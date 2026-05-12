@@ -308,7 +308,42 @@
     ];
 
     let allJobsRaw = [];
+    let allJccBookings = []; 
     let currentWeekOffset = 0;
+
+    // === NATIVE AUDIO SYNTHESIZER FOR ALERTS ===
+    function playAlert(type) {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            if (type === 'accept') {
+                // Pleasant double high-pitch beep for acceptance
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+                osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.15); // A5
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.4);
+            } else if (type === 'reject') {
+                // Low harsh buzz for rejection
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                osc.frequency.setValueAtTime(120, ctx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+            }
+        } catch (e) { 
+            console.log("Audio not supported or interaction needed first."); 
+        }
+    }
 
     // === REBUILT GRID GENERATOR ===
     const plannerBoard = document.getElementById('planner-board');
@@ -370,7 +405,6 @@
         }
 
         try {
-            // Fetch the most recent trailer check for this specific driver
             const { data, error } = await sb
                 .from('daily_trailer_checks')
                 .select('trailer_number')
@@ -390,16 +424,182 @@
         }
     }
 
+    // === MAINTENANCE WEEK OFFSET CALCULATOR ===
+    function getWeekOffsetFromNow(dateStr) {
+        if (!dateStr) return 0;
+        let now = new Date();
+        let dayNum = now.getDay() || 7;
+        let currentSun = new Date(now);
+        currentSun.setDate(now.getDate() - dayNum + 7);
+        currentSun.setHours(23, 59, 59, 999);
+
+        let target = new Date(dateStr);
+        if (target <= currentSun) return 0;
+
+        let diff = target.getTime() - currentSun.getTime();
+        let weeks = Math.ceil(diff / (1000 * 60 * 60 * 24 * 7));
+        return weeks;
+    }
+
+    // === MAINTENANCE SCHEDULER SYNC WITH FAILSAFES ===
+    async function checkMaintenance() {
+        try {
+            const { data: vehiclesData, error: vehError } = await sb.from('vehicles').select('*');
+            if (vehError || !vehiclesData || vehiclesData.length === 0) return;
+
+            const { data: existingQuotes, error: qError } = await sb.from('quotes')
+                .select('coll_postcode')
+                .eq('customer_name', '🔧 PLANNED MAINTENANCE');
+            
+            const existingRegs = existingQuotes ? existingQuotes.map(q => q.coll_postcode) : [];
+
+            const pendingVehicles = vehiclesData.filter(v => 
+                v.planned !== true && 
+                v.planned !== 'true' && 
+                !existingRegs.includes(v.registration_number)
+            );
+
+            if (pendingVehicles.length === 0) return;
+
+            let jobsToInsert = [];
+            let vehiclesToUpdate = [];
+
+            const now = new Date();
+            const dayNum = now.getDay() || 7;
+            const sun = new Date(now); sun.setDate(now.getDate() - dayNum + 7); sun.setHours(23,59,59,999);
+            const week4Sun = new Date(sun); week4Sun.setDate(sun.getDate() + 21); // End of Week 4
+
+            const getISOWeek = (dateStr) => {
+                if (!dateStr) return "-";
+                const d = new Date(dateStr);
+                const dNum = d.getUTCDay() || 7;
+                d.setUTCDate(d.getUTCDate() + 4 - dNum);
+                const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+                return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+            };
+
+            pendingVehicles.forEach(v => {
+                const isDue = (dateStr) => {
+                    if (!dateStr) return false;
+                    const d = new Date(dateStr);
+                    return d <= week4Sun; 
+                };
+
+                const types = [];
+                let earliestDate = null;
+
+                const checkDate = (dateStr, typeName) => {
+                    if (isDue(dateStr)) {
+                        types.push(typeName);
+                        const d = new Date(dateStr);
+                        if (!earliestDate || d < earliestDate) earliestDate = d;
+                    }
+                };
+
+                checkDate(v.mot_due, "MOT");
+                checkDate(v.pmi_due, "PMI");
+                checkDate(v.brake_test, "BRAKE TEST");
+
+                if (types.length > 0) {
+                    const maintenanceType = types.join(" & ");
+                    const primaryDate = earliestDate ? earliestDate.toISOString() : new Date().toISOString();
+                    const weekNumber = getISOWeek(primaryDate);
+
+                    jobsToInsert.push({
+                        customer_name: "🔧 PLANNED MAINTENANCE",
+                        coll_postcode: v.registration_number,
+                        del_postcode: "BOOK INSPECTION", 
+                        coll_ref: maintenanceType, 
+                        del_ref: `Week ${weekNumber}`, 
+                        coll_town: "YARD",
+                        del_town: "GARAGE",
+                        total_price: "0",
+                        vehicle_type: "Any",
+                        status: "pending", 
+                        dispatch_status: "unsent",
+                        coll_datetime: primaryDate
+                    });
+                    
+                    vehiclesToUpdate.push(v.registration_number);
+                }
+            });
+
+            if (jobsToInsert.length > 0) {
+                await sb.from('quotes').insert(jobsToInsert);
+                for (let reg of vehiclesToUpdate) {
+                    await sb.from('vehicles').update({ planned: true }).eq('registration_number', reg);
+                }
+            }
+        } catch (err) {
+            console.error("Maintenance Sync Error:", err);
+        }
+    }
+
+    // === JCC BOOKING LOGIC ===
+    async function bookAtJCC(event, jobId) {
+        event.stopPropagation();
+        const j = allJobsRaw.find(x => x.id == jobId);
+        if (!j) return;
+
+        if (!j.assigned_slot || j.assigned_slot.includes('pool') || j.assigned_slot.includes('yard')) {
+            alert("Please drag this maintenance card onto a specific day in the planner before booking it in!");
+            return;
+        }
+
+        const match = j.assigned_slot.match(/w(\d+).*s(\d+)/);
+        if (!match) return;
+        const weekOffset = parseInt(match[1]);
+        const dayIndex = parseInt(match[2]);
+
+        let now = new Date();
+        let dayNum = now.getDay() || 7;
+        let first = now.getDate() - dayNum + 1 + (weekOffset * 7);
+        let scheduledDate = new Date(now.getTime());
+        scheduledDate.setDate(first + dayIndex);
+
+        const payload = {
+            vehicle_reg: j.coll_postcode,
+            inspection_type: j.coll_ref,
+            scheduled_date: scheduledDate.toISOString().split('T')[0],
+            status: 'Booked',
+            planner_job_id: j.id
+        };
+
+        try {
+            const btn = event.target;
+            btn.innerText = "BOOKING...";
+            btn.style.background = "#555";
+
+            const { error } = await sb.from('jcc_bookings').insert([payload]);
+            if (error) throw error;
+
+            await sb.from('quotes').update({ dispatch_status: 'sent' }).eq('id', j.id);
+            loadAll();
+
+        } catch(e) {
+            console.error(e);
+            alert("Error booking with JCC. Please try again.");
+            event.target.innerText = "BOOK IN AT JCC";
+            event.target.style.background = "#8e44ad";
+        }
+    }
+
     async function loadAll() {
         document.querySelectorAll('.job-card').forEach(c => c.remove());
-        const { data: jobs } = await sb.from('quotes').select('*');
-        if (!jobs) return;
-        allJobsRaw = jobs;
-        jobs.forEach(q => {
+        
+        const [jobsRes, jccRes] = await Promise.all([
+            sb.from('quotes').select('*'),
+            sb.from('jcc_bookings').select('*')
+        ]);
+        
+        if (!jobsRes.data) return;
+        allJobsRaw = jobsRes.data;
+        allJccBookings = jccRes.data || [];
+
+        allJobsRaw.forEach(q => {
             if (['driver_config', 'archived', 'billed', 'subbed', 'cancelled'].includes(q.status)) return;
             const card = createCardElement(q);
             
-            // Failsafe: If a job was left in the yard, push it back to the unassigned pool
             let slot = q.assigned_slot ? document.getElementById(q.assigned_slot) : document.getElementById('pool-container');
             if (!slot) slot = document.getElementById('pool-container'); 
             
@@ -411,12 +611,14 @@
         renderSubbedList();
         renderCancelledList();
         updateCalculations();
-        restoreDrivers(jobs);
+        restoreDrivers(allJobsRaw);
+        switchView(currentWeekOffset); // Ensure unassigned pool filtering triggers after load
     }
 
     function createCardElement(q) {
         const card = document.createElement('div');
         const isCompleted = q.status === 'completed';
+        const isMaintenance = q.customer_name === "🔧 PLANNED MAINTENANCE";
         
         let dispatchClass = "";
         if (q.dispatch_status === 'sent') dispatchClass = " status-sent";
@@ -435,60 +637,131 @@
         const tOnly = (iso) => iso ? new Date(iso).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}) : '--:--';
 
         let pcHeader = `<span class="pc-coll">${q.coll_postcode || '??'}</span> ➔ `;
-        if (q.del_postcode_2 && q.del_postcode_2.trim() !== "") {
+        
+        if (isMaintenance) {
+            pcHeader += `<span class="pc-del" style="color:#8e44ad;">${q.del_postcode}</span>`;
+            
+            // Embed logic for the Unassigned Pool Filter
+            let targetWeek = getWeekOffsetFromNow(q.coll_datetime);
+            card.dataset.isMaintenance = "true";
+            card.dataset.targetWeek = targetWeek;
+            
+        } else if (q.del_postcode_2 && q.del_postcode_2.trim() !== "") {
             pcHeader += `<span class="pc-del-2">${q.del_postcode || '??'}</span> ➔ <span class="pc-del">${q.del_postcode_2}</span>`;
         } else {
             pcHeader += `<span class="pc-del">${q.del_postcode || '??'}</span>`;
         }
 
-        let dispatchBadge = '';
-        if (q.dispatch_status === 'sent') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#f39c12; border:1px solid #f39c12; padding:1px 4px; border-radius:3px; background:white;">SENT</span>`;
-        if (q.dispatch_status === 'acknowledged') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#0056b3; border:1px solid #0056b3; padding:1px 4px; border-radius:3px; background:white;">ACKNOWLEDGED</span>`;
-        if (q.dispatch_status === 'arrived') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#2e7d32; border:1px solid #2e7d32; padding:1px 4px; border-radius:3px; background:white;">AT COLLECTION</span>`;
-        if (q.dispatch_status === 'loaded') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#8e44ad; border:1px solid #8e44ad; padding:1px 4px; border-radius:3px; background:white;">LOADED</span>`;
-        if (q.dispatch_status === 'del_arrived') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#d68910; border:1px solid #d68910; padding:1px 4px; border-radius:3px; background:white;">AT DELIVERY</span>`;
-        if (q.dispatch_status === 'tipped') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#1abc9c; border:1px solid #1abc9c; padding:1px 4px; border-radius:3px; background:white;">TIPPED</span>`;
+        // --- RENDER CUSTOM MAINTENANCE CARD WITH LIVE STATUS LISTENER ---
+        if (isMaintenance) {
+            let booking = allJccBookings.find(b => b.planner_job_id === q.id);
+            
+            // Default "Unbooked" State
+            let cardBg = "white";
+            let cardBorder = "#8e44ad"; 
+            let titleColor = "#8e44ad";
+            let badgeHtml = "";
+            let btnHtml = `<button onclick="bookAtJCC(event, '${q.id}')" style="width:100%; padding:8px; font-size:0.75rem; background:#8e44ad; color:white; border:none; border-radius:3px; font-weight:bold; cursor:pointer;">BOOK IN AT JCC</button>`;
 
-        card.innerHTML = `
-            <div class="postcode-header">${pcHeader}</div>
-            <div class="card-body">
-                <div class="card-actions">
-                    <div style="display:flex; gap:10px;">
-                        <span class="action-btn" onclick="dispatchJob(event, '${q.id}')" title="Send to Driver App">📲</span>
-                        <span class="action-btn" onclick="editJob(event, '${q.id}')" title="Edit">✎</span>
-                        <span class="action-btn" onclick="splitJob(event, '${q.id}')" title="Split">✂</span>
-                        <span class="action-btn" onclick="duplicateJob(event, '${q.id}')" title="Duplicate">❐</span>
-                        <span class="action-btn" onclick="window.open('${podFolder}', '_blank')" title="POD Drive">📎</span>
-                        <span class="action-btn" onclick="queryRoute(event, '${q.coll_postcode}', '${q.del_postcode}')" title="Maps">📍</span>
-                        ${!isCompleted ? `<span class="action-btn" onclick="markPODReceived(event, '${q.id}')" title="Complete POD">✅</span>` : ''}
+            if (booking) {
+                if (booking.accepted) {
+                    cardBg = "#e8f5e9"; 
+                    cardBorder = "#2e7d32"; 
+                    titleColor = "#2e7d32";
+                    badgeHtml = `<span style="float:right; font-size:0.6rem; color:#2e7d32; border:1px solid #2e7d32; padding:1px 4px; border-radius:3px; background:white;">ACCEPTED</span>`;
+                    btnHtml = `<button onclick="event.stopPropagation();" style="width:100%; padding:8px; font-size:0.75rem; background:#2e7d32; color:white; border:none; border-radius:3px; font-weight:bold; cursor:default;">✓ ACCEPTED BY JCC</button>`;
+                } else if (booking.rejected) {
+                    cardBg = "#fdedec"; 
+                    cardBorder = "#c1272d"; 
+                    titleColor = "#c1272d";
+                    badgeHtml = `<span style="float:right; font-size:0.6rem; color:#c1272d; border:1px solid #c1272d; padding:1px 4px; border-radius:3px; background:white;">REJECTED</span>`;
+                    btnHtml = `<button onclick="event.stopPropagation();" style="width:100%; padding:8px; font-size:0.75rem; background:#c1272d; color:white; border:none; border-radius:3px; font-weight:bold; cursor:default;">❌ REJECTED BY JCC</button>`;
+                } else {
+                    cardBg = "#f5eef8"; 
+                    cardBorder = "#8e44ad";
+                    badgeHtml = `<span style="float:right; font-size:0.6rem; color:#8e44ad; border:1px solid #8e44ad; padding:1px 4px; border-radius:3px; background:white;">AWAITING JCC</span>`;
+                    btnHtml = `<button onclick="event.stopPropagation();" style="width:100%; padding:8px; font-size:0.75rem; background:#8e44ad; color:white; border:none; border-radius:3px; font-weight:bold; cursor:wait; opacity:0.8;">⏳ AWAITING CONFIRMATION</button>`;
+                }
+            }
+
+            card.style.backgroundColor = cardBg;
+            card.style.borderLeftColor = cardBorder;
+
+            card.innerHTML = `
+                <div class="postcode-header" style="color:${titleColor};">${pcHeader}</div>
+                <div class="card-body">
+                    <div class="card-actions" style="justify-content: flex-end; padding-bottom:0; border:none; margin-bottom:5px;">
+                        <span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;" title="Delete">🗑️</span>
                     </div>
-                    <span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;">🗑️</span>
-                </div>
-                <div style="font-weight:bold; color:black; font-size: 0.8rem; margin-bottom: 5px;">${q.customer_name} ${dispatchBadge}</div>
-                <div style="display:flex; gap:5px; margin:5px 0;"><span class="vehicle-tag">${q.vehicle_type}</span><span class="price-tag">£<span class="data-price">${q.total_price}</span></span></div>
+                    
+                    <div style="font-weight:bold; color:${titleColor}; font-size: 0.85rem; margin-bottom: 8px; text-align:center;">
+                        ${q.customer_name} ${badgeHtml}
+                    </div>
+                    
+                    <div style="background: #ffffff; padding: 8px; border-radius: 4px; border: 1px dashed ${cardBorder}; margin-bottom: 10px;">
+                        <div class="detail-row" style="color:#c1272d;"><b>DUE:</b> <span style="font-weight:bold;">${q.coll_ref || '-'}</span></div>
+                        <div class="detail-row" style="color:#0056b3;"><b>ISO WEEK:</b> <span style="font-weight:bold;">${q.del_ref || '-'}</span></div>
+                    </div>
+
+                    ${btnHtml}
+                    
+                    <div style="display:flex; gap:5px; margin-top:5px;">
+                        <button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#c1272d; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markCancelled(event, '${q.id}')">CANCEL</button>
+                    </div>
+                </div>`;
                 
-                <span class="card-section-label contact">LIVE TIMESTAMPS (DEMURRAGE)</span>
-                <div class="detail-row" style="color:#0056b3;"><b>Acknowledged:</b> <span>${tOnly(q.ack_timestamp)}</span></div>
-                <div class="detail-row" style="color:#2e7d32;"><b>Arrived Coll:</b> <span>${tOnly(q.arrived_timestamp)}</span></div>
-                <div class="detail-row" style="color:#8e44ad;"><b>Loaded:</b> <span>${tOnly(q.loaded_timestamp)}</span></div>
-                <div class="detail-row" style="color:#d68910;"><b>Arrived Del:</b> <span>${tOnly(q.del_arrived_timestamp)}</span></div>
-                <div class="detail-row" style="color:#1abc9c;"><b>Tipped:</b> <span>${tOnly(q.tipped_timestamp)}</span></div>
+        // --- RENDER STANDARD WORK CARD ---
+        } else {
+            let dispatchBadge = '';
+            if (q.dispatch_status === 'sent') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#f39c12; border:1px solid #f39c12; padding:1px 4px; border-radius:3px; background:white;">SENT</span>`;
+            if (q.dispatch_status === 'acknowledged') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#0056b3; border:1px solid #0056b3; padding:1px 4px; border-radius:3px; background:white;">ACKNOWLEDGED</span>`;
+            if (q.dispatch_status === 'arrived') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#2e7d32; border:1px solid #2e7d32; padding:1px 4px; border-radius:3px; background:white;">AT COLLECTION</span>`;
+            if (q.dispatch_status === 'loaded') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#8e44ad; border:1px solid #8e44ad; padding:1px 4px; border-radius:3px; background:white;">LOADED</span>`;
+            if (q.dispatch_status === 'del_arrived') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#d68910; border:1px solid #d68910; padding:1px 4px; border-radius:3px; background:white;">AT DELIVERY</span>`;
+            if (q.dispatch_status === 'tipped') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#1abc9c; border:1px solid #1abc9c; padding:1px 4px; border-radius:3px; background:white;">TIPPED</span>`;
 
-                <span class="card-section-label">COLLECTION</span>
-                <div class="detail-row"><b>Street:</b> <span>${q.coll_street || '-'}</span></div>
-                <div class="detail-row"><b>Town:</b> <span>${q.coll_town || '-'}</span></div>
-                <div class="detail-row"><b>Time:</b> <span>${dtFormat(q.coll_datetime)}</span></div>
-                <span class="card-section-label del">DELIVERY</span>
-                <div class="detail-row"><b>Company:</b> <span>${q.del_cust_name || '-'}</span></div>
-                <div class="detail-row"><b>Town:</b> <span>${q.del_town || '-'}</span></div>
-                <div class="detail-row"><b>Time:</b> <span>${dtFormat(q.del_datetime)}</span></div>
+            card.innerHTML = `
+                <div class="postcode-header">${pcHeader}</div>
+                <div class="card-body">
+                    <div class="card-actions">
+                        <div style="display:flex; gap:10px;">
+                            <span class="action-btn" onclick="dispatchJob(event, '${q.id}')" title="Send to Driver App">📲</span>
+                            <span class="action-btn" onclick="editJob(event, '${q.id}')" title="Edit">✎</span>
+                            <span class="action-btn" onclick="splitJob(event, '${q.id}')" title="Split">✂</span>
+                            <span class="action-btn" onclick="duplicateJob(event, '${q.id}')" title="Duplicate">❐</span>
+                            <span class="action-btn" onclick="window.open('${podFolder}', '_blank')" title="POD Drive">📎</span>
+                            <span class="action-btn" onclick="queryRoute(event, '${q.coll_postcode}', '${q.del_postcode}')" title="Maps">📍</span>
+                            ${!isCompleted ? `<span class="action-btn" onclick="markPODReceived(event, '${q.id}')" title="Complete POD">✅</span>` : ''}
+                        </div>
+                        <span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;">🗑️</span>
+                    </div>
+                    <div style="font-weight:bold; color:black; font-size: 0.8rem; margin-bottom: 5px;">${q.customer_name} ${dispatchBadge}</div>
+                    <div style="display:flex; gap:5px; margin:5px 0;"><span class="vehicle-tag">${q.vehicle_type}</span><span class="price-tag">£<span class="data-price">${q.total_price}</span></span></div>
+                    
+                    <span class="card-section-label contact">LIVE TIMESTAMPS (DEMURRAGE)</span>
+                    <div class="detail-row" style="color:#0056b3;"><b>Acknowledged:</b> <span>${tOnly(q.ack_timestamp)}</span></div>
+                    <div class="detail-row" style="color:#2e7d32;"><b>Arrived Coll:</b> <span>${tOnly(q.arrived_timestamp)}</span></div>
+                    <div class="detail-row" style="color:#8e44ad;"><b>Loaded:</b> <span>${tOnly(q.loaded_timestamp)}</span></div>
+                    <div class="detail-row" style="color:#d68910;"><b>Arrived Del:</b> <span>${tOnly(q.del_arrived_timestamp)}</span></div>
+                    <div class="detail-row" style="color:#1abc9c;"><b>Tipped:</b> <span>${tOnly(q.tipped_timestamp)}</span></div>
 
-                <!-- SUBBED & CANCEL BUTTONS (Inside Expanded View) -->
-                <div style="display:flex; gap:5px; margin-top:10px; padding-top:8px; border-top: 1px solid #eee;">
-                    <button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#34495e; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markSubbed(event, '${q.id}')">SUBBED</button>
-                    <button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#c1272d; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markCancelled(event, '${q.id}')">CANCEL</button>
-                </div>
-            </div>`;
+                    <span class="card-section-label">COLLECTION</span>
+                    <div class="detail-row"><b>Street:</b> <span>${q.coll_street || '-'}</span></div>
+                    <div class="detail-row"><b>Town:</b> <span>${q.coll_town || '-'}</span></div>
+                    <div class="detail-row"><b>Time:</b> <span>${dtFormat(q.coll_datetime)}</span></div>
+                    <span class="card-section-label del">DELIVERY</span>
+                    <div class="detail-row"><b>Company:</b> <span>${q.del_cust_name || '-'}</span></div>
+                    <div class="detail-row"><b>Town:</b> <span>${q.del_town || '-'}</span></div>
+                    <div class="detail-row"><b>Time:</b> <span>${dtFormat(q.del_datetime)}</span></div>
+
+                    <!-- SUBBED & CANCEL BUTTONS (Inside Expanded View) -->
+                    <div style="display:flex; gap:5px; margin-top:10px; padding-top:8px; border-top: 1px solid #eee;">
+                        <button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#34495e; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markSubbed(event, '${q.id}')">SUBBED</button>
+                        <button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#c1272d; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markCancelled(event, '${q.id}')">CANCEL</button>
+                    </div>
+                </div>`;
+        }
+        
         return card;
     }
 
@@ -781,6 +1054,19 @@
 
             const info = getWeekInfo(view); document.getElementById('week-display-box').innerText = `WK ${info.week} | MON ${info.date}`;
             updateDateHeaders(view); updateCalculations();
+            
+            // Apply the Unassigned Pool Filter for Maintenance Cards
+            document.querySelectorAll('#pool-container .job-card[data-is-maintenance="true"]').forEach(card => {
+                const targetWeek = parseInt(card.dataset.targetWeek) || 0;
+                
+                // Show if it belongs to this week, or if it's overdue (targetWeek <= 0) and we're looking at Week 1 (view 0),
+                // or if it's past week 4 and we're looking at Week 4 (view 3)
+                if (targetWeek === view || (targetWeek <= 0 && view === 0) || (targetWeek >= 3 && view === 3)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
         }
     }
 
@@ -958,7 +1244,34 @@
         }
     });
 
-    window.onload = () => { switchView(0); loadAll(); };
+    // === SUPABASE REALTIME LISTENER FOR GARAGE APP FEEDBACK (WITH AUDIO ALERTS) ===
+    sb.channel('jcc-tracker')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jcc_bookings' }, payload => {
+            console.log("JCC Booking Status Updated by Garage!", payload);
+            
+            // Check existing local state to see if it just flipped to true
+            let existingBooking = allJccBookings.find(b => b.id === payload.new.id);
+            
+            if (existingBooking) {
+                if (payload.new.accepted && !existingBooking.accepted) {
+                    playAlert('accept');
+                } else if (payload.new.rejected && !existingBooking.rejected) {
+                    playAlert('reject');
+                }
+            } else {
+                // Failsafe if it's somehow a brand new record we haven't loaded yet
+                if (payload.new.accepted) playAlert('accept');
+                if (payload.new.rejected) playAlert('reject');
+            }
+
+            loadAll(); // Silently re-renders the board to show green/red visual changes
+        })
+        .subscribe();
+
+    window.onload = async () => { 
+        await checkMaintenance(); 
+        await loadAll(); 
+    };
 </script>
 </body>
 </html>
