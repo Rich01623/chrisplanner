@@ -159,7 +159,7 @@
     <div class="logo-container"><img src="logo.png" alt="FROST"></div>
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="week-display-box" class="week-info-box">WK -- | MON --/--/--</div>
-        <button class="week-btn" id="btn-map" onclick="switchView('map')" style="background:#27ae60; color:white;">🗺️ EMPTY LEGS MAP</button>
+        <button class="week-btn" id="btn-map" onclick="switchView('map')" style="background:#27ae60; color:white;">🗺️ DROP SPOTS</button>
         <button class="week-btn" id="btn-toggle-header" onclick="toggleHeaderView()" style="background:#34495e; color:white;">🔄 POSTCODES</button>
         <button class="week-btn" onclick="loadAll()">SYNC</button>
         <div class="grand-total-box"><span class="grand-total-value" id="grand-total">£0.00</span></div>
@@ -209,10 +209,10 @@
         <!-- Planner Boards (Dynamically injected) -->
         <section id="planner-board"></section>
 
-        <!-- Empty Legs Map View -->
+        <!-- Drop Spots Map View -->
         <section id="map-view" style="display:none; padding:10px; height:100%; box-sizing:border-box;">
             <div style="background:var(--frost-black); color:white; padding:10px; border-radius:8px 8px 0 0; font-weight:bold; display:flex; justify-content:space-between;">
-                <span>🚚 Empty Legs Visualization</span>
+                <span>🚚 Drop Spots Visualization</span>
                 <span style="font-size:0.8rem; color:#aaa; font-weight:normal;">*Only valid, full postcodes are displayed</span>
             </div>
             <div id="map-container" style="border-radius: 0 0 8px 8px;"></div>
@@ -1236,7 +1236,7 @@
     }
 
     // ==========================================
-    // 9. LEAFLET MAP & EMPTY LEGS LOGIC
+    // 9. LEAFLET MAP & DROP SPOTS LOGIC
     // ==========================================
     async function updateMapPins() {
         if (!fleetMap) return;
