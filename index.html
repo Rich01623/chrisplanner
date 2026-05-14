@@ -160,7 +160,7 @@
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="week-display-box" class="week-info-box">WK -- | MON --/--/--</div>
         <button class="week-btn" id="btn-map" onclick="switchView('map')" style="background:#27ae60; color:white;">🗺️ DROP SPOTS</button>
-        <button class="week-btn" id="btn-toggle-header" onclick="toggleHeaderView()" style="background:#34495e; color:white;">🔄 POSTCODES</button>
+        <button class="week-btn" id="btn-toggle-header" onclick="toggleHeaderView()" style="background:#34495e; color:white;">🔄 TOWNS</button>
         <button class="week-btn" onclick="loadAll()">SYNC</button>
         <div class="grand-total-box"><span class="grand-total-value" id="grand-total">£0.00</span></div>
     </div>
@@ -433,8 +433,8 @@
 
             if (type === 'accept') {
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
-                osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.15); // A5
+                osc.frequency.setValueAtTime(659.25, ctx.currentTime); 
+                osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.15); 
                 gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4);
                 osc.start();
@@ -449,7 +449,7 @@
                 osc.stop(ctx.currentTime + 0.5);
             }
         } catch (e) { 
-            console.log("Audio not supported or interaction needed first."); 
+            console.log("Audio not supported."); 
         }
     }
 
@@ -459,7 +459,7 @@
     function toggleHeaderView() {
         showTownsInHeader = !showTownsInHeader;
         const btn = document.getElementById('btn-toggle-header');
-        btn.innerText = showTownsInHeader ? "🔄 TOWNS" : "🔄 POSTCODES";
+        btn.innerText = showTownsInHeader ? "🔄 POSTCODES" : "🔄 TOWNS";
         btn.style.background = showTownsInHeader ? "#0056b3" : "#34495e";
         loadAll(); 
     }
@@ -526,10 +526,14 @@
         }
 
         try {
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
+            
             const { data, error } = await sb
                 .from('daily_trailer_checks')
                 .select('trailer_number')
-                .ilike('driver_name', driverName) 
+                .ilike('driver_name', driverName)
+                .gte('created_at', startOfToday.toISOString()) 
                 .order('created_at', { ascending: false })
                 .limit(1);
 
@@ -811,7 +815,6 @@
             }
         }
 
-        // Render Planner Note
         if (isNote) {
             card.style.borderLeftColor = "#f39c12"; 
             card.style.backgroundColor = "#fef9e7"; 
@@ -825,7 +828,6 @@
                     <div style="background: #ffffff; padding: 10px; border-radius: 4px; border: 1px dashed #f39c12; margin-bottom: 5px; font-size: 0.75rem; color: #333; white-space: pre-wrap; font-weight: 500;">${q.coll_ref || ''}</div>
                 </div>`;
 
-        // Render Maintenance Card
         } else if (isMaintenance) {
             let booking = allJccBookings.find(b => b.planner_job_id === q.id);
             
@@ -882,7 +884,6 @@
                     </div>
                 </div>`;
                 
-        // Render Standard Work Card
         } else {
             let dispatchBadge = '';
             if (q.dispatch_status === 'sent') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#f39c12; border:1px solid #f39c12; padding:1px 4px; border-radius:3px; background:white;">SENT</span>`;
@@ -1096,6 +1097,35 @@
         let finalTarget = target.classList.contains('job-card') ? target.parentElement : target;
 
         const isPool = finalTarget.id === 'pool-container';
+
+        // --- NEW DATE VALIDATION LOGIC ---
+        if (!isPool) {
+            const j = allJobsRaw.find(x => x.id == id);
+            if (j && j.coll_datetime) {
+                const match = finalTarget.id.match(/w(\d+).*s(\d+)/);
+                if (match) {
+                    const weekOffset = parseInt(match[1]);
+                    const dayIndex = parseInt(match[2]);
+
+                    let now = new Date();
+                    let dayNum = now.getDay() || 7;
+                    let first = now.getDate() - dayNum + 1 + (weekOffset * 7);
+                    let cellDate = new Date(now.getTime());
+                    cellDate.setDate(first + dayIndex);
+
+                    const jobDate = new Date(j.coll_datetime);
+                    
+                    const cellDateStr = cellDate.toLocaleDateString('en-GB');
+                    const jobDateStr = jobDate.toLocaleDateString('en-GB');
+
+                    if (cellDateStr !== jobDateStr) {
+                        const confirmMove = confirm(`⚠️ WARNING: Date Mismatch!\n\nThe collection date for this job is ${jobDateStr}, but you are placing it on ${cellDateStr}.\n\nAre you sure you want to place it here?`);
+                        if (!confirmMove) return; 
+                    }
+                }
+            }
+        }
+        // --- END NEW LOGIC ---
 
         let assignedDriver = null;
         if (!isPool) {
