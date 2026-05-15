@@ -318,7 +318,7 @@
      MODALS
      ========================================== -->
 
-<!-- TABBED Add Job Modal -->
+<!-- NEW TABBED Add Job Modal -->
 <div id="modal-add" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-add')">
     <div class="modal-content" style="width: 1100px; max-width: 95vw;">
         
@@ -545,6 +545,7 @@
         document.querySelectorAll('.tab-content-zone').forEach(el => el.classList.remove('active'));
         document.getElementById('tab-content-' + tabId).classList.add('active');
         
+        // Visual button states
         document.getElementById('tab-btn-leg1').style.opacity = tabId === 'leg1' ? '1' : '0.6';
         document.getElementById('tab-btn-coll2').style.opacity = tabId === 'coll2' ? '1' : '0.6';
         document.getElementById('tab-btn-del2').style.opacity = tabId === 'del2' ? '1' : '0.6';
@@ -1130,14 +1131,6 @@
         } catch(e) { console.error(e); alert("Error saving note."); }
     }
 
-    function addHoursLocal(dtStr, hours) {
-        if (!dtStr) return "";
-        let d = new Date(dtStr);
-        d.setHours(d.getHours() + hours);
-        let pad = n => n.toString().padStart(2, '0');
-        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    }
-
     async function saveJob() {
         const id = document.getElementById('sys_job_id').value;
         const payload = {
@@ -1177,49 +1170,10 @@
             total_weight: document.getElementById('n_total_weight').value,
             vehicle_type: document.getElementById('n_veh_type').value
         };
-
-        // Check time difference for Auto-Split Logic (> 24 hours)
-        let diffHours = 0;
-        if (payload.coll_datetime && payload.del_datetime) {
-            let cTime = new Date(payload.coll_datetime).getTime();
-            let dTime = new Date(payload.del_datetime).getTime();
-            diffHours = (dTime - cTime) / (1000 * 60 * 60);
-        }
-
         try {
-            if (!id && diffHours > 24) {
-                // LEG 1: Collection to YARD
-                let p1 = { ...payload };
-                p1.del_postcode = "YARD";
-                p1.del_town = "YARD";
-                p1.del_cust_name = "FROST YARD";
-                p1.del_street = "Storage";
-                p1.del_datetime = addHoursLocal(payload.coll_datetime, 2); 
-                p1.del_postcode_2 = "";
-                p1.del_town_2 = "";
-                p1.status = 'pending';
-
-                // LEG 2: YARD to Delivery
-                let p2 = { ...payload };
-                p2.customer_name = payload.customer_name + " (Leg 2)";
-                p2.coll_postcode = "YARD";
-                p2.coll_town = "YARD";
-                p2.coll_street = "FROST YARD";
-                p2.coll_ref = "From Storage";
-                p2.coll_datetime = addHoursLocal(payload.del_datetime, -2); 
-                p2.coll_postcode_2 = "";
-                p2.coll_town_2 = "";
-                p2.status = 'pending';
-                p2.total_price = "0"; 
-
-                await sb.from('quotes').insert([p1, p2]);
-            } else {
-                if(id) await sb.from('quotes').update(payload).eq('id', id);
-                else { payload.status = 'pending'; await sb.from('quotes').insert([payload]); }
-            }
-            
-            closeModal('modal-add'); 
-            loadAll();
+            if(id) await sb.from('quotes').update(payload).eq('id', id);
+            else { payload.status = 'pending'; await sb.from('quotes').insert([payload]); }
+            closeModal('modal-add'); loadAll();
         } catch(e) { console.error(e); alert("Error saving."); }
     }
 
@@ -1244,10 +1198,7 @@
         document.getElementById('n_coll_town_2').value = j.coll_town_2 || '';
         
         document.getElementById('n_del_pc').value = j.del_postcode || '';
-        
-        // FIX: The HTML ID is n_del_name, not n_del_cust_name
-        document.getElementById('n_del_name').value = j.del_cust_name || ''; 
-        
+        document.getElementById('n_del_cust_name').value = j.del_cust_name || '';
         document.getElementById('n_del_phone').value = j.del_phone || '';
         document.getElementById('n_del_email').value = j.del_email || '';
         document.getElementById('n_del_street').value = j.del_street || '';
@@ -1265,6 +1216,7 @@
         document.getElementById('n_veh_type').value = j.vehicle_type || 'Artic';
         
         openModal('modal-add');
+        switchFormTab('leg1');
     }
 
     async function markSubbed(e, id) {
@@ -1643,6 +1595,7 @@
         });
     }
 
+    function toggleMultidropUI() { document.getElementById('multidrop_input_container').style.display = document.getElementById('toggle_multidrop').checked ? 'block' : 'none'; }
     function resetForm() {
         document.getElementById('sys_job_id').value = '';
         ['n_cust_name','n_cust_phone', 'n_cust_email','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
@@ -1658,11 +1611,7 @@
     }
     function toggleUnassigned() { document.getElementById('unassigned-sidebar').classList.toggle('open'); }
     function allowDrop(ev) { ev.preventDefault(); }
-    
-    function openModal(id) { 
-        document.getElementById(id).style.display = 'flex'; 
-        if(id === 'modal-add') switchFormTab('leg1');
-    }
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; switchFormTab('leg1');}
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function closeModalOnOutsideClick(e, id) { if(e.target.id === id) closeModal(id); }
 
@@ -1832,7 +1781,7 @@
         .subscribe();
 
     window.onload = async () => { 
-        setupAutoScroll(); 
+        setupAutoScroll(); // Initialize the edge-scroll engine
         await checkMaintenance(); 
         await loadAll(); 
     };
@@ -1840,6 +1789,9 @@
     // ==========================================
     // 13. AUTO-SCROLL DURING DRAG
     // ==========================================
+    let scrollInterval = null;
+    let dragMousePos = { x: 0, y: 0 };
+
     function setupAutoScroll() {
         document.addEventListener('dragover', (e) => {
             if (isDragging) {
