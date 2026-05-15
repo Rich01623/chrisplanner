@@ -59,12 +59,13 @@
            ========================================== */
         main { display: flex; flex-grow: 1; overflow: hidden; position: relative; }
         
-        #unassigned-sidebar { width: var(--sidebar-width); background: #eee; border-right: 2px solid var(--border-color); transition: margin-left 0.3s ease; margin-left: calc(-1 * var(--sidebar-width)); flex-shrink: 0; z-index: 80; display: flex; flex-direction: column; }
+        /* FIX: Added height: 100% so it respects screen edges */
+        #unassigned-sidebar { width: var(--sidebar-width); background: #eee; border-right: 2px solid var(--border-color); transition: margin-left 0.3s ease; margin-left: calc(-1 * var(--sidebar-width)); flex-shrink: 0; z-index: 80; display: flex; flex-direction: column; height: 100%; }
         #unassigned-sidebar.open { margin-left: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
         
-        /* NEW POOL LAYOUT STYLES */
-        #pool-container { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
-        .pool-day { background: white; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; }
+        /* FIX: Added min-height: 0 to force flexbox scrolling */
+        #pool-container { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+        .pool-day { background: white; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; flex-shrink: 0; }
         .pool-day-title { background: #34495e; color: white; padding: 6px; font-size: 0.75rem; font-weight: bold; text-align: center; }
         .pool-zone { min-height: 45px; padding: 6px; background: #fdfdfd; transition: background 0.2s; }
         .pool-zone:hover { background: #f4f4f4; }
@@ -1178,7 +1179,6 @@
         let dt2 = document.getElementById('n_del_town_2').value;
 
         // ONLY add these keys to the payload if they are not empty. 
-        // This stops Supabase from rejecting standard jobs if the columns aren't added yet!
         if (cp2) payload.coll_postcode_2 = cp2;
         if (ct2) payload.coll_town_2 = ct2;
         if (dt2) payload.del_town_2 = dt2;
@@ -1202,7 +1202,7 @@
                 p1.del_street = "Storage";
                 p1.del_datetime = addHoursLocal(payload.coll_datetime, 2); 
                 p1.del_postcode_2 = "";
-                delete p1.del_town_2; // Remove extra delivery info for Leg 1
+                delete p1.del_town_2; 
                 p1.status = 'pending';
 
                 // LEG 2: YARD to Delivery
@@ -1213,7 +1213,7 @@
                 p2.coll_street = "FROST YARD";
                 p2.coll_ref = "From Storage";
                 p2.coll_datetime = addHoursLocal(payload.del_datetime, -2); 
-                delete p2.coll_postcode_2; // Remove extra collection info for Leg 2
+                delete p2.coll_postcode_2; 
                 delete p2.coll_town_2;
                 p2.status = 'pending';
                 p2.total_price = "0"; 
@@ -1231,7 +1231,6 @@
                 }
             }
             
-            // Catch Database Missing Column Errors Silently and Alert the User safely
             if (errorObj) {
                 if (errorObj.code === '42703' || (errorObj.message && errorObj.message.includes('not exist'))) {
                     alert("⚠️ DATABASE UPDATE REQUIRED!\n\nTo use the extra '+ Collection' or '+ Delivery' tabs, you must go to your Supabase Dashboard and add three new 'text' columns to your 'quotes' table:\n\n1. coll_postcode_2\n2. coll_town_2\n3. del_town_2\n\nStandard jobs without extra legs will continue to save normally.");
@@ -1266,7 +1265,7 @@
         document.getElementById('n_coll_town_2').value = j.coll_town_2 || '';
         
         document.getElementById('n_del_pc').value = j.del_postcode || '';
-        document.getElementById('n_del_name').value = j.del_cust_name || '';
+        document.getElementById('n_del_name').value = j.del_cust_name || ''; 
         document.getElementById('n_del_phone').value = j.del_phone || '';
         document.getElementById('n_del_email').value = j.del_email || '';
         document.getElementById('n_del_street').value = j.del_street || '';
@@ -1677,7 +1676,11 @@
     }
     function toggleUnassigned() { document.getElementById('unassigned-sidebar').classList.toggle('open'); }
     function allowDrop(ev) { ev.preventDefault(); }
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; switchFormTab('leg1');}
+    
+    function openModal(id) { 
+        document.getElementById(id).style.display = 'flex'; 
+        if(id === 'modal-add') switchFormTab('leg1');
+    }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function closeModalOnOutsideClick(e, id) { if(e.target.id === id) closeModal(id); }
 
