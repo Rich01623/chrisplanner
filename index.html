@@ -101,12 +101,16 @@
         td:hover { background: #fdfdfd; }
 
         /* ==========================================
-           5. JOB CARDS
+           5. JOB CARDS & GHOST CARDS
            ========================================== */
         .job-card { background: white; color: black; border: 1px solid var(--border-color); border-left: 4px solid var(--frost-red); padding: 8px; margin-bottom: 6px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: grab; font-size: 0.72rem; position: relative; transition: all 0.2s; }
         .job-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
         .job-card.completed-grey { background: #f0f0f0 !important; border-left-color: #bbb !important; color: #888 !important; opacity: 0.8; }
         
+        /* Ghost Card Styling */
+        .job-card.ghost-card { border: 2px dashed var(--frost-blue); background: #f4f9ff; opacity: 0.85; cursor: pointer; border-left: 4px solid var(--frost-blue); }
+        .ghost-badge { background: var(--frost-blue); color: white; font-size: 0.65rem; padding: 3px 6px; border-radius: 3px; display: block; text-align: center; margin-bottom: 6px; font-weight: bold; letter-spacing: 0.5px; }
+
         /* Dispatch Colors */
         .job-card.status-sent { border-left-color: #f39c12; } 
         .job-card.status-ack { background: #e3f2fd; border-left-color: #0056b3; } 
@@ -153,7 +157,8 @@
         #add-job-btn { width: 100%; background: var(--frost-red); color: white; border: none; padding: 12px; font-weight: bold; cursor: pointer; border-radius: 4px; transition: background 0.2s;}
         #add-job-btn:hover { background: #a02025; }
         
-        .multidrop-ui { background: #f9f9f9; padding: 10px; border-radius: 6px; border: 1px dashed #ccc; margin-bottom: 15px; }
+        .tab-content-zone { display: none; }
+        .tab-content-zone.active { display: block; }
     </style>
 </head>
 <body>
@@ -313,69 +318,90 @@
      MODALS
      ========================================== -->
 
-<!-- Add Job Modal -->
+<!-- TABBED Add Job Modal -->
 <div id="modal-add" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-add')">
     <div class="modal-content" style="width: 1100px; max-width: 95vw;">
-        <h2 style="margin-top:0; border-bottom: 2px solid var(--frost-red); padding-bottom: 10px; margin-bottom: 20px;">Job Details</h2>
+        
+        <!-- MODAL TAB HEADER -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 2px solid var(--frost-red); padding-bottom: 10px;">
+            <h2 style="margin:0;">Job Details</h2>
+            <div id="form-tabs" style="display:flex; gap:10px;">
+                <button type="button" class="week-btn active" id="tab-btn-leg1" onclick="switchFormTab('leg1')" style="background:var(--frost-red);">Main Route</button>
+                <button type="button" class="week-btn" id="tab-btn-coll2" onclick="switchFormTab('coll2')" style="background:#0056b3;">+ Collection 2</button>
+                <button type="button" class="week-btn" id="tab-btn-del2" onclick="switchFormTab('del2')" style="background:#2e7d32;">+ Delivery 2</button>
+            </div>
+        </div>
+
         <input type="hidden" id="sys_job_id">
         
-        <div style="display: flex; gap: 40px;">
-            
-            <!-- Left Column: Customer & Collection -->
-            <div style="flex: 1;">
-                <h4 style="margin:0 0 10px 0; color:#0056b3;">CUSTOMER INFO</h4>
-                <div class="form-group"><label>Booking Customer Name</label><input type="text" id="n_cust_name"></div>
-                <div style="display:flex; gap:5px;">
-                    <div class="form-group" style="flex:1;"><label>Telephone</label><input type="text" id="n_cust_phone"></div>
-                    <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_cust_email"></div>
+        <!-- TAB 1: MAIN ROUTE -->
+        <div id="tab-content-leg1" class="tab-content-zone active">
+            <div style="display: flex; gap: 40px;">
+                <div style="flex: 1;">
+                    <h4 style="margin:0 0 10px 0; color:#0056b3;">CUSTOMER INFO</h4>
+                    <div class="form-group"><label>Booking Customer Name</label><input type="text" id="n_cust_name"></div>
+                    <div style="display:flex; gap:5px;">
+                        <div class="form-group" style="flex:1;"><label>Telephone</label><input type="text" id="n_cust_phone"></div>
+                        <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_cust_email"></div>
+                    </div>
+                    
+                    <hr class="section-divider">
+                    
+                    <h4 style="margin:5px 0; color:#c1272d;">COLLECTION ADDRESS (LEG 1)</h4>
+                    <div class="form-group"><label>Post Code</label><input type="text" id="n_coll_pc"></div>
+                    <div class="form-group"><label>Street</label><input type="text" id="n_coll_street"></div>
+                    <div style="display:flex; gap:5px;">
+                        <div class="form-group" style="flex:1;"><label>Town</label><input type="text" id="n_coll_town"></div>
+                        <div class="form-group" style="flex:1;"><label>County</label><input type="text" id="n_coll_county"></div>
+                    </div>
+                    <div class="form-group"><label>Ref</label><input type="text" id="n_coll_ref"></div>
+                    <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_coll_dt"></div>
                 </div>
                 
-                <hr class="section-divider">
-                
-                <h4 style="margin:5px 0; color:#c1272d;">COLLECTION ADDRESS</h4>
-                <div class="form-group"><label>Post Code</label><input type="text" id="n_coll_pc"></div>
-                <div class="form-group"><label>Street</label><input type="text" id="n_coll_street"></div>
-                <div style="display:flex; gap:5px;">
-                    <div class="form-group" style="flex:1;"><label>Town</label><input type="text" id="n_coll_town"></div>
-                    <div class="form-group" style="flex:1;"><label>County</label><input type="text" id="n_coll_county"></div>
+                <div style="flex: 1;">
+                    <h4 style="margin:0 0 10px 0; color:#2e7d32;">DELIVERY INFO (LEG 1)</h4>
+                    <div class="form-group"><label>Delivery Company Name</label><input type="text" id="n_del_name"></div>
+                    <div style="display:flex; gap:5px;">
+                        <div class="form-group" style="flex:1;"><label>Telephone</label><input type="text" id="n_del_phone"></div>
+                        <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_del_email"></div>
+                    </div>
+                    
+                    <hr class="section-divider">
+                    
+                    <h4 style="margin:5px 0; color:#2e7d32;">DELIVERY ADDRESS (LEG 1)</h4>
+                    <div class="form-group"><label>Post Code</label><input type="text" id="n_del_pc"></div>
+                    <div class="form-group"><label>Street</label><input type="text" id="n_del_street"></div>
+                    <div style="display:flex; gap:5px;">
+                        <div class="form-group" style="flex:1;"><label>Town</label><input type="text" id="n_8"></div>
+                        <div class="form-group" style="flex:1;"><label>County</label><input type="text" id="n_9"></div>
+                    </div>
+                    <div class="form-group"><label>Ref</label><input type="text" id="n_10"></div>
+                    <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_del_dt"></div>
                 </div>
-                <div class="form-group"><label>Ref</label><input type="text" id="n_coll_ref"></div>
-                <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_coll_dt"></div>
             </div>
-            
-            <!-- Right Column: Delivery Info & Address -->
-            <div style="flex: 1;">
-                <h4 style="margin:0 0 10px 0; color:#2e7d32;">DELIVERY INFO</h4>
-                
-                <!-- Multidrop Hidden -->
-                <div class="multidrop-ui" style="display:none;">
-                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                        <input type="checkbox" id="toggle_multidrop" style="width:auto;" onclick="toggleMultidropUI()">
-                        <label for="toggle_multidrop" style="margin:0; color:#2e7d32;">Enable Multidrop (2nd Postcode)</label>
-                    </div>
-                    <div id="multidrop_input_container" style="display:none;">
-                        <label>Post Code (Delivery 2)</label>
-                        <input type="text" id="n_del_pc_2" placeholder="Enter 2nd Drop Postcode">
-                    </div>
-                </div>
+        </div>
 
-                <div class="form-group"><label>Delivery Company Name</label><input type="text" id="n_del_name"></div>
+        <!-- TAB 2: COLLECTION 2 -->
+        <div id="tab-content-coll2" class="tab-content-zone">
+            <div style="background: #f4f9ff; padding: 20px; border-radius: 8px; border: 1px dashed #0056b3;">
+                <h4 style="margin:0 0 15px 0; color:#0056b3;">ADDITIONAL COLLECTION (LEG 2)</h4>
+                <div class="form-group"><label>Post Code</label><input type="text" id="n_coll_pc_2"></div>
                 <div style="display:flex; gap:5px;">
-                    <div class="form-group" style="flex:1;"><label>Telephone</label><input type="text" id="n_del_phone"></div>
-                    <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_del_email"></div>
+                    <div class="form-group" style="flex:1;"><label>Town</label><input type="text" id="n_coll_town_2"></div>
                 </div>
-                
-                <hr class="section-divider">
-                
-                <h4 style="margin:5px 0; color:#2e7d32;">DELIVERY ADDRESS</h4>
-                <div class="form-group"><label>Post Code</label><input type="text" id="n_del_pc"></div>
-                <div class="form-group"><label>Street</label><input type="text" id="n_del_street"></div>
+                <p style="font-size:0.75rem; color:#666; margin-bottom:0;">*This will dynamically add a second collection point to the job card header on the planner.</p>
+            </div>
+        </div>
+
+        <!-- TAB 3: DELIVERY 2 -->
+        <div id="tab-content-del2" class="tab-content-zone">
+            <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; border: 1px dashed #2e7d32;">
+                <h4 style="margin:0 0 15px 0; color:#2e7d32;">ADDITIONAL DELIVERY (LEG 2)</h4>
+                <div class="form-group"><label>Post Code</label><input type="text" id="n_del_pc_2"></div>
                 <div style="display:flex; gap:5px;">
-                    <div class="form-group" style="flex:1;"><label>Town</label><input type="text" id="n_8"></div>
-                    <div class="form-group" style="flex:1;"><label>County</label><input type="text" id="n_9"></div>
+                    <div class="form-group" style="flex:1;"><label>Town</label><input type="text" id="n_del_town_2"></div>
                 </div>
-                <div class="form-group"><label>Ref</label><input type="text" id="n_10"></div>
-                <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_del_dt"></div>
+                <p style="font-size:0.75rem; color:#666; margin-bottom:0;">*This will dynamically add a second delivery point to the job card header on the planner.</p>
             </div>
         </div>
 
@@ -389,8 +415,8 @@
             <div class="form-group" style="flex:1;"><label>Agreed Price (£)</label><input type="text" id="n_price" placeholder="0.00"></div>
             
             <div style="flex:1.5; display:flex; gap:10px;">
-                <button class="week-btn" onclick="closeModal('modal-add')" style="flex: 1; background:#ddd; color:#333; padding: 10px; font-weight: bold; border-radius: 4px; height: 37px; margin-bottom: 10px;">Cancel</button>
-                <button id="add-job-btn" onclick="saveJob()" style="flex: 2; height: 37px; margin-bottom: 10px; border-radius: 4px;">Save Changes</button>
+                <button type="button" class="week-btn" onclick="closeModal('modal-add')" style="flex: 1; background:#ddd; color:#333; padding: 10px; font-weight: bold; border-radius: 4px; height: 37px; margin-bottom: 10px;">Cancel</button>
+                <button type="button" id="add-job-btn" onclick="saveJob()" style="flex: 2; height: 37px; margin-bottom: 10px; border-radius: 4px;">Save Changes</button>
             </div>
         </div>
     </div>
@@ -407,7 +433,7 @@
             <span style="color:#aaa; font-weight:normal; font-size:0.9rem;">Waiting for input...</span>
         </div>
         
-        <button class="week-btn" onclick="closeModal('modal-postcode')" style="width:100%; margin-top:15px; background:#ddd; color:#333;">Close</button>
+        <button type="button" class="week-btn" onclick="closeModal('modal-postcode')" style="width:100%; margin-top:15px; background:#ddd; color:#333;">Close</button>
     </div>
 </div>
 
@@ -419,8 +445,8 @@
         <div class="form-group">
             <textarea id="n_note_text" rows="5" placeholder="e.g., Mark dentist 12/05 needs to finish at 3" style="resize:vertical;"></textarea>
         </div>
-        <button onclick="saveNote()" style="width: 100%; background: #f39c12; color: white; border: none; padding: 12px; font-weight: bold; cursor: pointer; border-radius: 4px; margin-top:5px;">Save Note</button>
-        <button class="week-btn" onclick="closeModal('modal-note')" style="width:100%; margin-top:8px; background:#ddd; color:#333;">Cancel</button>
+        <button type="button" onclick="saveNote()" style="width: 100%; background: #f39c12; color: white; border: none; padding: 12px; font-weight: bold; cursor: pointer; border-radius: 4px; margin-top:5px;">Save Note</button>
+        <button type="button" class="week-btn" onclick="closeModal('modal-note')" style="width:100%; margin-top:8px; background:#ddd; color:#333;">Cancel</button>
     </div>
 </div>
 
@@ -513,6 +539,15 @@
         btn.innerText = showTownsInHeader ? "🔄 POSTCODES" : "🔄 TOWNS";
         btn.style.background = showTownsInHeader ? "#0056b3" : "#34495e";
         loadAll(); 
+    }
+
+    function switchFormTab(tabId) {
+        document.querySelectorAll('.tab-content-zone').forEach(el => el.classList.remove('active'));
+        document.getElementById('tab-content-' + tabId).classList.add('active');
+        
+        document.getElementById('tab-btn-leg1').style.opacity = tabId === 'leg1' ? '1' : '0.6';
+        document.getElementById('tab-btn-coll2').style.opacity = tabId === 'coll2' ? '1' : '0.6';
+        document.getElementById('tab-btn-del2').style.opacity = tabId === 'del2' ? '1' : '0.6';
     }
 
     // ==========================================
@@ -761,20 +796,29 @@
     // 6. MAIN DATA LOADING & RENDERING
     // ==========================================
     async function loadAll() {
-        document.querySelectorAll('.job-card').forEach(c => c.remove());
-        
         const [jobsRes, jccRes] = await Promise.all([
             sb.from('quotes').select('*'),
             sb.from('jcc_bookings').select('*')
         ]);
         
         if (!jobsRes.data) return;
+
+        document.querySelectorAll('.job-card').forEach(c => c.remove());
+
         allJobsRaw = jobsRes.data;
         allJccBookings = jccRes.data || [];
 
         allJobsRaw.forEach(q => {
             if (['driver_config', 'archived', 'billed', 'subbed', 'cancelled'].includes(q.status)) return;
-            const card = createCardElement(q);
+            
+            let isON = false;
+            if (q.coll_datetime && q.del_datetime) {
+                let cD = new Date(q.coll_datetime).toDateString();
+                let dD = new Date(q.del_datetime).toDateString();
+                if (cD !== dD) isON = true;
+            }
+
+            const card = createCardElement(q, false, isON);
             
             let slot = null;
             if (q.assigned_slot) {
@@ -793,6 +837,24 @@
             }
             
             slot.appendChild(card);
+
+            if (isON && q.assigned_slot && !q.assigned_slot.includes('pool')) {
+                let delTargetWeek = getWeekOffsetFromNow(q.del_datetime);
+                let delDateObj = new Date(q.del_datetime);
+                let delDayIndex = (delDateObj.getDay() + 6) % 7; 
+                
+                let match = q.assigned_slot.match(/dr(\d+)/);
+                if (match) {
+                    let vehIndex = match[1];
+                    let ghostSlotId = `planner-w${delTargetWeek}-dr${vehIndex}-s${delDayIndex}`;
+                    let ghostSlot = document.getElementById(ghostSlotId);
+                    
+                    if (ghostSlot) {
+                        const ghostCard = createCardElement(q, true, isON);
+                        ghostSlot.appendChild(ghostCard);
+                    }
+                }
+            }
         });
         
         renderInvoiceList();
@@ -808,7 +870,7 @@
         }
     }
 
-    function createCardElement(q) {
+    function createCardElement(q, isGhost = false, isON = false) {
         const card = document.createElement('div');
         const isCompleted = q.status === 'completed';
         const isMaintenance = q.customer_name === "🔧 PLANNED MAINTENANCE";
@@ -823,12 +885,16 @@
         if (q.dispatch_status === 'tipped') dispatchClass = " status-tipped";
 
         card.className = "job-card" + (isCompleted ? " completed-grey" : "") + dispatchClass; 
-        card.id = q.id; 
-        card.draggable = !isCompleted; 
+        if (isGhost) card.classList.add('ghost-card');
+        
+        card.id = isGhost ? `ghost-${q.id}` : q.id; 
+        card.draggable = (!isCompleted && !isGhost); 
         
         card.ondragstart = (e) => { 
-            isDragging = true;
-            e.dataTransfer.setData("text", e.target.id); 
+            if(!isGhost) {
+                isDragging = true;
+                e.dataTransfer.setData("text", e.target.id); 
+            }
         };
         card.ondragend = () => { 
             isDragging = false; 
@@ -846,10 +912,11 @@
 
         let pcHeader = "";
         let headerAlignment = "center"; 
-        
+        let arrow = isON ? '<span style="font-size:0.7rem; font-weight:bold; color:#1a1a1a; padding:0 2px;">O/N</span>' : '<span style="padding:0 2px;">➔</span>';
+
         if (isMaintenance || isNote) {
             if (isMaintenance) {
-                pcHeader = `<span class="pc-coll">${q.coll_postcode || '??'}</span> ➔ <span class="pc-del" style="color:#8e44ad;">${q.del_postcode}</span>`;
+                pcHeader = `<span class="pc-coll">${q.coll_postcode || '??'}</span> ${arrow} <span class="pc-del" style="color:#8e44ad;">${q.del_postcode}</span>`;
             } else if (isNote) {
                 pcHeader = `<span style="color:#d68910;">📌 NOTE</span>`;
             }
@@ -857,32 +924,54 @@
         } else {
             headerAlignment = "flex-start";
             
-            let txtColl = showTownsInHeader ? (q.coll_town || 'N/A') : (q.coll_postcode || '??');
+            // DYNAMIC MULTI-LEG HEADER GENERATION
+            let txtColl1 = showTownsInHeader ? (q.coll_town || 'N/A') : (q.coll_postcode || '??');
+            let txtColl2 = q.coll_postcode_2 ? (showTownsInHeader ? (q.coll_town_2 || 'Coll 2') : q.coll_postcode_2) : null;
             let txtDel1 = showTownsInHeader ? (q.del_town || 'N/A') : (q.del_postcode || '??');
-            let txtDel2 = showTownsInHeader ? 'Drop 2' : (q.del_postcode_2 || '??');
+            let txtDel2 = q.del_postcode_2 ? (showTownsInHeader ? (q.del_town_2 || 'Drop 2') : q.del_postcode_2) : null;
             
             if (showTownsInHeader) {
-                if(txtColl.length > 12) txtColl = txtColl.substring(0, 10) + '..';
-                if(txtDel1.length > 12) txtDel1 = txtDel1.substring(0, 10) + '..';
-                if(txtDel2.length > 12) txtDel2 = txtDel2.substring(0, 10) + '..';
+                if(txtColl1.length > 10) txtColl1 = txtColl1.substring(0, 8) + '..';
+                if(txtColl2 && txtColl2.length > 10) txtColl2 = txtColl2.substring(0, 8) + '..';
+                if(txtDel1.length > 10) txtDel1 = txtDel1.substring(0, 8) + '..';
+                if(txtDel2 && txtDel2.length > 10) txtDel2 = txtDel2.substring(0, 8) + '..';
             }
 
-            if (q.del_postcode_2 && q.del_postcode_2.trim() !== "") {
-                pcHeader = `
-                    <div style="text-align:center; flex:1;"><span class="pc-coll" title="${showTownsInHeader ? q.coll_town : q.coll_postcode}">${txtColl}</span>${collTime}</div>
-                    <div style="margin-top:1px; padding:0 2px;">➔</div>
-                    <div style="text-align:center; flex:1;"><span class="pc-del-2" title="${showTownsInHeader ? q.del_town : q.del_postcode}">${txtDel1}</span>${delTime}</div>
-                    <div style="margin-top:1px; padding:0 2px;">➔</div>
-                    <div style="text-align:center; flex:1;"><span class="pc-del">${txtDel2}</span></div>
-                `;
-            } else {
-                pcHeader = `
-                    <div style="text-align:center; flex:1;"><span class="pc-coll" title="${showTownsInHeader ? q.coll_town : q.coll_postcode}">${txtColl}</span>${collTime}</div>
-                    <div style="margin-top:1px; padding:0 4px;">➔</div>
-                    <div style="text-align:center; flex:1;"><span class="pc-del" title="${showTownsInHeader ? q.del_town : q.del_postcode}">${txtDel1}</span>${delTime}</div>
-                `;
+            let routeArr = [];
+            
+            routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-coll" title="${showTownsInHeader ? q.customer_name : q.coll_postcode}">${txtColl1}</span>${collTime}</div>`);
+            
+            if(txtColl2) {
+                routeArr.push(`<div style="margin-top:1px; padding:0 2px;">${arrow}</div>`);
+                routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-coll" title="${showTownsInHeader ? 'Collection 2' : q.coll_postcode_2}">${txtColl2}</span></div>`);
             }
+            
+            routeArr.push(`<div style="margin-top:1px; padding:0 2px;">${arrow}</div>`);
+            routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-del" title="${showTownsInHeader ? q.del_cust_name : q.del_postcode}">${txtDel1}</span>${delTime}</div>`);
+            
+            if(txtDel2) {
+                routeArr.push(`<div style="margin-top:1px; padding:0 2px;">${arrow}</div>`);
+                routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-del-2" title="${showTownsInHeader ? 'Drop 2' : q.del_postcode_2}">${txtDel2}</span></div>`);
+            }
+
+            pcHeader = routeArr.join('');
         }
+
+        let ghostBanner = isGhost ? `<div class="ghost-badge">🚚 O/N DELIVERY</div>` : '';
+        let actionsHtml = isGhost ? '' : `
+            <div class="card-actions">
+                <div style="display:flex; gap:10px;">
+                    <span class="action-btn" onclick="dispatchJob(event, '${q.id}')" title="Send to Driver App">📲</span>
+                    <span class="action-btn" onclick="editJob(event, '${q.id}')" title="Edit">✎</span>
+                    <span class="action-btn" onclick="splitJob(event, '${q.id}')" title="Split">✂</span>
+                    <span class="action-btn" onclick="duplicateJob(event, '${q.id}')" title="Duplicate">❐</span>
+                    <span class="action-btn" onclick="window.open('${podFolder}', '_blank')" title="POD Drive">📎</span>
+                    <span class="action-btn" onclick="queryRoute(event, '${q.coll_postcode}', '${q.del_postcode}')" title="Maps">📍</span>
+                    ${!isCompleted ? `<span class="action-btn" onclick="markPODReceived(event, '${q.id}')" title="Complete POD">✅</span>` : ''}
+                </div>
+                <span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;">🗑️</span>
+            </div>
+        `;
 
         if (isNote) {
             card.style.borderLeftColor = "#f39c12"; 
@@ -904,9 +993,9 @@
             let cardBorder = "#8e44ad"; 
             let titleColor = "#8e44ad";
             let badgeHtml = "";
-            let btnHtml = `<button onclick="bookAtJCC(event, '${q.id}')" style="width:100%; padding:8px; font-size:0.75rem; background:#8e44ad; color:white; border:none; border-radius:3px; font-weight:bold; cursor:pointer;">BOOK IN AT JCC</button>`;
+            let btnHtml = isGhost ? '' : `<button onclick="bookAtJCC(event, '${q.id}')" style="width:100%; padding:8px; font-size:0.75rem; background:#8e44ad; color:white; border:none; border-radius:3px; font-weight:bold; cursor:pointer;">BOOK IN AT JCC</button>`;
 
-            if (booking) {
+            if (booking && !isGhost) {
                 if (booking.accepted) {
                     cardBg = "#e8f5e9"; 
                     cardBorder = "#2e7d32"; 
@@ -930,11 +1019,15 @@
             card.style.backgroundColor = cardBg;
             card.style.borderLeftColor = cardBorder;
 
+            let cancelBtn = isGhost ? '' : `<button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#c1272d; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markCancelled(event, '${q.id}')">CANCEL</button>`;
+            let delBtn = isGhost ? '' : `<span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;" title="Delete">🗑️</span>`;
+
             card.innerHTML = `
+                ${ghostBanner}
                 <div class="postcode-header" style="color:${titleColor}; align-items: ${headerAlignment};">${pcHeader}</div>
                 <div class="card-body">
                     <div class="card-actions" style="justify-content: flex-end; padding-bottom:0; border:none; margin-bottom:5px;">
-                        <span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;" title="Delete">🗑️</span>
+                        ${delBtn}
                     </div>
                     
                     <div style="font-weight:bold; color:${titleColor}; font-size: 0.85rem; margin-bottom: 8px; text-align:center;">
@@ -949,7 +1042,7 @@
                     ${btnHtml}
                     
                     <div style="display:flex; gap:5px; margin-top:5px;">
-                        <button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#c1272d; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markCancelled(event, '${q.id}')">CANCEL</button>
+                        ${cancelBtn}
                     </div>
                 </div>`;
                 
@@ -965,21 +1058,17 @@
             let weightTag = q.total_weight ? `<span class="vehicle-tag" style="background:#666;">${q.total_weight}kg</span>` : '';
             let palletTag = q.total_pallets ? `<span class="vehicle-tag" style="background:#d68910;">${q.total_pallets} Plt</span>` : '';
 
+            let extraActions = isGhost ? '' : `
+                <div style="display:flex; gap:5px; margin-top:10px; padding-top:8px; border-top: 1px solid #eee;">
+                    <button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#34495e; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markSubbed(event, '${q.id}')">SUBBED</button>
+                    <button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#c1272d; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markCancelled(event, '${q.id}')">CANCEL</button>
+                </div>`;
+
             card.innerHTML = `
+                ${ghostBanner}
                 <div class="postcode-header" style="align-items: ${headerAlignment};">${pcHeader}</div>
                 <div class="card-body">
-                    <div class="card-actions">
-                        <div style="display:flex; gap:10px;">
-                            <span class="action-btn" onclick="dispatchJob(event, '${q.id}')" title="Send to Driver App">📲</span>
-                            <span class="action-btn" onclick="editJob(event, '${q.id}')" title="Edit">✎</span>
-                            <span class="action-btn" onclick="splitJob(event, '${q.id}')" title="Split">✂</span>
-                            <span class="action-btn" onclick="duplicateJob(event, '${q.id}')" title="Duplicate">❐</span>
-                            <span class="action-btn" onclick="window.open('${podFolder}', '_blank')" title="POD Drive">📎</span>
-                            <span class="action-btn" onclick="queryRoute(event, '${q.coll_postcode}', '${q.del_postcode}')" title="Maps">📍</span>
-                            ${!isCompleted ? `<span class="action-btn" onclick="markPODReceived(event, '${q.id}')" title="Complete POD">✅</span>` : ''}
-                        </div>
-                        <span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;">🗑️</span>
-                    </div>
+                    ${actionsHtml}
                     <div style="font-weight:bold; color:black; font-size: 0.8rem; margin-bottom: 5px;">${q.customer_name} ${dispatchBadge}</div>
                     <div style="display:flex; gap:5px; margin:5px 0;">
                         <span class="vehicle-tag">${q.vehicle_type}</span>
@@ -1004,11 +1093,7 @@
                     <div class="detail-row"><b>Town:</b> <span>${q.del_town || '-'}</span></div>
                     <div class="detail-row"><b>Time:</b> <span>${dtFormat(q.del_datetime)}</span></div>
 
-                    <!-- SUBBED & CANCEL BUTTONS (Inside Expanded View) -->
-                    <div style="display:flex; gap:5px; margin-top:10px; padding-top:8px; border-top: 1px solid #eee;">
-                        <button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#34495e; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markSubbed(event, '${q.id}')">SUBBED</button>
-                        <button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#c1272d; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markCancelled(event, '${q.id}')">CANCEL</button>
-                    </div>
+                    ${extraActions}
                 </div>`;
         }
         
@@ -1045,20 +1130,31 @@
         } catch(e) { console.error(e); alert("Error saving note."); }
     }
 
+    function addHoursLocal(dtStr, hours) {
+        if (!dtStr) return "";
+        let d = new Date(dtStr);
+        d.setHours(d.getHours() + hours);
+        let pad = n => n.toString().padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
     async function saveJob() {
         const id = document.getElementById('sys_job_id').value;
+        
+        // STANDARD PAYLOAD (Only Columns Guaranteed to Exist)
         const payload = {
             customer_name: document.getElementById('n_cust_name').value,
             customer_phone: document.getElementById('n_cust_phone').value,
             customer_email: document.getElementById('n_cust_email').value,
+            
             coll_postcode: document.getElementById('n_coll_pc').value,
             coll_street: document.getElementById('n_coll_street').value,
             coll_town: document.getElementById('n_coll_town').value,
             coll_county: document.getElementById('n_coll_county').value,
             coll_ref: document.getElementById('n_coll_ref').value,
             coll_datetime: document.getElementById('n_coll_dt').value,
+            
             del_postcode: document.getElementById('n_del_pc').value,
-            del_postcode_2: document.getElementById('n_del_pc_2').value,
             del_cust_name: document.getElementById('n_del_name').value,
             del_phone: document.getElementById('n_del_phone').value,
             del_email: document.getElementById('n_del_email').value,
@@ -1067,16 +1163,86 @@
             del_county: document.getElementById('n_9').value,
             del_ref: document.getElementById('n_10').value,
             del_datetime: document.getElementById('n_del_dt').value,
+            
+            del_postcode_2: document.getElementById('n_del_pc_2').value,
+            
             total_price: document.getElementById('n_price').value || "0",
             total_pallets: document.getElementById('n_total_pallets').value,
             total_weight: document.getElementById('n_total_weight').value,
             vehicle_type: document.getElementById('n_veh_type').value
         };
+
+        // NEW TABS DATA
+        let cp2 = document.getElementById('n_coll_pc_2').value;
+        let ct2 = document.getElementById('n_coll_town_2').value;
+        let dt2 = document.getElementById('n_del_town_2').value;
+
+        // ONLY add these keys to the payload if they are not empty. 
+        // This stops Supabase from rejecting standard jobs if the columns aren't added yet!
+        if (cp2) payload.coll_postcode_2 = cp2;
+        if (ct2) payload.coll_town_2 = ct2;
+        if (dt2) payload.del_town_2 = dt2;
+
+        let diffHours = 0;
+        if (payload.coll_datetime && payload.del_datetime) {
+            let cTime = new Date(payload.coll_datetime).getTime();
+            let dTime = new Date(payload.del_datetime).getTime();
+            diffHours = (dTime - cTime) / (1000 * 60 * 60);
+        }
+
         try {
-            if(id) await sb.from('quotes').update(payload).eq('id', id);
-            else { payload.status = 'pending'; await sb.from('quotes').insert([payload]); }
-            closeModal('modal-add'); loadAll();
-        } catch(e) { console.error(e); alert("Error saving."); }
+            let errorObj = null;
+
+            if (!id && diffHours > 24) {
+                // LEG 1: Collection to YARD
+                let p1 = { ...payload };
+                p1.del_postcode = "YARD";
+                p1.del_town = "YARD";
+                p1.del_cust_name = "FROST YARD";
+                p1.del_street = "Storage";
+                p1.del_datetime = addHoursLocal(payload.coll_datetime, 2); 
+                p1.del_postcode_2 = "";
+                delete p1.del_town_2; // Remove extra delivery info for Leg 1
+                p1.status = 'pending';
+
+                // LEG 2: YARD to Delivery
+                let p2 = { ...payload };
+                p2.customer_name = payload.customer_name + " (Leg 2)";
+                p2.coll_postcode = "YARD";
+                p2.coll_town = "YARD";
+                p2.coll_street = "FROST YARD";
+                p2.coll_ref = "From Storage";
+                p2.coll_datetime = addHoursLocal(payload.del_datetime, -2); 
+                delete p2.coll_postcode_2; // Remove extra collection info for Leg 2
+                delete p2.coll_town_2;
+                p2.status = 'pending';
+                p2.total_price = "0"; 
+
+                const { error } = await sb.from('quotes').insert([p1, p2]);
+                errorObj = error;
+            } else {
+                if(id) {
+                    const { error } = await sb.from('quotes').update(payload).eq('id', id);
+                    errorObj = error;
+                } else { 
+                    payload.status = 'pending'; 
+                    const { error } = await sb.from('quotes').insert([payload]); 
+                    errorObj = error;
+                }
+            }
+            
+            // Catch Database Missing Column Errors Silently and Alert the User safely
+            if (errorObj) {
+                if (errorObj.code === '42703' || (errorObj.message && errorObj.message.includes('not exist'))) {
+                    alert("⚠️ DATABASE UPDATE REQUIRED!\n\nTo use the extra '+ Collection' or '+ Delivery' tabs, you must go to your Supabase Dashboard and add three new 'text' columns to your 'quotes' table:\n\n1. coll_postcode_2\n2. coll_town_2\n3. del_town_2\n\nStandard jobs without extra legs will continue to save normally.");
+                    return;
+                }
+                throw errorObj;
+            }
+            
+            closeModal('modal-add'); 
+            loadAll();
+        } catch(e) { console.error(e); alert("Error saving: " + e.message); }
     }
 
     function editJob(e, id) {
@@ -1088,14 +1254,18 @@
         document.getElementById('n_cust_name').value = j.customer_name || '';
         document.getElementById('n_cust_phone').value = j.customer_phone || '';
         document.getElementById('n_cust_email').value = j.customer_email || '';
+        
         document.getElementById('n_coll_pc').value = j.coll_postcode || '';
         document.getElementById('n_coll_street').value = j.coll_street || '';
         document.getElementById('n_coll_town').value = j.coll_town || '';
         document.getElementById('n_coll_county').value = j.coll_county || '';
         document.getElementById('n_coll_ref').value = j.coll_ref || '';
         document.getElementById('n_coll_dt').value = j.coll_datetime || '';
+
+        document.getElementById('n_coll_pc_2').value = j.coll_postcode_2 || '';
+        document.getElementById('n_coll_town_2').value = j.coll_town_2 || '';
+        
         document.getElementById('n_del_pc').value = j.del_postcode || '';
-        document.getElementById('n_del_pc_2').value = j.del_postcode_2 || '';
         document.getElementById('n_del_name').value = j.del_cust_name || '';
         document.getElementById('n_del_phone').value = j.del_phone || '';
         document.getElementById('n_del_email').value = j.del_email || '';
@@ -1104,11 +1274,15 @@
         document.getElementById('n_9').value = j.del_county || '';
         document.getElementById('n_10').value = j.del_ref || '';
         document.getElementById('n_del_dt').value = j.del_datetime || '';
+
+        document.getElementById('n_del_pc_2').value = j.del_postcode_2 || '';
+        document.getElementById('n_del_town_2').value = j.del_town_2 || '';
+        
         document.getElementById('n_price').value = j.total_price || '0';
         document.getElementById('n_total_pallets').value = j.total_pallets || '';
         document.getElementById('n_total_weight').value = j.total_weight || '';
         document.getElementById('n_veh_type').value = j.vehicle_type || 'Artic';
-        if(j.del_postcode_2) { document.getElementById('toggle_multidrop').checked = true; toggleMultidropUI(); }
+        
         openModal('modal-add');
     }
 
@@ -1488,11 +1662,10 @@
         });
     }
 
-    function toggleMultidropUI() { document.getElementById('multidrop_input_container').style.display = document.getElementById('toggle_multidrop').checked ? 'block' : 'none'; }
     function resetForm() {
         document.getElementById('sys_job_id').value = '';
-        ['n_cust_name','n_cust_phone', 'n_cust_email','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
-        document.getElementById('toggle_multidrop').checked = false; toggleMultidropUI();
+        ['n_cust_name','n_cust_phone', 'n_cust_email','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
+        switchFormTab('leg1');
     }
 
     function formatUKDate(iso) { if(!iso) return '-'; return new Date(iso).toLocaleDateString('en-GB'); }
@@ -1504,7 +1677,7 @@
     }
     function toggleUnassigned() { document.getElementById('unassigned-sidebar').classList.toggle('open'); }
     function allowDrop(ev) { ev.preventDefault(); }
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; switchFormTab('leg1');}
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function closeModalOnOutsideClick(e, id) { if(e.target.id === id) closeModal(id); }
 
@@ -1674,9 +1847,61 @@
         .subscribe();
 
     window.onload = async () => { 
+        setupAutoScroll(); 
         await checkMaintenance(); 
         await loadAll(); 
     };
+
+    // ==========================================
+    // 13. AUTO-SCROLL DURING DRAG
+    // ==========================================
+    let scrollInterval = null;
+    let dragMousePos = { x: 0, y: 0 };
+
+    function setupAutoScroll() {
+        document.addEventListener('dragover', (e) => {
+            if (isDragging) {
+                dragMousePos.x = e.clientX;
+                dragMousePos.y = e.clientY;
+                
+                if (!scrollInterval) {
+                    scrollInterval = setInterval(() => {
+                        const board = document.getElementById('planner-board');
+                        if (board.style.display === 'none') return;
+                        
+                        const rect = board.getBoundingClientRect();
+                        const scrollThreshold = 100; // pixels from edge to trigger
+                        const scrollSpeed = 15;      // pixels to scroll per frame
+                        
+                        // X axis
+                        if (dragMousePos.x > rect.right - scrollThreshold) {
+                            board.scrollLeft += scrollSpeed;
+                        } else if (dragMousePos.x < rect.left + scrollThreshold) {
+                            board.scrollLeft -= scrollSpeed;
+                        }
+                        
+                        // Y axis
+                        if (dragMousePos.y > rect.bottom - scrollThreshold) {
+                            board.scrollTop += scrollSpeed;
+                        } else if (dragMousePos.y < rect.top + scrollThreshold) {
+                            board.scrollTop -= scrollSpeed;
+                        }
+                    }, 20); // Runs 50 times per second for smooth scrolling
+                }
+            }
+        });
+
+        // Clean up the interval when dropping or canceling a drag
+        const stopScroll = () => {
+            if (scrollInterval) {
+                clearInterval(scrollInterval);
+                scrollInterval = null;
+            }
+        };
+
+        document.addEventListener('dragend', stopScroll);
+        document.addEventListener('drop', stopScroll);
+    }
 </script>
 </body>
 </html>
