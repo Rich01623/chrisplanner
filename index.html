@@ -208,7 +208,7 @@
      MAIN CONTENT AREA
      ========================================== -->
 <main>
-    <!-- LEFT SIDEBAR: UNASSIGNED POOL -->
+    <!-- LEFT SIDEBAR: UNASSIGNED POOL (NOW SORTED BY DAY) -->
     <section id="unassigned-sidebar">
         <div style="padding:10px; background:#e0e0e0; color:black; font-weight:bold; display:flex; justify-content:space-between; border-bottom: 1px solid #ccc;">
             POOL <span onclick="toggleUnassigned()" style="cursor:pointer; color: var(--frost-red);">✕</span>
@@ -465,6 +465,7 @@
         "KU70 XNW", "KU70 XNX", "FJ69 WMC", "DK69 ZHM"
     ];
 
+    // ALL DRIVERS ALPHABETICALLY SORTED (WITH UNASSIGNED PINNED TO TOP)
     const drivers = [
         { name: "Unassigned", phone: "" },
         { name: "Andy Elston", phone: "447999811320" },
@@ -477,11 +478,12 @@
         { name: "Neil Woods", phone: "447701238567" },
         { name: "Rhys Hill", phone: "447701238572" },
         { name: "Ricardo Morais", phone: "447746509636" },
+        { name: "Richard", phone: "447701238570" },
         { name: "Richard Spence", phone: "447701238570" },
         { name: "Roy Taylor", phone: "447701238558" },
         { name: "Sean Walton", phone: "447792931496" },
         { name: "Stuart Sleigh", phone: "447701238575" },
-        { name: "Svagunas Butnorious", phone: "447546702780" }
+        { name: "Suaunis Butnorious", phone: "447546702780" }
     ];
 
     let allJobsRaw = [];
@@ -490,9 +492,9 @@
     let showTownsInHeader = false;
     let fleetMap = null;
     let mapMarkers = [];
+    
+    // Prevents board refresh if user is currently dragging a card
     let isDragging = false;
-    let scrollInterval = null;
-    let dragMousePos = { x: 0, y: 0 };
 
     // ==========================================
     // 2. AUDIO & ALERTS
@@ -524,7 +526,7 @@
                 osc.stop(ctx.currentTime + 0.5);
             }
         } catch (e) { 
-            console.log("Audio not supported."); 
+            console.log("Audio not supported or interaction needed first."); 
         }
     }
 
@@ -1128,7 +1130,6 @@
         } catch(e) { console.error(e); alert("Error saving note."); }
     }
 
-    // NEW: Helper to correctly add/subtract hours to local datetime strings
     function addHoursLocal(dtStr, hours) {
         if (!dtStr) return "";
         let d = new Date(dtStr);
@@ -1193,7 +1194,7 @@
                 p1.del_town = "YARD";
                 p1.del_cust_name = "FROST YARD";
                 p1.del_street = "Storage";
-                p1.del_datetime = addHoursLocal(payload.coll_datetime, 2); // Set delivery to 2h after collection
+                p1.del_datetime = addHoursLocal(payload.coll_datetime, 2); 
                 p1.del_postcode_2 = "";
                 p1.del_town_2 = "";
                 p1.status = 'pending';
@@ -1205,15 +1206,14 @@
                 p2.coll_town = "YARD";
                 p2.coll_street = "FROST YARD";
                 p2.coll_ref = "From Storage";
-                p2.coll_datetime = addHoursLocal(payload.del_datetime, -2); // Set collection to 2h before delivery
+                p2.coll_datetime = addHoursLocal(payload.del_datetime, -2); 
                 p2.coll_postcode_2 = "";
                 p2.coll_town_2 = "";
                 p2.status = 'pending';
-                p2.total_price = "0"; // Prevent double billing
+                p2.total_price = "0"; 
 
                 await sb.from('quotes').insert([p1, p2]);
             } else {
-                // Standard Save or Update (<= 24 hours)
                 if(id) await sb.from('quotes').update(payload).eq('id', id);
                 else { payload.status = 'pending'; await sb.from('quotes').insert([payload]); }
             }
@@ -1244,7 +1244,10 @@
         document.getElementById('n_coll_town_2').value = j.coll_town_2 || '';
         
         document.getElementById('n_del_pc').value = j.del_postcode || '';
-        document.getElementById('n_del_cust_name').value = j.del_cust_name || '';
+        
+        // FIX: The HTML ID is n_del_name, not n_del_cust_name
+        document.getElementById('n_del_name').value = j.del_cust_name || ''; 
+        
         document.getElementById('n_del_phone').value = j.del_phone || '';
         document.getElementById('n_del_email').value = j.del_email || '';
         document.getElementById('n_del_street').value = j.del_street || '';
@@ -1262,7 +1265,6 @@
         document.getElementById('n_veh_type').value = j.vehicle_type || 'Artic';
         
         openModal('modal-add');
-        switchFormTab('leg1');
     }
 
     async function markSubbed(e, id) {
@@ -1641,7 +1643,6 @@
         });
     }
 
-    function toggleMultidropUI() { document.getElementById('multidrop_input_container').style.display = document.getElementById('toggle_multidrop').checked ? 'block' : 'none'; }
     function resetForm() {
         document.getElementById('sys_job_id').value = '';
         ['n_cust_name','n_cust_phone', 'n_cust_email','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
@@ -1657,7 +1658,11 @@
     }
     function toggleUnassigned() { document.getElementById('unassigned-sidebar').classList.toggle('open'); }
     function allowDrop(ev) { ev.preventDefault(); }
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; switchFormTab('leg1');}
+    
+    function openModal(id) { 
+        document.getElementById(id).style.display = 'flex'; 
+        if(id === 'modal-add') switchFormTab('leg1');
+    }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function closeModalOnOutsideClick(e, id) { if(e.target.id === id) closeModal(id); }
 
