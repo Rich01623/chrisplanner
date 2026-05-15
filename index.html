@@ -208,7 +208,7 @@
      MAIN CONTENT AREA
      ========================================== -->
 <main>
-    <!-- LEFT SIDEBAR: UNASSIGNED POOL (NOW SORTED BY DAY) -->
+    <!-- LEFT SIDEBAR: UNASSIGNED POOL -->
     <section id="unassigned-sidebar">
         <div style="padding:10px; background:#e0e0e0; color:black; font-weight:bold; display:flex; justify-content:space-between; border-bottom: 1px solid #ccc;">
             POOL <span onclick="toggleUnassigned()" style="cursor:pointer; color: var(--frost-red);">✕</span>
@@ -318,7 +318,7 @@
      MODALS
      ========================================== -->
 
-<!-- NEW TABBED Add Job Modal -->
+<!-- TABBED Add Job Modal -->
 <div id="modal-add" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-add')">
     <div class="modal-content" style="width: 1100px; max-width: 95vw;">
         
@@ -491,9 +491,9 @@
     let showTownsInHeader = false;
     let fleetMap = null;
     let mapMarkers = [];
-    
-    // Prevents board refresh if user is currently dragging a card
     let isDragging = false;
+    let scrollInterval = null;
+    let dragMousePos = { x: 0, y: 0 };
 
     // ==========================================
     // 2. AUDIO & ALERTS
@@ -525,7 +525,7 @@
                 osc.stop(ctx.currentTime + 0.5);
             }
         } catch (e) { 
-            console.log("Audio not supported or interaction needed first."); 
+            console.log("Audio not supported."); 
         }
     }
 
@@ -544,7 +544,6 @@
         document.querySelectorAll('.tab-content-zone').forEach(el => el.classList.remove('active'));
         document.getElementById('tab-content-' + tabId).classList.add('active');
         
-        // Visual button states
         document.getElementById('tab-btn-leg1').style.opacity = tabId === 'leg1' ? '1' : '0.6';
         document.getElementById('tab-btn-coll2').style.opacity = tabId === 'coll2' ? '1' : '0.6';
         document.getElementById('tab-btn-del2').style.opacity = tabId === 'del2' ? '1' : '0.6';
@@ -1130,6 +1129,15 @@
         } catch(e) { console.error(e); alert("Error saving note."); }
     }
 
+    // NEW: Helper to correctly add/subtract hours to local datetime strings
+    function addHoursLocal(dtStr, hours) {
+        if (!dtStr) return "";
+        let d = new Date(dtStr);
+        d.setHours(d.getHours() + hours);
+        let pad = n => n.toString().padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
     async function saveJob() {
         const id = document.getElementById('sys_job_id').value;
         const payload = {
@@ -1169,10 +1177,50 @@
             total_weight: document.getElementById('n_total_weight').value,
             vehicle_type: document.getElementById('n_veh_type').value
         };
+
+        // Check time difference for Auto-Split Logic (> 24 hours)
+        let diffHours = 0;
+        if (payload.coll_datetime && payload.del_datetime) {
+            let cTime = new Date(payload.coll_datetime).getTime();
+            let dTime = new Date(payload.del_datetime).getTime();
+            diffHours = (dTime - cTime) / (1000 * 60 * 60);
+        }
+
         try {
-            if(id) await sb.from('quotes').update(payload).eq('id', id);
-            else { payload.status = 'pending'; await sb.from('quotes').insert([payload]); }
-            closeModal('modal-add'); loadAll();
+            if (!id && diffHours > 24) {
+                // LEG 1: Collection to YARD
+                let p1 = { ...payload };
+                p1.del_postcode = "YARD";
+                p1.del_town = "YARD";
+                p1.del_cust_name = "FROST YARD";
+                p1.del_street = "Storage";
+                p1.del_datetime = addHoursLocal(payload.coll_datetime, 2); // Set delivery to 2h after collection
+                p1.del_postcode_2 = "";
+                p1.del_town_2 = "";
+                p1.status = 'pending';
+
+                // LEG 2: YARD to Delivery
+                let p2 = { ...payload };
+                p2.customer_name = payload.customer_name + " (Leg 2)";
+                p2.coll_postcode = "YARD";
+                p2.coll_town = "YARD";
+                p2.coll_street = "FROST YARD";
+                p2.coll_ref = "From Storage";
+                p2.coll_datetime = addHoursLocal(payload.del_datetime, -2); // Set collection to 2h before delivery
+                p2.coll_postcode_2 = "";
+                p2.coll_town_2 = "";
+                p2.status = 'pending';
+                p2.total_price = "0"; // Prevent double billing
+
+                await sb.from('quotes').insert([p1, p2]);
+            } else {
+                // Standard Save or Update (<= 24 hours)
+                if(id) await sb.from('quotes').update(payload).eq('id', id);
+                else { payload.status = 'pending'; await sb.from('quotes').insert([payload]); }
+            }
+            
+            closeModal('modal-add'); 
+            loadAll();
         } catch(e) { console.error(e); alert("Error saving."); }
     }
 
@@ -1780,9 +1828,58 @@
         .subscribe();
 
     window.onload = async () => { 
+        setupAutoScroll(); 
         await checkMaintenance(); 
         await loadAll(); 
     };
+
+    // ==========================================
+    // 13. AUTO-SCROLL DURING DRAG
+    // ==========================================
+    function setupAutoScroll() {
+        document.addEventListener('dragover', (e) => {
+            if (isDragging) {
+                dragMousePos.x = e.clientX;
+                dragMousePos.y = e.clientY;
+                
+                if (!scrollInterval) {
+                    scrollInterval = setInterval(() => {
+                        const board = document.getElementById('planner-board');
+                        if (board.style.display === 'none') return;
+                        
+                        const rect = board.getBoundingClientRect();
+                        const scrollThreshold = 100; // pixels from edge to trigger
+                        const scrollSpeed = 15;      // pixels to scroll per frame
+                        
+                        // X axis
+                        if (dragMousePos.x > rect.right - scrollThreshold) {
+                            board.scrollLeft += scrollSpeed;
+                        } else if (dragMousePos.x < rect.left + scrollThreshold) {
+                            board.scrollLeft -= scrollSpeed;
+                        }
+                        
+                        // Y axis
+                        if (dragMousePos.y > rect.bottom - scrollThreshold) {
+                            board.scrollTop += scrollSpeed;
+                        } else if (dragMousePos.y < rect.top + scrollThreshold) {
+                            board.scrollTop -= scrollSpeed;
+                        }
+                    }, 20); // Runs 50 times per second for smooth scrolling
+                }
+            }
+        });
+
+        // Clean up the interval when dropping or canceling a drag
+        const stopScroll = () => {
+            if (scrollInterval) {
+                clearInterval(scrollInterval);
+                scrollInterval = null;
+            }
+        };
+
+        document.addEventListener('dragend', stopScroll);
+        document.addEventListener('drop', stopScroll);
+    }
 </script>
 </body>
 </html>
