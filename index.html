@@ -61,7 +61,13 @@
         
         #unassigned-sidebar { width: var(--sidebar-width); background: #eee; border-right: 2px solid var(--border-color); transition: margin-left 0.3s ease; margin-left: calc(-1 * var(--sidebar-width)); flex-shrink: 0; z-index: 80; display: flex; flex-direction: column; }
         #unassigned-sidebar.open { margin-left: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
-        #pool-container { flex-grow: 1; overflow-y: auto; padding: 10px; margin: 10px; border: 2px dashed #aaa; border-radius: 6px; background: white; }
+        
+        /* NEW POOL LAYOUT STYLES */
+        #pool-container { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
+        .pool-day { background: white; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; }
+        .pool-day-title { background: #34495e; color: white; padding: 6px; font-size: 0.75rem; font-weight: bold; text-align: center; }
+        .pool-zone { min-height: 45px; padding: 6px; background: #fdfdfd; transition: background 0.2s; }
+        .pool-zone:hover { background: #f4f4f4; }
 
         #content-area { flex-grow: 1; overflow: hidden; padding: 10px; }
         #planner-board, #invoicing-view, #history-view, #subbed-view, #cancelled-view, #map-view { background: white; border-radius: 8px; height: 100%; overflow: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -197,10 +203,46 @@
      MAIN CONTENT AREA
      ========================================== -->
 <main>
-    <!-- LEFT SIDEBAR: UNASSIGNED POOL -->
+    <!-- LEFT SIDEBAR: UNASSIGNED POOL (NOW SORTED BY DAY) -->
     <section id="unassigned-sidebar">
-        <div style="padding:10px; background:#e0e0e0; color:black; font-weight:bold; display:flex; justify-content:space-between; border-bottom: 1px solid #ccc;">POOL <span onclick="toggleUnassigned()" style="cursor:pointer; color: var(--frost-red);">✕</span></div>
-        <div id="pool-container" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        <div style="padding:10px; background:#e0e0e0; color:black; font-weight:bold; display:flex; justify-content:space-between; border-bottom: 1px solid #ccc;">
+            POOL <span onclick="toggleUnassigned()" style="cursor:pointer; color: var(--frost-red);">✕</span>
+        </div>
+        
+        <div id="pool-container">
+            <div class="pool-day">
+                <div class="pool-day-title" style="background:var(--frost-red);">UNSCHEDULED</div>
+                <div id="pool-zone-tba" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day">
+                <div class="pool-day-title">MONDAY</div>
+                <div id="pool-zone-1" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day">
+                <div class="pool-day-title">TUESDAY</div>
+                <div id="pool-zone-2" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day">
+                <div class="pool-day-title">WEDNESDAY</div>
+                <div id="pool-zone-3" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day">
+                <div class="pool-day-title">THURSDAY</div>
+                <div id="pool-zone-4" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day">
+                <div class="pool-day-title">FRIDAY</div>
+                <div id="pool-zone-5" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day" id="pool-day-sat" style="display:none;">
+                <div class="pool-day-title" style="background:#888;">SATURDAY</div>
+                <div id="pool-zone-6" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day" id="pool-day-sun" style="display:none;">
+                <div class="pool-day-title" style="background:#888;">SUNDAY</div>
+                <div id="pool-zone-0" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+        </div>
     </section>
 
     <!-- RIGHT CONTENT: GRIDS & VIEWS -->
@@ -418,6 +460,9 @@
     let showTownsInHeader = false;
     let fleetMap = null;
     let mapMarkers = [];
+    
+    // NEW: Prevents board refresh if user is currently dragging a card
+    let isDragging = false;
 
     // ==========================================
     // 2. AUDIO & ALERTS
@@ -449,7 +494,7 @@
                 osc.stop(ctx.currentTime + 0.5);
             }
         } catch (e) { 
-            console.log("Audio not supported."); 
+            console.log("Audio not supported or interaction needed first."); 
         }
     }
 
@@ -725,8 +770,21 @@
             if (['driver_config', 'archived', 'billed', 'subbed', 'cancelled'].includes(q.status)) return;
             const card = createCardElement(q);
             
-            let slot = q.assigned_slot ? document.getElementById(q.assigned_slot) : document.getElementById('pool-container');
-            if (!slot) slot = document.getElementById('pool-container'); 
+            let slot = null;
+            if (q.assigned_slot) {
+                slot = document.getElementById(q.assigned_slot);
+            }
+            
+            if (!slot) {
+                if (q.coll_datetime) {
+                    let d = new Date(q.coll_datetime);
+                    if (!isNaN(d)) {
+                        let day = d.getDay(); 
+                        slot = document.getElementById(`pool-zone-${day}`);
+                    }
+                }
+                if (!slot) slot = document.getElementById('pool-zone-tba');
+            }
             
             slot.appendChild(card);
         });
@@ -761,13 +819,25 @@
         card.className = "job-card" + (isCompleted ? " completed-grey" : "") + dispatchClass; 
         card.id = q.id; 
         card.draggable = !isCompleted; 
-        card.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id);
+        
+        // NEW: Live Drag Tracking Safety Feature
+        card.ondragstart = (e) => { 
+            isDragging = true;
+            e.dataTransfer.setData("text", e.target.id); 
+        };
+        card.ondragend = () => { 
+            isDragging = false; 
+        };
+
         card.onclick = (e) => { if(!e.target.classList.contains('action-btn')) card.classList.toggle('expanded'); };
         const dtFormat = (str) => str ? str.replace('T', ' ') : '-';
         const tOnly = (iso) => iso ? new Date(iso).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}) : '--:--';
 
         let collTime = q.coll_datetime ? `<span style="display:block; font-size:0.55rem; color:#888; font-weight:normal; line-height:1; padding-top:2px;">${new Date(q.coll_datetime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}</span>` : '';
         let delTime = q.del_datetime ? `<span style="display:block; font-size:0.55rem; color:#888; font-weight:normal; line-height:1; padding-top:2px;">${new Date(q.del_datetime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}</span>` : '';
+
+        let targetWeek = getWeekOffsetFromNow(q.coll_datetime);
+        card.dataset.targetWeek = targetWeek;
 
         let pcHeader = "";
         let headerAlignment = "center"; 
@@ -778,13 +848,7 @@
             } else if (isNote) {
                 pcHeader = `<span style="color:#d68910;">📌 NOTE</span>`;
             }
-            
-            if (isMaintenance) {
-                let targetWeek = getWeekOffsetFromNow(q.coll_datetime);
-                card.dataset.isMaintenance = "true";
-                card.dataset.targetWeek = targetWeek;
-            }
-            
+            if (isMaintenance) card.dataset.isMaintenance = "true";
         } else {
             headerAlignment = "flex-start";
             
@@ -1062,7 +1126,7 @@
     async function dispatchJob(e, id) {
         e.stopPropagation();
         const j = allJobsRaw.find(x => x.id == id);
-        if (!j || !j.assigned_slot || j.assigned_slot.includes('pool')) {
+        if (!j || !j.assigned_slot || j.assigned_slot.includes('pool') || j.assigned_slot.includes('zone')) {
             return alert("Please assign the job to a driver's row first before dispatching.");
         }
 
@@ -1096,9 +1160,8 @@
         const target = ev.currentTarget;
         let finalTarget = target.classList.contains('job-card') ? target.parentElement : target;
 
-        const isPool = finalTarget.id === 'pool-container';
+        const isPool = finalTarget.id === 'pool-container' || finalTarget.classList.contains('pool-zone') || finalTarget.closest('.pool-zone') !== null;
 
-        // --- NEW DATE VALIDATION LOGIC ---
         if (!isPool) {
             const j = allJobsRaw.find(x => x.id == id);
             if (j && j.coll_datetime) {
@@ -1125,7 +1188,6 @@
                 }
             }
         }
-        // --- END NEW LOGIC ---
 
         let assignedDriver = null;
         if (!isPool) {
@@ -1382,7 +1444,8 @@
             const info = getWeekInfo(view); document.getElementById('week-display-box').innerText = `WK ${info.week} | MON ${info.date}`;
             updateDateHeaders(view); updateCalculations();
             
-            document.querySelectorAll('#pool-container .job-card[data-is-maintenance="true"]').forEach(card => {
+            // Filter Unassigned Pool by week
+            document.querySelectorAll('#unassigned-sidebar .job-card').forEach(card => {
                 const targetWeek = parseInt(card.dataset.targetWeek) || 0;
                 
                 if (targetWeek === view || (targetWeek <= 0 && view === 0) || (targetWeek >= 3 && view === 3)) {
@@ -1428,7 +1491,12 @@
     }
 
     function formatUKDate(iso) { if(!iso) return '-'; return new Date(iso).toLocaleDateString('en-GB'); }
-    function toggleWeekend() { document.body.classList.toggle('show-weekend'); }
+    function toggleWeekend() { 
+        document.body.classList.toggle('show-weekend'); 
+        const isWeekend = document.body.classList.contains('show-weekend');
+        document.getElementById('pool-day-sat').style.display = isWeekend ? 'block' : 'none';
+        document.getElementById('pool-day-sun').style.display = isWeekend ? 'block' : 'none';
+    }
     function toggleUnassigned() { document.getElementById('unassigned-sidebar').classList.toggle('open'); }
     function allowDrop(ev) { ev.preventDefault(); }
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
@@ -1568,6 +1636,17 @@
         }
     });
 
+    // NEW: Listen for ALL quote changes to sync boards instantly across the office
+    sb.channel('quotes-tracker')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, payload => {
+            console.log("Planner sync update received!");
+            // Only update if this specific planner isn't currently dragging a card
+            if (!isDragging) {
+                loadAll();
+            }
+        })
+        .subscribe();
+
     sb.channel('jcc-tracker')
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jcc_bookings' }, payload => {
             console.log("JCC Booking Status Updated by Garage!", payload);
@@ -1585,7 +1664,7 @@
                 if (payload.new.rejected) playAlert('reject');
             }
 
-            loadAll(); 
+            if (!isDragging) loadAll(); 
         })
         .subscribe();
 
