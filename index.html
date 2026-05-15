@@ -5,7 +5,1794 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FROST Transport Planner - V5.6 (Live Postcode Database)</title>
     
+    <!-- EXTERNAL LIBRARIES --><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FROST Transport Planner - V5.6 (Live Postcode Database)</title>
+    
     <!-- EXTERNAL LIBRARIES -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        /* ==========================================
+           1. GLOBAL VARIABLES & RESET
+           ========================================== */
+        :root {
+            --frost-red: #c1272d;
+            --frost-black: #1a1a1a;
+            --frost-blue: #0056b3; 
+            --light-grey: #f4f4f4;
+            --border-color: #ccc;
+            --whatsapp-green: #25D366;
+            --price-green: #2e7d32;
+            --sidebar-width: 320px;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: var(--light-grey); color: #000; overflow: hidden; }
+        
+        /* CUSTOM SCROLLBARS FOR A CLEANER UI */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+        /* ==========================================
+           2. HEADER & NAVIGATION
+           ========================================== */
+        header { background: white; padding: 10px 20px; border-bottom: 3px solid var(--frost-red); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .logo-container img { height: 50px; }
+        
+        .grand-total-box { background: var(--frost-black); color: white; padding: 5px 15px; border-radius: 6px; border-left: 4px solid var(--price-green); }
+        .grand-total-value { font-size: 1.1rem; font-weight: bold; color: var(--whatsapp-green); }
+        .week-info-box { background: #e0e0e0; color: var(--frost-red); padding: 5px 12px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85rem; font-weight: bold; }
+
+        .week-selector { background: #333; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; z-index: 90; }
+        .menu-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .week-btn { padding: 8px 18px; border: none; background: #555; color: white; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 0.8rem; transition: background 0.2s, transform 0.1s; }
+        .week-btn:hover { background: #666; transform: translateY(-1px); }
+        .week-btn:active { transform: translateY(0); }
+        .week-btn.active { background: var(--frost-red); }
+        .nav-blue { background: var(--frost-blue); }
+        .nav-blue:hover { background: #004494; }
+
+        /* ==========================================
+           3. MAIN LAYOUT & SIDEBARS
+           ========================================== */
+        main { display: flex; flex-grow: 1; overflow: hidden; position: relative; }
+        
+        #unassigned-sidebar { width: var(--sidebar-width); background: #eee; border-right: 2px solid var(--border-color); transition: margin-left 0.3s ease; margin-left: calc(-1 * var(--sidebar-width)); flex-shrink: 0; z-index: 80; display: flex; flex-direction: column; }
+        #unassigned-sidebar.open { margin-left: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+        
+        /* NEW POOL LAYOUT STYLES */
+        #pool-container { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px; }
+        .pool-day { background: white; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; }
+        .pool-day-title { background: #34495e; color: white; padding: 6px; font-size: 0.75rem; font-weight: bold; text-align: center; }
+        .pool-zone { min-height: 45px; padding: 6px; background: #fdfdfd; transition: background 0.2s; }
+        .pool-zone:hover { background: #f4f4f4; }
+
+        #content-area { flex-grow: 1; overflow: hidden; padding: 10px; }
+        #planner-board, #invoicing-view, #history-view, #subbed-view, #cancelled-view, #map-view { background: white; border-radius: 8px; height: 100%; overflow: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        #map-container { height: 100%; width: 100%; border-radius: 0 0 8px 8px; z-index: 1; }
+
+        /* ==========================================
+           4. PLANNER GRID & CELLS
+           ========================================== */
+        table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 3000px; } 
+        
+        .corner-header { position: sticky; top: 0; left: 0; z-index: 30; background: var(--frost-black); color: white; border-right: 3px solid var(--frost-red); border-bottom: 3px solid var(--frost-red); width: 120px; text-align: center; }
+        .vehicle-col-header { position: sticky; top: 0; z-index: 20; background: var(--frost-black); color: white; border-right: 1px solid var(--border-color); border-bottom: 3px solid var(--frost-red); padding: 10px; min-width: 240px; vertical-align: top; text-align: left; }
+        .date-cell { position: sticky; left: 0; z-index: 10; background: #eee; color: var(--frost-black); border-right: 3px solid var(--frost-red); border-bottom: 1px solid var(--border-color); padding: 10px; min-width: 120px; text-align: center; font-weight: bold; }
+        
+        .day-name { font-size: 0.95rem; color: var(--frost-red); margin-bottom: 4px; }
+        .day-date { font-size: 0.8rem; color: #555; }
+
+        .reg-title { font-weight: bold; font-size: 0.95rem; display: block; color: var(--frost-red); margin-bottom: 5px; }
+        .trailer-tag { font-size: 0.7rem; color: white; background-color: #555; padding: 2px 6px; border-radius: 4px; margin-left: 8px; display: none; vertical-align: text-bottom; font-weight: normal; }
+        .trailer-tag.visible { display: inline-block; }
+
+        .driver-sel { width: 100%; padding: 4px; background: white; color: black; border: 1px solid #ccc; border-radius: 3px; font-size: 0.75rem; cursor: pointer; }
+        .driver-weekly-total { font-size: 0.7rem; color: #aaa; display: block; margin-top: 6px; font-weight: bold; }
+        
+        .weekend-row { display: none; }
+        .show-weekend .weekend-row { display: table-row; }
+        .show-weekend .weekend-row .date-cell { background: #e0e0e0; }
+
+        td { border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); min-height: 125px; height: 125px; vertical-align: top; padding: 6px; background: white; transition: background 0.2s; }
+        td:hover { background: #fdfdfd; }
+
+        /* ==========================================
+           5. JOB CARDS & GHOST CARDS
+           ========================================== */
+        .job-card { background: white; color: black; border: 1px solid var(--border-color); border-left: 4px solid var(--frost-red); padding: 8px; margin-bottom: 6px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: grab; font-size: 0.72rem; position: relative; transition: all 0.2s; }
+        .job-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .job-card.completed-grey { background: #f0f0f0 !important; border-left-color: #bbb !important; color: #888 !important; opacity: 0.8; }
+        
+        /* Ghost Card Styling */
+        .job-card.ghost-card { border: 2px dashed var(--frost-blue); background: #f4f9ff; opacity: 0.85; cursor: pointer; border-left: 4px solid var(--frost-blue); }
+        .ghost-badge { background: var(--frost-blue); color: white; font-size: 0.65rem; padding: 3px 6px; border-radius: 3px; display: block; text-align: center; margin-bottom: 6px; font-weight: bold; letter-spacing: 0.5px; }
+
+        /* Dispatch Colors */
+        .job-card.status-sent { border-left-color: #f39c12; } 
+        .job-card.status-ack { background: #e3f2fd; border-left-color: #0056b3; } 
+        .job-card.status-arr { background: #e8f5e9; border-left-color: #2e7d32; } 
+        .job-card.status-load { background: #f5eef8; border-left-color: #8e44ad; }
+        .job-card.status-del-arr { background: #fef9e7; border-left-color: #f1c40f; }
+        .job-card.status-tipped { background: #e8f8f5; border-left-color: #1abc9c; }
+
+        .postcode-header { display: flex; font-weight: bold; margin-bottom: 5px; font-size: 0.85rem; pointer-events: none; justify-content: center; }
+        .pc-coll { color: royalblue; display: block;} 
+        .pc-del { color: #2e7d32; display: block;} 
+        .pc-del-2 { color: #d68910; display: block;}
+        
+        .card-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #eee; justify-content: space-between; }
+        .action-btn { color: #666; cursor: pointer; font-size: 1.1rem; transition: color 0.2s; }
+        .action-btn:hover { color: var(--frost-red); }
+
+        .card-body { display: none; margin-top: 8px; line-height: 1.4; border-top: 1px solid #eee; padding-top: 5px;}
+        .expanded .card-body { display: block; }
+        .card-section-label { color: #c1272d; font-weight: bold; text-transform: uppercase; font-size: 0.6rem; display: block; margin-top: 6px; }
+        .card-section-label.del { color: #2e7d32; }
+        .card-section-label.contact { color: #0056b3; }
+        .detail-row { display: flex; justify-content: space-between; border-bottom: 1px solid #f4f4f4; padding: 2px 0; }
+        .detail-row b { color: #555; font-size: 0.65rem; }
+
+        .vehicle-tag { background: var(--frost-blue); color: white; padding: 1px 5px; border-radius: 3px; font-size: 0.65rem; }
+        .price-tag { background: var(--price-green); color: white; padding: 1px 5px; border-radius: 3px; font-size: 0.65rem; }
+
+        /* ==========================================
+           6. MODALS & FORMS
+           ========================================== */
+        .search-container { margin-bottom: 15px; display: flex; gap: 10px; align-items: center; }
+        #history-search { max-width: 400px; padding: 10px; background: white; color: black; border: 1px solid #ccc; border-radius: 4px; }
+        .pdf-btn { background: var(--frost-red); color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.7rem; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(2px); }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; max-height: 85vh; overflow-y: auto; position: relative; color: black; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; font-size: 0.75rem; font-weight: bold; margin-bottom: 2px; color: #444; }
+        input, select { width: 100%; padding: 8px; background: white; color: black; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--frost-blue); box-shadow: 0 0 0 2px rgba(0,86,179,0.2); }
+        textarea { width: 100%; padding: 8px; background: white; color: black; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-family: inherit; }
+        .section-divider { border: 0; border-top: 1px solid #eee; margin: 15px 0; }
+        #add-job-btn { width: 100%; background: var(--frost-red); color: white; border: none; padding: 12px; font-weight: bold; cursor: pointer; border-radius: 4px; transition: background 0.2s;}
+        #add-job-btn:hover { background: #a02025; }
+        
+        .tab-content-zone { display: none; }
+        .tab-content-zone.active { display: block; }
+    </style>
+</head>
+<body>
+
+<!-- ==========================================
+     HEADER
+     ========================================== -->
+<header>
+    <div class="logo-container"><img src="logo.png" alt="FROST"></div>
+    <div style="display:flex; gap:15px; align-items:center;">
+        <div id="week-display-box" class="week-info-box">WK -- | MON --/--/--</div>
+        <button class="week-btn" id="btn-map" onclick="switchView('map')" style="background:#27ae60; color:white;">🗺️ DROP SPOTS</button>
+        <button class="week-btn" id="btn-toggle-header" onclick="toggleHeaderView()" style="background:#34495e; color:white;">🔄 TOWNS</button>
+        <button class="week-btn" onclick="loadAll()">SYNC</button>
+        <div class="grand-total-box"><span class="grand-total-value" id="grand-total">£0.00</span></div>
+    </div>
+</header>
+
+<!-- ==========================================
+     TOP NAVIGATION & TOOLBAR
+     ========================================== -->
+<div class="week-selector">
+    <div class="menu-group">
+        <button class="week-btn nav-blue" onclick="toggleUnassigned()">UNASSIGNED</button>
+        <button class="week-btn nav-blue" onclick="resetForm(); openModal('modal-add')">+ NEW JOB</button>
+        <button class="week-btn nav-blue" onclick="window.open('https://rich01623.github.io/fleet-tracker/', '_blank')">TRACKER</button>
+        <button class="week-btn nav-blue" onclick="window.open('https://rich01623.github.io/standalonemaintenanceschedule/', '_blank')">MAINTENANCE SCHEDULE</button>
+        <button class="week-btn nav-blue" id="btn-subbed" onclick="switchView('subbed')">SUBBED TO CONTRACTOR</button>
+        <button class="week-btn nav-blue" id="btn-cancelled" onclick="switchView('cancelled')">CANCELLED JOBS</button>
+        <button class="week-btn nav-blue" onclick="openPostcodeSearch()" style="background:#2c3e50;">📍 POSTCODE</button>
+        <button class="week-btn" onclick="openNoteModal()" style="background:#f39c12; color:white;">📝 NOTES</button>
+    </div>
+    <div class="menu-group">
+        <button class="week-btn active" id="btn-w0" onclick="switchView(0)">WEEK 1</button>
+        <button class="week-btn" id="btn-w1" onclick="switchView(1)">WEEK 2</button>
+        <button class="week-btn" id="btn-w2" onclick="switchView(2)">WEEK 3</button>
+        <button class="week-btn" id="btn-w3" onclick="switchView(3)">WEEK 4</button>
+        <button class="week-btn" style="background:#888;" onclick="toggleWeekend()">W/E</button>
+    </div>
+    <div class="menu-group">
+        <button class="week-btn nav-blue" id="btn-hist" onclick="switchView('history')">HISTORY</button>
+        <button class="week-btn nav-blue" id="btn-invoice" onclick="switchView('invoice')">INVOICES</button>
+    </div>
+</div>
+
+<!-- ==========================================
+     MAIN CONTENT AREA
+     ========================================== -->
+<main>
+    <!-- LEFT SIDEBAR: UNASSIGNED POOL (NOW SORTED BY DAY) -->
+    <section id="unassigned-sidebar">
+        <div style="padding:10px; background:#e0e0e0; color:black; font-weight:bold; display:flex; justify-content:space-between; border-bottom: 1px solid #ccc;">
+            POOL <span onclick="toggleUnassigned()" style="cursor:pointer; color: var(--frost-red);">✕</span>
+        </div>
+        
+        <div id="pool-container">
+            <div class="pool-day">
+                <div class="pool-day-title" style="background:var(--frost-red);">UNSCHEDULED</div>
+                <div id="pool-zone-tba" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day">
+                <div class="pool-day-title">MONDAY</div>
+                <div id="pool-zone-1" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day">
+                <div class="pool-day-title">TUESDAY</div>
+                <div id="pool-zone-2" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day">
+                <div class="pool-day-title">WEDNESDAY</div>
+                <div id="pool-zone-3" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day">
+                <div class="pool-day-title">THURSDAY</div>
+                <div id="pool-zone-4" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day">
+                <div class="pool-day-title">FRIDAY</div>
+                <div id="pool-zone-5" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day" id="pool-day-sat" style="display:none;">
+                <div class="pool-day-title" style="background:#888;">SATURDAY</div>
+                <div id="pool-zone-6" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day" id="pool-day-sun" style="display:none;">
+                <div class="pool-day-title" style="background:#888;">SUNDAY</div>
+                <div id="pool-zone-0" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- RIGHT CONTENT: GRIDS & VIEWS -->
+    <div id="content-area">
+        
+        <!-- Planner Boards (Dynamically injected) -->
+        <section id="planner-board"></section>
+
+        <!-- Drop Spots Map View -->
+        <section id="map-view" style="display:none; padding:10px; height:100%; box-sizing:border-box;">
+            <div style="background:var(--frost-black); color:white; padding:10px; border-radius:8px 8px 0 0; font-weight:bold; display:flex; justify-content:space-between;">
+                <span>🚚 Drop Spots Visualization</span>
+                <span style="font-size:0.8rem; color:#aaa; font-weight:normal;">*Only valid, full postcodes are displayed</span>
+            </div>
+            <div id="map-container" style="border-radius: 0 0 8px 8px;"></div>
+        </section>
+
+        <!-- Invoice View -->
+        <section id="invoicing-view" style="display:none; padding:20px;">
+            <h2>Invoice Queue</h2>
+            <table style="width:100%; border-collapse: collapse;">
+                <thead style="background:#000; color:white;">
+                    <tr><th><input type="checkbox" onclick="toggleAllInvoices(this)"></th><th>Date</th><th>Customer</th><th>Route</th><th>Price</th><th>Action</th></tr>
+                </thead>
+                <tbody id="invoice-list-body"></tbody>
+            </table>
+        </section>
+
+        <!-- History View -->
+        <section id="history-view" style="display:none; padding:20px;">
+            <div class="search-container">
+                <h2 style="margin:0; margin-right: 20px;">Historical Archive</h2>
+                <input type="text" id="history-search" placeholder="Search customer, postcode, town or ref..." onkeyup="filterHistory()">
+            </div>
+            <table style="width:100%; border-collapse: collapse;">
+                <thead style="background:#000; color:white;">
+                    <tr><th style="width:100px;">Date</th><th>Customer</th><th>Route</th><th>Driver</th><th>Vehicle</th><th>Price</th><th style="width:120px;">Actions</th></tr>
+                </thead>
+                <tbody id="history-list-body"></tbody>
+            </table>
+        </section>
+
+        <!-- Subbed View -->
+        <section id="subbed-view" style="display:none; padding:20px;">
+            <h2>Subbed to Contractor</h2>
+            <table style="width:100%; border-collapse: collapse;">
+                <thead style="background:#000; color:white;">
+                    <tr><th style="width:100px;">Date</th><th>Customer</th><th>Route</th><th>Vehicle</th><th>Price</th><th style="width:120px;">Action</th></tr>
+                </thead>
+                <tbody id="subbed-list-body"></tbody>
+            </table>
+        </section>
+
+        <!-- Cancelled View -->
+        <section id="cancelled-view" style="display:none; padding:20px;">
+            <h2>Cancelled Jobs</h2>
+            <table style="width:100%; border-collapse: collapse;">
+                <thead style="background:#000; color:white;">
+                    <tr><th style="width:100px;">Date</th><th>Customer</th><th>Route</th><th>Vehicle</th><th>Price</th><th style="width:120px;">Action</th></tr>
+                </thead>
+                <tbody id="cancelled-list-body"></tbody>
+            </table>
+        </section>
+    </div>
+</main>
+
+<!-- ==========================================
+     MODALS
+     ========================================== -->
+
+<!-- NEW TABBED Add Job Modal -->
+<div id="modal-add" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-add')">
+    <div class="modal-content" style="width: 1100px; max-width: 95vw;">
+        
+        <!-- MODAL TAB HEADER -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 2px solid var(--frost-red); padding-bottom: 10px;">
+            <h2 style="margin:0;">Job Details</h2>
+            <div id="form-tabs" style="display:flex; gap:10px;">
+                <button class="week-btn active" id="tab-btn-leg1" onclick="switchFormTab('leg1')" style="background:var(--frost-red);">Main Route</button>
+                <button class="week-btn" id="tab-btn-coll2" onclick="switchFormTab('coll2')" style="background:#0056b3;">+ Collection 2</button>
+                <button class="week-btn" id="tab-btn-del2" onclick="switchFormTab('del2')" style="background:#2e7d32;">+ Delivery 2</button>
+            </div>
+        </div>
+
+        <input type="hidden" id="sys_job_id">
+        
+        <!-- TAB 1: MAIN ROUTE -->
+        <div id="tab-content-leg1" class="tab-content-zone active">
+            <div style="display: flex; gap: 40px;">
+                <div style="flex: 1;">
+                    <h4 style="margin:0 0 10px 0; color:#0056b3;">CUSTOMER INFO</h4>
+                    <div class="form-group"><label>Booking Customer Name</label><input type="text" id="n_cust_name"></div>
+                    <div style="display:flex; gap:5px;">
+                        <div class="form-group" style="flex:1;"><label>Telephone</label><input type="text" id="n_cust_phone"></div>
+                        <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_cust_email"></div>
+                    </div>
+                    
+                    <hr class="section-divider">
+                    
+                    <h4 style="margin:5px 0; color:#c1272d;">COLLECTION ADDRESS (LEG 1)</h4>
+                    <div class="form-group"><label>Post Code</label><input type="text" id="n_coll_pc"></div>
+                    <div class="form-group"><label>Street</label><input type="text" id="n_coll_street"></div>
+                    <div style="display:flex; gap:5px;">
+                        <div class="form-group" style="flex:1;"><label>Town</label><input type="text" id="n_coll_town"></div>
+                        <div class="form-group" style="flex:1;"><label>County</label><input type="text" id="n_coll_county"></div>
+                    </div>
+                    <div class="form-group"><label>Ref</label><input type="text" id="n_coll_ref"></div>
+                    <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_coll_dt"></div>
+                </div>
+                
+                <div style="flex: 1;">
+                    <h4 style="margin:0 0 10px 0; color:#2e7d32;">DELIVERY INFO (LEG 1)</h4>
+                    <div class="form-group"><label>Delivery Company Name</label><input type="text" id="n_del_name"></div>
+                    <div style="display:flex; gap:5px;">
+                        <div class="form-group" style="flex:1;"><label>Telephone</label><input type="text" id="n_del_phone"></div>
+                        <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_del_email"></div>
+                    </div>
+                    
+                    <hr class="section-divider">
+                    
+                    <h4 style="margin:5px 0; color:#2e7d32;">DELIVERY ADDRESS (LEG 1)</h4>
+                    <div class="form-group"><label>Post Code</label><input type="text" id="n_del_pc"></div>
+                    <div class="form-group"><label>Street</label><input type="text" id="n_del_street"></div>
+                    <div style="display:flex; gap:5px;">
+                        <div class="form-group" style="flex:1;"><label>Town</label><input type="text" id="n_8"></div>
+                        <div class="form-group" style="flex:1;"><label>County</label><input type="text" id="n_9"></div>
+                    </div>
+                    <div class="form-group"><label>Ref</label><input type="text" id="n_10"></div>
+                    <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_del_dt"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: COLLECTION 2 -->
+        <div id="tab-content-coll2" class="tab-content-zone">
+            <div style="background: #f4f9ff; padding: 20px; border-radius: 8px; border: 1px dashed #0056b3;">
+                <h4 style="margin:0 0 15px 0; color:#0056b3;">ADDITIONAL COLLECTION (LEG 2)</h4>
+                <div class="form-group"><label>Post Code</label><input type="text" id="n_coll_pc_2"></div>
+                <div style="display:flex; gap:5px;">
+                    <div class="form-group" style="flex:1;"><label>Town</label><input type="text" id="n_coll_town_2"></div>
+                </div>
+                <p style="font-size:0.75rem; color:#666; margin-bottom:0;">*This will dynamically add a second collection point to the job card header on the planner.</p>
+            </div>
+        </div>
+
+        <!-- TAB 3: DELIVERY 2 -->
+        <div id="tab-content-del2" class="tab-content-zone">
+            <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; border: 1px dashed #2e7d32;">
+                <h4 style="margin:0 0 15px 0; color:#2e7d32;">ADDITIONAL DELIVERY (LEG 2)</h4>
+                <div class="form-group"><label>Post Code</label><input type="text" id="n_del_pc_2"></div>
+                <div style="display:flex; gap:5px;">
+                    <div class="form-group" style="flex:1;"><label>Town</label><input type="text" id="n_del_town_2"></div>
+                </div>
+                <p style="font-size:0.75rem; color:#666; margin-bottom:0;">*This will dynamically add a second delivery point to the job card header on the planner.</p>
+            </div>
+        </div>
+
+        <!-- Full Width Bottom Section -->
+        <hr class="section-divider">
+        <h4 style="margin:5px 0 10px 0; color:#1a1a1a;">LOGISTICS</h4>
+        <div style="display:flex; gap:15px; align-items:flex-end;">
+            <div class="form-group" style="flex:1;"><label>Vehicle Required</label><select id="n_veh_type"><option>Artic</option><option>Rigid</option><option>7.5t</option><option>Van</option></select></div>
+            <div class="form-group" style="flex:1;"><label>Total Pallets</label><input type="number" id="n_total_pallets" placeholder="e.g. 14"></div>
+            <div class="form-group" style="flex:1;"><label>Total Weight (kg)</label><input type="number" id="n_total_weight" placeholder="e.g. 12500"></div>
+            <div class="form-group" style="flex:1;"><label>Agreed Price (£)</label><input type="text" id="n_price" placeholder="0.00"></div>
+            
+            <div style="flex:1.5; display:flex; gap:10px;">
+                <button class="week-btn" onclick="closeModal('modal-add')" style="flex: 1; background:#ddd; color:#333; padding: 10px; font-weight: bold; border-radius: 4px; height: 37px; margin-bottom: 10px;">Cancel</button>
+                <button id="add-job-btn" onclick="saveJob()" style="flex: 2; height: 37px; margin-bottom: 10px; border-radius: 4px;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Postcode Search Modal -->
+<div id="modal-postcode" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-postcode')">
+    <div class="modal-content" style="width: 320px; text-align: center;">
+        <h3 style="margin-top:0; color:var(--frost-red);">Postcode Lookup</h3>
+        <p style="font-size: 0.8rem; color: #666; margin-bottom:15px;">Type full or partial postcode (e.g., NG18 or KT1)</p>
+        <input type="text" id="pc-search-input" placeholder="Enter Postcode..." style="text-transform: uppercase; text-align: center; font-size: 1.2rem; margin-bottom: 15px;" onkeyup="lookupPostcode()">
+        
+        <div id="pc-search-result" style="font-size: 1rem; font-weight: bold; min-height: 80px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f9f9f9; border:1px solid #eee; border-radius:6px; padding:10px;">
+            <span style="color:#aaa; font-weight:normal; font-size:0.9rem;">Waiting for input...</span>
+        </div>
+        
+        <button class="week-btn" onclick="closeModal('modal-postcode')" style="width:100%; margin-top:15px; background:#ddd; color:#333;">Close</button>
+    </div>
+</div>
+
+<!-- Add Note Modal -->
+<div id="modal-note" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-note')">
+    <div class="modal-content" style="width: 350px;">
+        <h3 style="margin-top:0; color:#d68910;">📝 Create Planner Note</h3>
+        <p style="font-size: 0.8rem; color: #666; margin-bottom:15px;">This will drop a sticky note into the Unassigned Pool.</p>
+        <div class="form-group">
+            <textarea id="n_note_text" rows="5" placeholder="e.g., Mark dentist 12/05 needs to finish at 3" style="resize:vertical;"></textarea>
+        </div>
+        <button onclick="saveNote()" style="width: 100%; background: #f39c12; color: white; border: none; padding: 12px; font-weight: bold; cursor: pointer; border-radius: 4px; margin-top:5px;">Save Note</button>
+        <button class="week-btn" onclick="closeModal('modal-note')" style="width:100%; margin-top:8px; background:#ddd; color:#333;">Cancel</button>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 1. CONFIGURATION & STATE
+    // ==========================================
+    const _URL = "https://mbudwnwxucluwgbkgbfx.supabase.co";
+    const _KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1idWR3bnd4dWNsdXdnYmtnYmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDQwMjYsImV4cCI6MjA5MDc4MDAyNn0.xFv-FiQ894vdfJuQYWQyF4WzQXmlnmnKvz_c8nuzl5Q";
+    const sb = supabase.createClient(_URL, _KEY);
+    const podFolder = "https://drive.google.com/drive/folders/173z9mkrCmqmEyEENeH__-qvdw1SFJl7w?usp=sharing";
+
+    const vehicles = [
+        "FN21 HLZ", "FR72 FTS", "FS72 FTS", "FT72 FTS", 
+        "KU70 XNR", "KU70 XNS", "KU70 XNT", "KU70 XNV", 
+        "KU70 XNW", "KU70 XNX", "FJ69 WMC", "DK69 ZHM"
+    ];
+
+    const drivers = [
+        { name: "Unassigned", phone: "" },
+        { name: "Andy Elston", phone: "447999811320" },
+        { name: "Andy West", phone: "447734369810" },
+        { name: "Callum Lee", phone: "447359390140" },
+        { name: "Josh Harrison", phone: "447701238574" },
+        { name: "Lee Woodcock", phone: "447701238577" },
+        { name: "Marc Wickham", phone: "447701238576" },
+        { name: "Marco Marco", phone: "447759926814" },
+        { name: "Neil Woods", phone: "447701238567" },
+        { name: "Rhys Hill", phone: "447701238572" },
+        { name: "Ricardo Morais", phone: "447746509636" },
+        { name: "Richard", phone: "447701238570" },
+        { name: "Richard Spence", phone: "447701238570" },
+        { name: "Roy Taylor", phone: "447701238558" },
+        { name: "Sean Walton", phone: "447792931496" },
+        { name: "Stuart Sleigh", phone: "447701238575" },
+        { name: "Suaunis Butnorious", phone: "447546702780" }
+    ];
+
+    let allJobsRaw = [];
+    let allJccBookings = []; 
+    let currentWeekOffset = 0;
+    let showTownsInHeader = false;
+    let fleetMap = null;
+    let mapMarkers = [];
+    
+    // Prevents board refresh if user is currently dragging a card
+    let isDragging = false;
+
+    // ==========================================
+    // 2. AUDIO & ALERTS
+    // ==========================================
+    function playAlert(type) {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            if (type === 'accept') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(659.25, ctx.currentTime); 
+                osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.15); 
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.4);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.4);
+            } else if (type === 'reject') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                osc.frequency.setValueAtTime(120, ctx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.5);
+            }
+        } catch (e) { 
+            console.log("Audio not supported or interaction needed first."); 
+        }
+    }
+
+    // ==========================================
+    // 3. UI TOGGLES
+    // ==========================================
+    function toggleHeaderView() {
+        showTownsInHeader = !showTownsInHeader;
+        const btn = document.getElementById('btn-toggle-header');
+        btn.innerText = showTownsInHeader ? "🔄 POSTCODES" : "🔄 TOWNS";
+        btn.style.background = showTownsInHeader ? "#0056b3" : "#34495e";
+        loadAll(); 
+    }
+
+    function switchFormTab(tabId) {
+        document.querySelectorAll('.tab-content-zone').forEach(el => el.classList.remove('active'));
+        document.getElementById('tab-content-' + tabId).classList.add('active');
+        
+        // Visual button states
+        document.getElementById('tab-btn-leg1').style.opacity = tabId === 'leg1' ? '1' : '0.6';
+        document.getElementById('tab-btn-coll2').style.opacity = tabId === 'coll2' ? '1' : '0.6';
+        document.getElementById('tab-btn-del2').style.opacity = tabId === 'del2' ? '1' : '0.6';
+    }
+
+    // ==========================================
+    // 4. PLANNER GRID GENERATION
+    // ==========================================
+    const plannerBoard = document.getElementById('planner-board');
+    [0, 1, 2, 3].forEach(week => {
+        const table = document.createElement('table');
+        table.id = `table-w${week}`;
+        table.style.display = week === 0 ? 'table' : 'none';
+
+        const thead = document.createElement('thead');
+        let headRow = document.createElement('tr');
+        headRow.innerHTML = `<th class="corner-header">Date</th>`;
+        
+        vehicles.forEach((reg, i) => {
+            let driverOptions = drivers.map(d => `<option value="${d.phone}">${d.name}</option>`).join('');
+            headRow.innerHTML += `
+                <th class="vehicle-col-header">
+                    <span class="reg-title">${reg} <span class="trailer-tag" id="trl-planner-w${week}-dr${i}"></span></span>
+                    <select class="driver-sel" id="sel-planner-w${week}-dr${i}">
+                        ${driverOptions}
+                    </select>
+                    <span class="driver-weekly-total" id="planner-w${week}-total-${i}">Week: £0</span>
+                </th>`;
+        });
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        tbody.id = `planner-w${week}`;
+        
+        for(let day = 0; day < 7; day++) {
+            let row = document.createElement('tr');
+            if(day >= 5) row.classList.add('weekend-row');
+            
+            row.innerHTML = `<th class="date-cell" id="date-w${week}-d${day}">...</th>`;
+            
+            for(let veh = 0; veh < vehicles.length; veh++) {
+                row.innerHTML += `<td id="planner-w${week}-dr${veh}-s${day}" ondrop="drop(event)" ondragover="allowDrop(event)"></td>`;
+            }
+            tbody.appendChild(row);
+        }
+        table.appendChild(tbody);
+        plannerBoard.appendChild(table);
+    });
+
+    // ==========================================
+    // 5. MAINTENANCE & TRAILER LOGIC
+    // ==========================================
+    async function updateTrailerDisplay(selectEl) {
+        const driverName = selectEl.options[selectEl.selectedIndex].text;
+        const trailerSpanId = selectEl.id.replace('sel-', 'trl-');
+        const trailerSpan = document.getElementById(trailerSpanId);
+        
+        if (!trailerSpan) return;
+
+        if (driverName === 'Unassigned' || !driverName) {
+            trailerSpan.innerText = '';
+            trailerSpan.classList.remove('visible');
+            return;
+        }
+
+        try {
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
+            
+            const { data, error } = await sb
+                .from('daily_trailer_checks')
+                .select('trailer_number')
+                .ilike('driver_name', driverName)
+                .gte('created_at', startOfToday.toISOString()) 
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (data && data.length > 0 && data[0].trailer_number) {
+                trailerSpan.innerText = `[${data[0].trailer_number}]`;
+                trailerSpan.classList.add('visible');
+            } else {
+                trailerSpan.innerText = '';
+                trailerSpan.classList.remove('visible');
+            }
+        } catch (err) {
+            console.error("Error fetching trailer data:", err);
+        }
+    }
+
+    function getWeekOffsetFromNow(dateStr) {
+        if (!dateStr) return 0;
+        let now = new Date();
+        let dayNum = now.getDay() || 7;
+        let currentSun = new Date(now);
+        currentSun.setDate(now.getDate() - dayNum + 7);
+        currentSun.setHours(23, 59, 59, 999);
+
+        let target = new Date(dateStr);
+        if (target <= currentSun) return 0;
+
+        let diff = target.getTime() - currentSun.getTime();
+        let weeks = Math.ceil(diff / (1000 * 60 * 60 * 24 * 7));
+        return weeks;
+    }
+
+    async function checkMaintenance() {
+        try {
+            const { data: vehiclesData, error: vehError } = await sb.from('vehicles').select('*');
+            if (vehError || !vehiclesData || vehiclesData.length === 0) return;
+
+            const { data: existingQuotes, error: qError } = await sb.from('quotes')
+                .select('coll_postcode')
+                .eq('customer_name', '🔧 PLANNED MAINTENANCE');
+            
+            const existingRegs = existingQuotes ? existingQuotes.map(q => q.coll_postcode) : [];
+
+            const pendingVehicles = vehiclesData.filter(v => 
+                v.planned !== true && 
+                v.planned !== 'true' && 
+                !existingRegs.includes(v.registration_number)
+            );
+
+            if (pendingVehicles.length === 0) return;
+
+            let jobsToInsert = [];
+            let vehiclesToUpdate = [];
+
+            const now = new Date();
+            const dayNum = now.getDay() || 7;
+            const sun = new Date(now); sun.setDate(now.getDate() - dayNum + 7); sun.setHours(23,59,59,999);
+            const week4Sun = new Date(sun); week4Sun.setDate(sun.getDate() + 21);
+
+            const getISOWeek = (dateStr) => {
+                if (!dateStr) return "-";
+                const d = new Date(dateStr);
+                const dNum = d.getUTCDay() || 7;
+                d.setUTCDate(d.getUTCDate() + 4 - dNum);
+                const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+                return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+            };
+
+            pendingVehicles.forEach(v => {
+                const isDue = (dateStr) => {
+                    if (!dateStr) return false;
+                    const d = new Date(dateStr);
+                    return d <= week4Sun; 
+                };
+
+                const types = [];
+                let earliestDate = null;
+
+                const checkDate = (dateStr, typeName) => {
+                    if (isDue(dateStr)) {
+                        types.push(typeName);
+                        const d = new Date(dateStr);
+                        if (!earliestDate || d < earliestDate) earliestDate = d;
+                    }
+                };
+
+                checkDate(v.mot_due, "MOT");
+                checkDate(v.pmi_due, "PMI");
+                checkDate(v.brake_test, "BRAKE TEST");
+
+                if (types.length > 0) {
+                    const maintenanceType = types.join(" & ");
+                    const primaryDate = earliestDate ? earliestDate.toISOString() : new Date().toISOString();
+                    const weekNumber = getISOWeek(primaryDate);
+
+                    jobsToInsert.push({
+                        customer_name: "🔧 PLANNED MAINTENANCE",
+                        coll_postcode: v.registration_number,
+                        del_postcode: "BOOK INSPECTION", 
+                        coll_ref: maintenanceType, 
+                        del_ref: `Week ${weekNumber}`, 
+                        coll_town: "YARD",
+                        del_town: "GARAGE",
+                        total_price: "0",
+                        vehicle_type: "Any",
+                        status: "pending", 
+                        dispatch_status: "unsent",
+                        coll_datetime: primaryDate
+                    });
+                    
+                    vehiclesToUpdate.push(v.registration_number);
+                }
+            });
+
+            if (jobsToInsert.length > 0) {
+                await sb.from('quotes').insert(jobsToInsert);
+                for (let reg of vehiclesToUpdate) {
+                    await sb.from('vehicles').update({ planned: true }).eq('registration_number', reg);
+                }
+            }
+        } catch (err) {
+            console.error("Maintenance Sync Error:", err);
+        }
+    }
+
+    async function bookAtJCC(event, jobId) {
+        event.stopPropagation();
+        const j = allJobsRaw.find(x => x.id == jobId);
+        if (!j) return;
+
+        if (!j.assigned_slot || j.assigned_slot.includes('pool') || j.assigned_slot.includes('yard')) {
+            alert("Please drag this maintenance card onto a specific day in the planner before booking it in!");
+            return;
+        }
+
+        const match = j.assigned_slot.match(/w(\d+).*s(\d+)/);
+        if (!match) return;
+        const weekOffset = parseInt(match[1]);
+        const dayIndex = parseInt(match[2]);
+
+        let now = new Date();
+        let dayNum = now.getDay() || 7;
+        let first = now.getDate() - dayNum + 1 + (weekOffset * 7);
+        let scheduledDate = new Date(now.getTime());
+        scheduledDate.setDate(first + dayIndex);
+
+        const payload = {
+            vehicle_reg: j.coll_postcode,
+            inspection_type: j.coll_ref,
+            scheduled_date: scheduledDate.toISOString().split('T')[0],
+            status: 'Booked',
+            planner_job_id: j.id
+        };
+
+        try {
+            const btn = event.target;
+            btn.innerText = "BOOKING...";
+            btn.style.background = "#555";
+
+            const { error } = await sb.from('jcc_bookings').insert([payload]);
+            if (error) throw error;
+
+            await sb.from('quotes').update({ dispatch_status: 'sent' }).eq('id', j.id);
+            loadAll();
+
+        } catch(e) {
+            console.error(e);
+            alert("Error booking with JCC. Please try again.");
+            event.target.innerText = "BOOK IN AT JCC";
+            event.target.style.background = "#8e44ad";
+        }
+    }
+
+    // ==========================================
+    // 6. MAIN DATA LOADING & RENDERING
+    // ==========================================
+    async function loadAll() {
+        const [jobsRes, jccRes] = await Promise.all([
+            sb.from('quotes').select('*'),
+            sb.from('jcc_bookings').select('*')
+        ]);
+        
+        if (!jobsRes.data) return;
+
+        document.querySelectorAll('.job-card').forEach(c => c.remove());
+
+        allJobsRaw = jobsRes.data;
+        allJccBookings = jccRes.data || [];
+
+        allJobsRaw.forEach(q => {
+            if (['driver_config', 'archived', 'billed', 'subbed', 'cancelled'].includes(q.status)) return;
+            
+            let isON = false;
+            if (q.coll_datetime && q.del_datetime) {
+                let cD = new Date(q.coll_datetime).toDateString();
+                let dD = new Date(q.del_datetime).toDateString();
+                if (cD !== dD) isON = true;
+            }
+
+            const card = createCardElement(q, false, isON);
+            
+            let slot = null;
+            if (q.assigned_slot) {
+                slot = document.getElementById(q.assigned_slot);
+            }
+            
+            if (!slot) {
+                if (q.coll_datetime) {
+                    let d = new Date(q.coll_datetime);
+                    if (!isNaN(d)) {
+                        let day = d.getDay(); 
+                        slot = document.getElementById(`pool-zone-${day}`);
+                    }
+                }
+                if (!slot) slot = document.getElementById('pool-zone-tba');
+            }
+            
+            slot.appendChild(card);
+
+            if (isON && q.assigned_slot && !q.assigned_slot.includes('pool')) {
+                let delTargetWeek = getWeekOffsetFromNow(q.del_datetime);
+                let delDateObj = new Date(q.del_datetime);
+                let delDayIndex = (delDateObj.getDay() + 6) % 7; 
+                
+                let match = q.assigned_slot.match(/dr(\d+)/);
+                if (match) {
+                    let vehIndex = match[1];
+                    let ghostSlotId = `planner-w${delTargetWeek}-dr${vehIndex}-s${delDayIndex}`;
+                    let ghostSlot = document.getElementById(ghostSlotId);
+                    
+                    if (ghostSlot) {
+                        const ghostCard = createCardElement(q, true, isON);
+                        ghostSlot.appendChild(ghostCard);
+                    }
+                }
+            }
+        });
+        
+        renderInvoiceList();
+        renderHistoryList();
+        renderSubbedList();
+        renderCancelledList();
+        updateCalculations();
+        restoreDrivers(allJobsRaw);
+        switchView(currentWeekOffset); 
+
+        if (document.getElementById('map-view').style.display === 'block') {
+            updateMapPins();
+        }
+    }
+
+    function createCardElement(q, isGhost = false, isON = false) {
+        const card = document.createElement('div');
+        const isCompleted = q.status === 'completed';
+        const isMaintenance = q.customer_name === "🔧 PLANNED MAINTENANCE";
+        const isNote = q.customer_name === "📝 PLANNER NOTE";
+        
+        let dispatchClass = "";
+        if (q.dispatch_status === 'sent') dispatchClass = " status-sent";
+        if (q.dispatch_status === 'acknowledged') dispatchClass = " status-ack";
+        if (q.dispatch_status === 'arrived') dispatchClass = " status-arr";
+        if (q.dispatch_status === 'loaded') dispatchClass = " status-load";
+        if (q.dispatch_status === 'del_arrived') dispatchClass = " status-del-arr";
+        if (q.dispatch_status === 'tipped') dispatchClass = " status-tipped";
+
+        card.className = "job-card" + (isCompleted ? " completed-grey" : "") + dispatchClass; 
+        if (isGhost) card.classList.add('ghost-card');
+        
+        card.id = isGhost ? `ghost-${q.id}` : q.id; 
+        card.draggable = (!isCompleted && !isGhost); 
+        
+        card.ondragstart = (e) => { 
+            if(!isGhost) {
+                isDragging = true;
+                e.dataTransfer.setData("text", e.target.id); 
+            }
+        };
+        card.ondragend = () => { 
+            isDragging = false; 
+        };
+
+        card.onclick = (e) => { if(!e.target.classList.contains('action-btn')) card.classList.toggle('expanded'); };
+        const dtFormat = (str) => str ? str.replace('T', ' ') : '-';
+        const tOnly = (iso) => iso ? new Date(iso).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}) : '--:--';
+
+        let collTime = q.coll_datetime ? `<span style="display:block; font-size:0.55rem; color:#888; font-weight:normal; line-height:1; padding-top:2px;">${new Date(q.coll_datetime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}</span>` : '';
+        let delTime = q.del_datetime ? `<span style="display:block; font-size:0.55rem; color:#888; font-weight:normal; line-height:1; padding-top:2px;">${new Date(q.del_datetime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}</span>` : '';
+
+        let targetWeek = getWeekOffsetFromNow(q.coll_datetime);
+        card.dataset.targetWeek = targetWeek;
+
+        let pcHeader = "";
+        let headerAlignment = "center"; 
+        let arrow = isON ? '<span style="font-size:0.7rem; font-weight:bold; color:#1a1a1a; padding:0 2px;">O/N</span>' : '<span style="padding:0 2px;">➔</span>';
+
+        if (isMaintenance || isNote) {
+            if (isMaintenance) {
+                pcHeader = `<span class="pc-coll">${q.coll_postcode || '??'}</span> ${arrow} <span class="pc-del" style="color:#8e44ad;">${q.del_postcode}</span>`;
+            } else if (isNote) {
+                pcHeader = `<span style="color:#d68910;">📌 NOTE</span>`;
+            }
+            if (isMaintenance) card.dataset.isMaintenance = "true";
+        } else {
+            headerAlignment = "flex-start";
+            
+            // DYNAMIC MULTI-LEG HEADER GENERATION
+            let txtColl1 = showTownsInHeader ? (q.coll_town || 'N/A') : (q.coll_postcode || '??');
+            let txtColl2 = q.coll_postcode_2 ? (showTownsInHeader ? (q.coll_town_2 || 'Coll 2') : q.coll_postcode_2) : null;
+            let txtDel1 = showTownsInHeader ? (q.del_town || 'N/A') : (q.del_postcode || '??');
+            let txtDel2 = q.del_postcode_2 ? (showTownsInHeader ? (q.del_town_2 || 'Drop 2') : q.del_postcode_2) : null;
+            
+            if (showTownsInHeader) {
+                if(txtColl1.length > 10) txtColl1 = txtColl1.substring(0, 8) + '..';
+                if(txtColl2 && txtColl2.length > 10) txtColl2 = txtColl2.substring(0, 8) + '..';
+                if(txtDel1.length > 10) txtDel1 = txtDel1.substring(0, 8) + '..';
+                if(txtDel2 && txtDel2.length > 10) txtDel2 = txtDel2.substring(0, 8) + '..';
+            }
+
+            let routeArr = [];
+            
+            routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-coll" title="${showTownsInHeader ? q.customer_name : q.coll_postcode}">${txtColl1}</span>${collTime}</div>`);
+            
+            if(txtColl2) {
+                routeArr.push(`<div style="margin-top:1px; padding:0 2px;">${arrow}</div>`);
+                routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-coll" title="${showTownsInHeader ? 'Collection 2' : q.coll_postcode_2}">${txtColl2}</span></div>`);
+            }
+            
+            routeArr.push(`<div style="margin-top:1px; padding:0 2px;">${arrow}</div>`);
+            routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-del" title="${showTownsInHeader ? q.del_cust_name : q.del_postcode}">${txtDel1}</span>${delTime}</div>`);
+            
+            if(txtDel2) {
+                routeArr.push(`<div style="margin-top:1px; padding:0 2px;">${arrow}</div>`);
+                routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-del-2" title="${showTownsInHeader ? 'Drop 2' : q.del_postcode_2}">${txtDel2}</span></div>`);
+            }
+
+            pcHeader = routeArr.join('');
+        }
+
+        let ghostBanner = isGhost ? `<div class="ghost-badge">🚚 O/N DELIVERY</div>` : '';
+        let actionsHtml = isGhost ? '' : `
+            <div class="card-actions">
+                <div style="display:flex; gap:10px;">
+                    <span class="action-btn" onclick="dispatchJob(event, '${q.id}')" title="Send to Driver App">📲</span>
+                    <span class="action-btn" onclick="editJob(event, '${q.id}')" title="Edit">✎</span>
+                    <span class="action-btn" onclick="splitJob(event, '${q.id}')" title="Split">✂</span>
+                    <span class="action-btn" onclick="duplicateJob(event, '${q.id}')" title="Duplicate">❐</span>
+                    <span class="action-btn" onclick="window.open('${podFolder}', '_blank')" title="POD Drive">📎</span>
+                    <span class="action-btn" onclick="queryRoute(event, '${q.coll_postcode}', '${q.del_postcode}')" title="Maps">📍</span>
+                    ${!isCompleted ? `<span class="action-btn" onclick="markPODReceived(event, '${q.id}')" title="Complete POD">✅</span>` : ''}
+                </div>
+                <span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;">🗑️</span>
+            </div>
+        `;
+
+        if (isNote) {
+            card.style.borderLeftColor = "#f39c12"; 
+            card.style.backgroundColor = "#fef9e7"; 
+            
+            card.innerHTML = `
+                <div class="postcode-header" style="color:#d68910; align-items: ${headerAlignment};">${pcHeader}</div>
+                <div class="card-body">
+                    <div class="card-actions" style="justify-content: flex-end; padding-bottom:0; border:none; margin-bottom:5px;">
+                        <span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;" title="Delete Note">🗑️</span>
+                    </div>
+                    <div style="background: #ffffff; padding: 10px; border-radius: 4px; border: 1px dashed #f39c12; margin-bottom: 5px; font-size: 0.75rem; color: #333; white-space: pre-wrap; font-weight: 500;">${q.coll_ref || ''}</div>
+                </div>`;
+
+        } else if (isMaintenance) {
+            let booking = allJccBookings.find(b => b.planner_job_id === q.id);
+            
+            let cardBg = "white";
+            let cardBorder = "#8e44ad"; 
+            let titleColor = "#8e44ad";
+            let badgeHtml = "";
+            let btnHtml = isGhost ? '' : `<button onclick="bookAtJCC(event, '${q.id}')" style="width:100%; padding:8px; font-size:0.75rem; background:#8e44ad; color:white; border:none; border-radius:3px; font-weight:bold; cursor:pointer;">BOOK IN AT JCC</button>`;
+
+            if (booking && !isGhost) {
+                if (booking.accepted) {
+                    cardBg = "#e8f5e9"; 
+                    cardBorder = "#2e7d32"; 
+                    titleColor = "#2e7d32";
+                    badgeHtml = `<span style="float:right; font-size:0.6rem; color:#2e7d32; border:1px solid #2e7d32; padding:1px 4px; border-radius:3px; background:white;">ACCEPTED</span>`;
+                    btnHtml = `<button onclick="event.stopPropagation();" style="width:100%; padding:8px; font-size:0.75rem; background:#2e7d32; color:white; border:none; border-radius:3px; font-weight:bold; cursor:default;">✓ ACCEPTED BY JCC</button>`;
+                } else if (booking.rejected) {
+                    cardBg = "#fdedec"; 
+                    cardBorder = "#c1272d"; 
+                    titleColor = "#c1272d";
+                    badgeHtml = `<span style="float:right; font-size:0.6rem; color:#c1272d; border:1px solid #c1272d; padding:1px 4px; border-radius:3px; background:white;">REJECTED</span>`;
+                    btnHtml = `<button onclick="event.stopPropagation();" style="width:100%; padding:8px; font-size:0.75rem; background:#c1272d; color:white; border:none; border-radius:3px; font-weight:bold; cursor:default;">❌ REJECTED BY JCC</button>`;
+                } else {
+                    cardBg = "#f5eef8"; 
+                    cardBorder = "#8e44ad";
+                    badgeHtml = `<span style="float:right; font-size:0.6rem; color:#8e44ad; border:1px solid #8e44ad; padding:1px 4px; border-radius:3px; background:white;">AWAITING JCC</span>`;
+                    btnHtml = `<button onclick="event.stopPropagation();" style="width:100%; padding:8px; font-size:0.75rem; background:#8e44ad; color:white; border:none; border-radius:3px; font-weight:bold; cursor:wait; opacity:0.8;">⏳ AWAITING CONFIRMATION</button>`;
+                }
+            }
+
+            card.style.backgroundColor = cardBg;
+            card.style.borderLeftColor = cardBorder;
+
+            let cancelBtn = isGhost ? '' : `<button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#c1272d; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markCancelled(event, '${q.id}')">CANCEL</button>`;
+            let delBtn = isGhost ? '' : `<span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;" title="Delete">🗑️</span>`;
+
+            card.innerHTML = `
+                ${ghostBanner}
+                <div class="postcode-header" style="color:${titleColor}; align-items: ${headerAlignment};">${pcHeader}</div>
+                <div class="card-body">
+                    <div class="card-actions" style="justify-content: flex-end; padding-bottom:0; border:none; margin-bottom:5px;">
+                        ${delBtn}
+                    </div>
+                    
+                    <div style="font-weight:bold; color:${titleColor}; font-size: 0.85rem; margin-bottom: 8px; text-align:center;">
+                        ${q.customer_name} ${badgeHtml}
+                    </div>
+                    
+                    <div style="background: #ffffff; padding: 8px; border-radius: 4px; border: 1px dashed ${cardBorder}; margin-bottom: 10px;">
+                        <div class="detail-row" style="color:#c1272d;"><b>DUE:</b> <span style="font-weight:bold;">${q.coll_ref || '-'}</span></div>
+                        <div class="detail-row" style="color:#0056b3;"><b>ISO WEEK:</b> <span style="font-weight:bold;">${q.del_ref || '-'}</span></div>
+                    </div>
+
+                    ${btnHtml}
+                    
+                    <div style="display:flex; gap:5px; margin-top:5px;">
+                        ${cancelBtn}
+                    </div>
+                </div>`;
+                
+        } else {
+            let dispatchBadge = '';
+            if (q.dispatch_status === 'sent') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#f39c12; border:1px solid #f39c12; padding:1px 4px; border-radius:3px; background:white;">SENT</span>`;
+            if (q.dispatch_status === 'acknowledged') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#0056b3; border:1px solid #0056b3; padding:1px 4px; border-radius:3px; background:white;">ACKNOWLEDGED</span>`;
+            if (q.dispatch_status === 'arrived') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#2e7d32; border:1px solid #2e7d32; padding:1px 4px; border-radius:3px; background:white;">AT COLLECTION</span>`;
+            if (q.dispatch_status === 'loaded') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#8e44ad; border:1px solid #8e44ad; padding:1px 4px; border-radius:3px; background:white;">LOADED</span>`;
+            if (q.dispatch_status === 'del_arrived') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#d68910; border:1px solid #d68910; padding:1px 4px; border-radius:3px; background:white;">AT DELIVERY</span>`;
+            if (q.dispatch_status === 'tipped') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#1abc9c; border:1px solid #1abc9c; padding:1px 4px; border-radius:3px; background:white;">TIPPED</span>`;
+
+            let weightTag = q.total_weight ? `<span class="vehicle-tag" style="background:#666;">${q.total_weight}kg</span>` : '';
+            let palletTag = q.total_pallets ? `<span class="vehicle-tag" style="background:#d68910;">${q.total_pallets} Plt</span>` : '';
+
+            let extraActions = isGhost ? '' : `
+                <div style="display:flex; gap:5px; margin-top:10px; padding-top:8px; border-top: 1px solid #eee;">
+                    <button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#34495e; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markSubbed(event, '${q.id}')">SUBBED</button>
+                    <button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#c1272d; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markCancelled(event, '${q.id}')">CANCEL</button>
+                </div>`;
+
+            card.innerHTML = `
+                ${ghostBanner}
+                <div class="postcode-header" style="align-items: ${headerAlignment};">${pcHeader}</div>
+                <div class="card-body">
+                    ${actionsHtml}
+                    <div style="font-weight:bold; color:black; font-size: 0.8rem; margin-bottom: 5px;">${q.customer_name} ${dispatchBadge}</div>
+                    <div style="display:flex; gap:5px; margin:5px 0;">
+                        <span class="vehicle-tag">${q.vehicle_type}</span>
+                        ${palletTag}
+                        ${weightTag}
+                        <span class="price-tag">£<span class="data-price">${q.total_price}</span></span>
+                    </div>
+                    
+                    <span class="card-section-label contact">LIVE TIMESTAMPS (DEMURRAGE)</span>
+                    <div class="detail-row" style="color:#0056b3;"><b>Acknowledged:</b> <span>${tOnly(q.ack_timestamp)}</span></div>
+                    <div class="detail-row" style="color:#2e7d32;"><b>Arrived Coll:</b> <span>${tOnly(q.arrived_timestamp)}</span></div>
+                    <div class="detail-row" style="color:#8e44ad;"><b>Loaded:</b> <span>${tOnly(q.loaded_timestamp)}</span></div>
+                    <div class="detail-row" style="color:#d68910;"><b>Arrived Del:</b> <span>${tOnly(q.del_arrived_timestamp)}</span></div>
+                    <div class="detail-row" style="color:#1abc9c;"><b>Tipped:</b> <span>${tOnly(q.tipped_timestamp)}</span></div>
+
+                    <span class="card-section-label">COLLECTION</span>
+                    <div class="detail-row"><b>Street:</b> <span>${q.coll_street || '-'}</span></div>
+                    <div class="detail-row"><b>Town:</b> <span>${q.coll_town || '-'}</span></div>
+                    <div class="detail-row"><b>Time:</b> <span>${dtFormat(q.coll_datetime)}</span></div>
+                    <span class="card-section-label del">DELIVERY</span>
+                    <div class="detail-row"><b>Company:</b> <span>${q.del_cust_name || '-'}</span></div>
+                    <div class="detail-row"><b>Town:</b> <span>${q.del_town || '-'}</span></div>
+                    <div class="detail-row"><b>Time:</b> <span>${dtFormat(q.del_datetime)}</span></div>
+
+                    ${extraActions}
+                </div>`;
+        }
+        
+        return card;
+    }
+
+    // ==========================================
+    // 7. JOB DATA HANDLING & DB OPERATIONS
+    // ==========================================
+    function openNoteModal() {
+        document.getElementById('n_note_text').value = '';
+        openModal('modal-note');
+    }
+
+    async function saveNote() {
+        const text = document.getElementById('n_note_text').value;
+        if(!text) return alert("Please enter a note.");
+
+        const payload = {
+            customer_name: "📝 PLANNER NOTE",
+            coll_postcode: "NOTE",
+            del_postcode: "NOTE",
+            coll_ref: text, 
+            total_price: "0",
+            vehicle_type: "Any",
+            status: "pending", 
+            dispatch_status: "unsent",
+            coll_datetime: new Date().toISOString()
+        };
+        try {
+            await sb.from('quotes').insert([payload]);
+            closeModal('modal-note'); 
+            loadAll();
+        } catch(e) { console.error(e); alert("Error saving note."); }
+    }
+
+    async function saveJob() {
+        const id = document.getElementById('sys_job_id').value;
+        const payload = {
+            customer_name: document.getElementById('n_cust_name').value,
+            customer_phone: document.getElementById('n_cust_phone').value,
+            customer_email: document.getElementById('n_cust_email').value,
+            
+            // LEG 1 Collection
+            coll_postcode: document.getElementById('n_coll_pc').value,
+            coll_street: document.getElementById('n_coll_street').value,
+            coll_town: document.getElementById('n_coll_town').value,
+            coll_county: document.getElementById('n_coll_county').value,
+            coll_ref: document.getElementById('n_coll_ref').value,
+            coll_datetime: document.getElementById('n_coll_dt').value,
+            
+            // LEG 2 Collection
+            coll_postcode_2: document.getElementById('n_coll_pc_2').value,
+            coll_town_2: document.getElementById('n_coll_town_2').value,
+            
+            // LEG 1 Delivery
+            del_postcode: document.getElementById('n_del_pc').value,
+            del_cust_name: document.getElementById('n_del_name').value,
+            del_phone: document.getElementById('n_del_phone').value,
+            del_email: document.getElementById('n_del_email').value,
+            del_street: document.getElementById('n_del_street').value,
+            del_town: document.getElementById('n_8').value,
+            del_county: document.getElementById('n_9').value,
+            del_ref: document.getElementById('n_10').value,
+            del_datetime: document.getElementById('n_del_dt').value,
+
+            // LEG 2 Delivery
+            del_postcode_2: document.getElementById('n_del_pc_2').value,
+            del_town_2: document.getElementById('n_del_town_2').value,
+            
+            total_price: document.getElementById('n_price').value || "0",
+            total_pallets: document.getElementById('n_total_pallets').value,
+            total_weight: document.getElementById('n_total_weight').value,
+            vehicle_type: document.getElementById('n_veh_type').value
+        };
+        try {
+            if(id) await sb.from('quotes').update(payload).eq('id', id);
+            else { payload.status = 'pending'; await sb.from('quotes').insert([payload]); }
+            closeModal('modal-add'); loadAll();
+        } catch(e) { console.error(e); alert("Error saving."); }
+    }
+
+    function editJob(e, id) {
+        e.stopPropagation();
+        const j = allJobsRaw.find(x => x.id == id);
+        if(!j) return;
+        resetForm();
+        document.getElementById('sys_job_id').value = id;
+        document.getElementById('n_cust_name').value = j.customer_name || '';
+        document.getElementById('n_cust_phone').value = j.customer_phone || '';
+        document.getElementById('n_cust_email').value = j.customer_email || '';
+        
+        document.getElementById('n_coll_pc').value = j.coll_postcode || '';
+        document.getElementById('n_coll_street').value = j.coll_street || '';
+        document.getElementById('n_coll_town').value = j.coll_town || '';
+        document.getElementById('n_coll_county').value = j.coll_county || '';
+        document.getElementById('n_coll_ref').value = j.coll_ref || '';
+        document.getElementById('n_coll_dt').value = j.coll_datetime || '';
+
+        document.getElementById('n_coll_pc_2').value = j.coll_postcode_2 || '';
+        document.getElementById('n_coll_town_2').value = j.coll_town_2 || '';
+        
+        document.getElementById('n_del_pc').value = j.del_postcode || '';
+        document.getElementById('n_del_cust_name').value = j.del_cust_name || '';
+        document.getElementById('n_del_phone').value = j.del_phone || '';
+        document.getElementById('n_del_email').value = j.del_email || '';
+        document.getElementById('n_del_street').value = j.del_street || '';
+        document.getElementById('n_8').value = j.del_town || '';
+        document.getElementById('n_9').value = j.del_county || '';
+        document.getElementById('n_10').value = j.del_ref || '';
+        document.getElementById('n_del_dt').value = j.del_datetime || '';
+
+        document.getElementById('n_del_pc_2').value = j.del_postcode_2 || '';
+        document.getElementById('n_del_town_2').value = j.del_town_2 || '';
+        
+        document.getElementById('n_price').value = j.total_price || '0';
+        document.getElementById('n_total_pallets').value = j.total_pallets || '';
+        document.getElementById('n_total_weight').value = j.total_weight || '';
+        document.getElementById('n_veh_type').value = j.vehicle_type || 'Artic';
+        
+        openModal('modal-add');
+        switchFormTab('leg1');
+    }
+
+    async function markSubbed(e, id) {
+        e.stopPropagation();
+        if(confirm("Move this job to Subbed to Contractor?")) {
+            await sb.from('quotes').update({ status: 'subbed', assigned_slot: null, dispatch_status: 'unsent' }).eq('id', id);
+            loadAll();
+        }
+    }
+
+    async function markCancelled(e, id) {
+        e.stopPropagation();
+        if(confirm("Cancel this job?")) {
+            await sb.from('quotes').update({ status: 'cancelled', assigned_slot: null, dispatch_status: 'unsent' }).eq('id', id);
+            loadAll();
+        }
+    }
+
+    async function dispatchJob(e, id) {
+        e.stopPropagation();
+        const j = allJobsRaw.find(x => x.id == id);
+        if (!j || !j.assigned_slot || j.assigned_slot.includes('pool') || j.assigned_slot.includes('zone')) {
+            return alert("Please assign the job to a driver's row first before dispatching.");
+        }
+
+        const cellId = j.assigned_slot.split('-s')[0]; 
+        const dropdown = document.getElementById(`sel-${cellId}`);
+        if (!dropdown || !dropdown.value) return alert("Please select a driver in the row's dropdown first.");
+        
+        const driverName = dropdown.options[dropdown.selectedIndex].text.toLowerCase();
+        
+        try {
+            await sb.from('quotes').update({ 
+                dispatch_status: 'sent',
+                assigned_driver: driverName 
+            }).eq('id', id);
+            
+            loadAll(); 
+        } catch(err) {
+            alert("Error dispatching job: " + err.message);
+        }
+    }
+
+    async function duplicateJob(e, id) { e.stopPropagation(); const j = {...allJobsRaw.find(x => x.id == id)}; delete j.id; j.status = 'pending'; j.assigned_slot = null; await sb.from('quotes').insert([j]); loadAll(); }
+    async function splitJob(e, id) { e.stopPropagation(); if(confirm("Split this job?")) await duplicateJob(e, id); }
+    function queryRoute(e, pc1, pc2) { e.stopPropagation(); window.open(`https://www.google.com/maps/dir/${pc1}/${pc2}`, '_blank'); }
+    async function markPODReceived(e, id) { e.stopPropagation(); if(confirm("Move to Invoicing?")) { await sb.from('quotes').update({ status: 'completed' }).eq('id', id); loadAll(); } }
+    async function deleteJob(id) { if(confirm("Delete permanently?")) { await sb.from('quotes').delete().eq('id', id); loadAll(); } }
+
+    async function drop(ev) {
+        ev.preventDefault();
+        const id = ev.dataTransfer.getData("text");
+        const target = ev.currentTarget;
+        let finalTarget = target.classList.contains('job-card') ? target.parentElement : target;
+
+        const isPool = finalTarget.id === 'pool-container' || finalTarget.classList.contains('pool-zone') || finalTarget.closest('.pool-zone') !== null;
+
+        if (!isPool) {
+            const j = allJobsRaw.find(x => x.id == id);
+            if (j && j.coll_datetime) {
+                const match = finalTarget.id.match(/w(\d+).*s(\d+)/);
+                if (match) {
+                    const weekOffset = parseInt(match[1]);
+                    const dayIndex = parseInt(match[2]);
+
+                    let now = new Date();
+                    let dayNum = now.getDay() || 7;
+                    let first = now.getDate() - dayNum + 1 + (weekOffset * 7);
+                    let cellDate = new Date(now.getTime());
+                    cellDate.setDate(first + dayIndex);
+
+                    const jobDate = new Date(j.coll_datetime);
+                    
+                    const cellDateStr = cellDate.toLocaleDateString('en-GB');
+                    const jobDateStr = jobDate.toLocaleDateString('en-GB');
+
+                    if (cellDateStr !== jobDateStr) {
+                        const confirmMove = confirm(`⚠️ WARNING: Date Mismatch!\n\nThe collection date for this job is ${jobDateStr}, but you are placing it on ${cellDateStr}.\n\nAre you sure you want to place it here?`);
+                        if (!confirmMove) return; 
+                    }
+                }
+            }
+        }
+
+        let assignedDriver = null;
+        if (!isPool) {
+            const cellId = finalTarget.id.split('-s')[0]; 
+            const dropdown = document.getElementById(`sel-${cellId}`);
+            if (dropdown && dropdown.value) {
+                assignedDriver = dropdown.options[dropdown.selectedIndex].text.toLowerCase();
+                if (assignedDriver === 'unassigned') assignedDriver = null;
+            }
+        }
+
+        let updatePayload = { 
+            status: isPool ? 'pending' : 'assigned', 
+            assigned_slot: isPool ? null : finalTarget.id,
+            assigned_driver: assignedDriver 
+        };
+
+        if (isPool) updatePayload.dispatch_status = 'unsent'; 
+
+        await sb.from('quotes').update(updatePayload).eq('id', id);
+        loadAll();
+    }
+
+    // ==========================================
+    // 8. LIST VIEWS & PDF GENERATION
+    // ==========================================
+    function renderInvoiceList() {
+        const body = document.getElementById('invoice-list-body');
+        if (!body) return; body.innerHTML = "";
+        allJobsRaw.filter(j => j.status === 'completed').forEach(j => {
+            body.innerHTML += `<tr><td><input type="checkbox" class="invoice-check" value="${j.id}"></td><td>${formatUKDate(j.coll_datetime)}</td><td>${j.customer_name}</td><td>${j.coll_town} ➔ ${j.del_town}</td><td>£${j.total_price}</td><td><button class="pdf-btn" onclick="markAsBilled('${j.id}')">MARK BILLED</button></td></tr>`;
+        });
+    }
+
+    async function markAsBilled(id) { await sb.from('quotes').update({ status: 'billed' }).eq('id', id); loadAll(); }
+
+    function renderHistoryList() {
+        const body = document.getElementById('history-list-body');
+        if (!body) return; body.innerHTML = "";
+        allJobsRaw.filter(j => j.status === 'billed' || j.status === 'archived').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
+            body.innerHTML += `<tr style="cursor:pointer; border-bottom:1px solid #ccc;" onclick="editJob(event, '${j.id}')"><td>${formatUKDate(j.coll_datetime)}</td><td>${j.customer_name}</td><td>${j.coll_town} ➔ ${j.del_town}</td><td>-</td><td>${j.vehicle_type}</td><td>£${j.total_price}</td><td><button class="pdf-btn" onclick="generatePDF(event, '${j.id}')">📄 PDF</button></td></tr>`;
+        });
+    }
+
+    function renderSubbedList() {
+        const body = document.getElementById('subbed-list-body');
+        if (!body) return; body.innerHTML = "";
+        allJobsRaw.filter(j => j.status === 'subbed').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
+            body.innerHTML += `<tr style="cursor:pointer; border-bottom:1px solid #ccc;" onclick="editJob(event, '${j.id}')"><td>${formatUKDate(j.coll_datetime)}</td><td>${j.customer_name}</td><td>${j.coll_town} ➔ ${j.del_town}</td><td>${j.vehicle_type}</td><td>£${j.total_price}</td><td><button class="pdf-btn" onclick="generatePDF(event, '${j.id}')">📄 PDF</button></td></tr>`;
+        });
+    }
+
+    function renderCancelledList() {
+        const body = document.getElementById('cancelled-list-body');
+        if (!body) return; body.innerHTML = "";
+        allJobsRaw.filter(j => j.status === 'cancelled').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
+            body.innerHTML += `<tr style="cursor:pointer; border-bottom:1px solid #ccc;" onclick="editJob(event, '${j.id}')"><td>${formatUKDate(j.coll_datetime)}</td><td>${j.customer_name}</td><td>${j.coll_town} ➔ ${j.del_town}</td><td>${j.vehicle_type}</td><td>£${j.total_price}</td><td><button class="pdf-btn" onclick="generatePDF(event, '${j.id}')">📄 PDF</button></td></tr>`;
+        });
+    }
+
+    function generatePDF(event, id) {
+        event.stopPropagation();
+        const j = allJobsRaw.find(x => x.id == id);
+        const { jsPDF } = window.jspdf; 
+        const doc = new jsPDF();
+        
+        doc.setFontSize(18);
+        doc.setTextColor(193, 39, 45); 
+        doc.text(`FROST TRANSPORT - JOB MANIFEST`, 14, 20);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`Job Reference: ${j.id.slice(0,8).toUpperCase()}`, 14, 28);
+        doc.text(`Date Created: ${new Date(j.created_at).toLocaleDateString('en-GB')}`, 14, 34);
+
+        doc.autoTable({ 
+            startY: 40,
+            theme: 'grid',
+            headStyles: { fillColor: [26, 26, 26], textColor: [255, 255, 255] },
+            bodyStyles: { textColor: [0, 0, 0] },
+            head: [['Field', 'Details']],
+            body: [
+                ['Customer Name', j.customer_name || 'N/A'],
+                ['Customer Phone', j.customer_phone || 'N/A'],
+                ['Customer Email', j.customer_email || 'N/A'],
+                ['Vehicle Required', j.vehicle_type || 'N/A'],
+                ['Total Price', `£${j.total_price || '0.00'}`]
+            ] 
+        });
+
+        doc.autoTable({ 
+            startY: doc.lastAutoTable.finalY + 10,
+            theme: 'grid',
+            headStyles: { fillColor: [193, 39, 45], textColor: [255, 255, 255] },
+            head: [['COLLECTION DETAILS', '']],
+            body: [
+                ['Collection Ref', j.coll_ref || 'N/A'],
+                ['Address', `${j.coll_street || ''}, ${j.coll_town || ''}, ${j.coll_county || ''}`.replace(/^, |, $/g, '').trim() || 'N/A'],
+                ['Postcode', j.coll_postcode || 'N/A'],
+                ['Date & Time', j.coll_datetime ? j.coll_datetime.replace('T', ' ') : 'N/A']
+            ] 
+        });
+
+        doc.autoTable({ 
+            startY: doc.lastAutoTable.finalY + 10,
+            theme: 'grid',
+            headStyles: { fillColor: [46, 125, 50], textColor: [255, 255, 255] },
+            head: [['DELIVERY DETAILS (1)', '']],
+            body: [
+                ['Delivery Company', j.del_cust_name || 'N/A'],
+                ['Delivery Ref', j.del_ref || 'N/A'],
+                ['Address', `${j.del_street || ''}, ${j.del_town || ''}, ${j.del_county || ''}`.replace(/^, |, $/g, '').trim() || 'N/A'],
+                ['Postcode', j.del_postcode || 'N/A'],
+                ['Date & Time', j.del_datetime ? j.del_datetime.replace('T', ' ') : 'N/A']
+            ] 
+        });
+
+        if (j.del_postcode_2) {
+            doc.autoTable({ 
+                startY: doc.lastAutoTable.finalY + 10,
+                theme: 'grid',
+                headStyles: { fillColor: [214, 137, 16], textColor: [255, 255, 255] },
+                head: [['DELIVERY DETAILS (2 - Multidrop)', '']],
+                body: [
+                    ['Postcode', j.del_postcode_2 || 'N/A']
+                ] 
+            });
+        }
+
+        doc.save(`FROST_Job_${j.id.slice(0,5)}.pdf`);
+    }
+
+    function filterHistory() {
+        const q = document.getElementById('history-search').value.toLowerCase();
+        document.querySelectorAll('#history-list-body tr, #subbed-list-body tr, #cancelled-list-body tr').forEach(r => { 
+            r.style.display = r.innerText.toLowerCase().includes(q) ? "" : "none"; 
+        });
+    }
+
+    // ==========================================
+    // 9. LEAFLET MAP & DROP SPOTS LOGIC
+    // ==========================================
+    async function updateMapPins() {
+        if (!fleetMap) return;
+
+        mapMarkers.forEach(m => fleetMap.removeLayer(m));
+        mapMarkers = [];
+
+        const activeJobs = allJobsRaw.filter(j => 
+            (j.status === 'assigned' || j.status === 'pending') && 
+            j.del_postcode && 
+            j.del_postcode.trim() !== '' &&
+            j.del_postcode !== 'NOTE' &&
+            j.del_postcode !== 'BOOK INSPECTION'
+        );
+
+        if (activeJobs.length === 0) return;
+
+        const postcodes = [...new Set(activeJobs.map(j => j.del_postcode.toUpperCase().replace(/\s+/g, '')))];
+        let coords = {};
+
+        for (let i = 0; i < postcodes.length; i += 100) {
+            const chunk = postcodes.slice(i, i + 100);
+            try {
+                const res = await fetch('https://api.postcodes.io/postcodes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ postcodes: chunk })
+                });
+                const data = await res.json();
+                if (data.status === 200 && data.result) {
+                    data.result.forEach(r => {
+                        if (r.result) {
+                            coords[r.query] = { lat: r.result.latitude, lng: r.result.longitude };
+                        }
+                    });
+                }
+            } catch(e) { console.error("Map Geocoding Error:", e); }
+        }
+
+        activeJobs.forEach(j => {
+            const pc = j.del_postcode.toUpperCase().replace(/\s+/g, '');
+            if (coords[pc]) {
+                const dt = j.del_datetime ? new Date(j.del_datetime).toLocaleString('en-GB', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : 'Time TBC';
+                const marker = L.marker([coords[pc].lat, coords[pc].lng]).addTo(fleetMap);
+                
+                marker.bindPopup(`
+                    <div style="font-family:Segoe UI, sans-serif; font-size:0.85rem; line-height:1.4;">
+                        <strong style="color:var(--frost-red); font-size:0.95rem;">${j.customer_name || 'Unknown'}</strong><br>
+                        <b>Town:</b> ${j.del_town || 'Unknown'}<br>
+                        <b>Postcode:</b> ${j.del_postcode}<br>
+                        <b>Unloading Time:</b> <span style="color:#0056b3;">${dt}</span><br>
+                        <hr style="border:0; border-top:1px solid #ccc; margin:5px 0;">
+                        <span style="font-size:0.75rem; color:#555;"><b>Vehicle:</b> ${j.vehicle_type} | <b>Driver:</b> <span style="text-transform:capitalize;">${j.assigned_driver || 'Unassigned'}</span></span>
+                    </div>
+                `);
+                mapMarkers.push(marker);
+            }
+        });
+    }
+
+    // ==========================================
+    // 10. UI UPDATERS & UTILS
+    // ==========================================
+    function updateCalculations() {
+        let grand = 0; const boardId = `planner-w${currentWeekOffset}`;
+        vehicles.forEach((_, i) => {
+            let sum = 0; document.querySelectorAll(`[id^="${boardId}-dr${i}-s"] .data-price`).forEach(p => sum += parseFloat(p.innerText) || 0);
+            const el = document.getElementById(`${boardId}-total-${i}`);
+            if (el) el.innerText = `Week: £${sum.toFixed(2)}`;
+            grand += sum;
+        });
+        document.getElementById('grand-total').innerText = "£" + grand.toFixed(2);
+    }
+
+    function switchView(view) {
+        document.querySelectorAll('.week-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('planner-board').style.display = 'none';
+        document.getElementById('invoicing-view').style.display = 'none';
+        document.getElementById('history-view').style.display = 'none';
+        document.getElementById('subbed-view').style.display = 'none';
+        document.getElementById('cancelled-view').style.display = 'none';
+        document.getElementById('map-view').style.display = 'none';
+
+        if (view === 'invoice') { document.getElementById('invoicing-view').style.display = 'block'; document.getElementById('btn-invoice').classList.add('active'); }
+        else if (view === 'history') { document.getElementById('history-view').style.display = 'block'; document.getElementById('btn-hist').classList.add('active'); }
+        else if (view === 'subbed') { document.getElementById('subbed-view').style.display = 'block'; document.getElementById('btn-subbed').classList.add('active'); }
+        else if (view === 'cancelled') { document.getElementById('cancelled-view').style.display = 'block'; document.getElementById('btn-cancelled').classList.add('active'); }
+        else if (view === 'map') { 
+            document.getElementById('map-view').style.display = 'flex'; document.getElementById('map-view').style.flexDirection = 'column';
+            document.getElementById('btn-map').classList.add('active'); 
+            
+            if (!fleetMap) {
+                fleetMap = L.map('map-container').setView([53.48, -2.24], 6); 
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(fleetMap);
+            }
+            
+            setTimeout(() => { 
+                fleetMap.invalidateSize(); 
+                updateMapPins();
+            }, 100);
+            
+        } else {
+            currentWeekOffset = view; document.getElementById('planner-board').style.display = 'block';
+            document.getElementById(`btn-w${view}`).classList.add('active');
+            
+            [0,1,2,3].forEach(i => {
+                const tbl = document.getElementById(`table-w${i}`);
+                if (tbl) tbl.style.display = (i === view ? 'table' : 'none');
+            });
+
+            const info = getWeekInfo(view); document.getElementById('week-display-box').innerText = `WK ${info.week} | MON ${info.date}`;
+            updateDateHeaders(view); updateCalculations();
+            
+            // Filter Unassigned Pool by week
+            document.querySelectorAll('#unassigned-sidebar .job-card').forEach(card => {
+                const targetWeek = parseInt(card.dataset.targetWeek) || 0;
+                
+                if (targetWeek === view || (targetWeek <= 0 && view === 0) || (targetWeek >= 3 && view === 3)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    }
+
+    function getWeekInfo(offset) {
+        let now = new Date(); 
+        let dayNum = now.getDay() || 7; 
+        let mon = new Date(now.setDate(now.getDate() - dayNum + 1 + (offset * 7)));
+        let d = new Date(Date.UTC(mon.getFullYear(), mon.getMonth(), mon.getDate()));
+        let dNum = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - dNum);
+        let yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+        let weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+        return { week: weekNo, date: mon.toLocaleDateString('en-GB') };
+    }
+
+    function updateDateHeaders(offset) {
+        let now = new Date(); 
+        let dayNum = now.getDay() || 7; 
+        let first = now.getDate() - dayNum + 1 + (offset * 7);
+        
+        ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach((dayName, day) => {
+            let d = new Date(now.getTime());
+            d.setDate(first + day);
+            const dateHeader = document.getElementById(`date-w${offset}-d${day}`);
+            if (dateHeader) {
+                dateHeader.innerHTML = `<div class="day-name">${dayName}</div><div class="day-date">${d.toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'})}</div>`;
+            }
+        });
+    }
+
+    function toggleMultidropUI() { document.getElementById('multidrop_input_container').style.display = document.getElementById('toggle_multidrop').checked ? 'block' : 'none'; }
+    function resetForm() {
+        document.getElementById('sys_job_id').value = '';
+        ['n_cust_name','n_cust_phone', 'n_cust_email','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
+        switchFormTab('leg1');
+    }
+
+    function formatUKDate(iso) { if(!iso) return '-'; return new Date(iso).toLocaleDateString('en-GB'); }
+    function toggleWeekend() { 
+        document.body.classList.toggle('show-weekend'); 
+        const isWeekend = document.body.classList.contains('show-weekend');
+        document.getElementById('pool-day-sat').style.display = isWeekend ? 'block' : 'none';
+        document.getElementById('pool-day-sun').style.display = isWeekend ? 'block' : 'none';
+    }
+    function toggleUnassigned() { document.getElementById('unassigned-sidebar').classList.toggle('open'); }
+    function allowDrop(ev) { ev.preventDefault(); }
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; switchFormTab('leg1');}
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function closeModalOnOutsideClick(e, id) { if(e.target.id === id) closeModal(id); }
+
+    function restoreDrivers(jobs) {
+        jobs.forEach(q => {
+            if (q.status === 'driver_config') {
+                const el = document.getElementById(q.assigned_slot);
+                if (el) {
+                    el.value = q.driver_phone || q.customer_phone || "";
+                    updateTrailerDisplay(el);
+                }
+            }
+        });
+    }
+
+    // ==========================================
+    // 11. POSTCODES.IO INTEGRATION (LOOKUP)
+    // ==========================================
+    const ukRegions = {
+        "AB": "Aberdeen", "AL": "St Albans", "B": "Birmingham", "BA": "Bath", "BD": "Bradford", 
+        "BH": "Bournemouth", "BL": "Bolton", "BN": "Brighton", "BR": "Bromley", "BS": "Bristol", 
+        "BT": "Belfast", "CA": "Carlisle", "CB": "Cambridge", "CF": "Cardiff", "CH": "Chester", 
+        "CM": "Chelmsford", "CO": "Colchester", "CR": "Croydon", "CT": "Canterbury", "CV": "Coventry", 
+        "CW": "Crewe", "DA": "Dartford", "DD": "Dundee", "DE": "Derby", "DG": "Dumfries", "DH": "Durham", 
+        "DL": "Darlington", "DN": "Doncaster", "DT": "Dorchester", "DY": "Dudley", "E": "East London", 
+        "EC": "East Central London", "EH": "Edinburgh", "EN": "Enfield", "EX": "Exeter", "FK": "Falkirk", 
+        "FY": "Blackpool", "G": "Glasgow", "GL": "Gloucester", "GU": "Guildford", "HA": "Harrow", 
+        "HD": "Huddersfield", "HG": "Harrogate", "HP": "Hemel Hempstead", "HR": "Hereford", 
+        "HS": "Outer Hebrides", "HU": "Hull", "HX": "Halifax", "IG": "Ilford", "IP": "Ipswich", 
+        "IV": "Inverness", "KA": "Kilmarnock", "KT": "Kingston upon Thames", "KW": "Kirkwall", 
+        "KY": "Kirkcaldy", "L": "Liverpool", "LA": "Lancaster", "LD": "Llandrindod Wells", 
+        "LE": "Leicester", "LL": "Llandudno", "LN": "Lincoln", "LS": "Leeds", "LU": "Luton", 
+        "M": "Manchester", "ME": "Medway", "MK": "Milton Keynes", "ML": "Motherwell", "N": "North London", 
+        "NE": "Newcastle", "NG": "Nottingham", "NN": "Northampton", "NP": "Newport", "NR": "Norwich", 
+        "NW": "North West London", "OL": "Oldham", "OX": "Oxford", "PA": "Paisley", "PE": "Peterborough", 
+        "PH": "Perth", "PL": "Plymouth", "PO": "Portsmouth", "PR": "Preston", "RG": "Reading", 
+        "RH": "Redhill", "RM": "Romford", "S": "Sheffield", "SA": "Swansea", "SE": "South East London", 
+        "SG": "Stevenage", "SK": "Stockport", "SL": "Slough", "SM": "Sutton", "SN": "Swindon", 
+        "SO": "Southampton", "SP": "Salisbury", "SR": "Sunderland", "SS": "Southend-on-Sea", 
+        "ST": "Stoke-on-Trent", "SW": "South West London", "SY": "Shrewsbury", "TA": "Taunton", 
+        "TD": "Galashiels", "TF": "Telford", "TN": "Tonbridge", "TQ": "Torquay", "TR": "Truro", 
+        "TS": "Cleveland", "TW": "Twickenham", "UB": "Southall", "W": "West London", "WA": "Warrington", 
+        "WC": "West Central London", "WD": "Watford", "WF": "Wakefield", "WN": "Wigan", "WR": "Worcester", 
+        "WS": "Walsall", "WV": "Wolverhampton", "YO": "York", "ZE": "Lerwick"
+    };
+
+    let pcDebounceTimer;
+    
+    function openPostcodeSearch() {
+        document.getElementById('pc-search-input').value = '';
+        document.getElementById('pc-search-result').innerHTML = '<span style="color:#aaa; font-weight:normal; font-size:0.9rem;">Waiting for input...</span>';
+        openModal('modal-postcode');
+        setTimeout(() => document.getElementById('pc-search-input').focus(), 100);
+    }
+
+    async function lookupPostcode() {
+        let input = document.getElementById('pc-search-input').value.toUpperCase().replace(/\s+/g, '');
+        let resultBox = document.getElementById('pc-search-result');
+        
+        clearTimeout(pcDebounceTimer);
+        
+        if (input.length === 0) {
+            resultBox.innerHTML = '<span style="color:#aaa; font-weight:normal; font-size:0.9rem;">Waiting for input...</span>';
+            return;
+        }
+
+        let prefixMatch = input.match(/^[A-Z]{1,2}/);
+        let region = "Unknown Region";
+        if (prefixMatch && ukRegions[prefixMatch[0]]) {
+            region = ukRegions[prefixMatch[0]];
+        }
+
+        if (input.length <= 2) {
+            resultBox.innerHTML = `<span style="color:var(--frost-blue); font-size:1.1rem;">Area: ${region}</span><br><span style="font-size:0.75rem; color:#888; margin-top:5px; font-weight:normal;">Add numbers (e.g., ${input}1) for Town & County</span>`;
+            return;
+        }
+
+        resultBox.innerHTML = `<span style="color:#888; font-size:0.9rem;">Searching database...</span>`;
+
+        pcDebounceTimer = setTimeout(async () => {
+            try {
+                let url = `https://api.postcodes.io/postcodes/${input}`;
+                let res = await fetch(url);
+                
+                if (!res.ok) {
+                    url = `https://api.postcodes.io/outcodes/${input}`;
+                    res = await fetch(url);
+                }
+
+                if (res.ok) {
+                    let data = await res.json();
+                    let getPrimary = (val) => Array.isArray(val) ? val[0] : val;
+                    
+                    let admin_district = getPrimary(data.result.admin_district);
+                    let admin_county = getPrimary(data.result.admin_county);
+                    let parish = getPrimary(data.result.parish);
+
+                    let townStr = admin_district || parish || region;
+                    let countyStr = admin_county || admin_district || 'N/A';
+
+                    resultBox.innerHTML = `
+                        <div style="color:var(--price-green); font-size:1.2rem; margin-bottom:4px;">${townStr}</div>
+                        <div style="color:#555; font-size:0.95rem;">County: ${countyStr}</div>
+                        <div style="color:var(--frost-blue); font-size:0.75rem; margin-top:6px; padding-top:6px; border-top:1px solid #ddd;">Main Area: ${region}</div>
+                    `;
+                } else {
+                    resultBox.innerHTML = `<span style="color:var(--frost-blue); font-size:1.1rem;">Area: ${region}</span><br><span style="font-size:0.8rem; color:var(--frost-red); margin-top:5px;">Awaiting more numbers...</span>`;
+                }
+            } catch (err) {
+                resultBox.innerHTML = `<span style="color:var(--frost-blue)">Area: ${region}</span>`;
+            }
+        }, 400); 
+    }
+
+    // ==========================================
+    // 12. INITIALIZATION & LISTENERS
+    // ==========================================
+    document.addEventListener('change', async (e) => {
+        if (e.target.classList.contains('driver-sel')) {
+            const selectId = e.target.id; 
+            const driverPhone = e.target.value;
+            
+            updateTrailerDisplay(e.target);
+
+            const { data: existing } = await sb.from('quotes').select('id').eq('status', 'driver_config').eq('assigned_slot', selectId);
+
+            if (existing && existing.length > 0) {
+                await sb.from('quotes').update({ driver_phone: driverPhone, customer_phone: driverPhone }).eq('id', existing[0].id);
+            } else {
+                await sb.from('quotes').insert([{ 
+                    status: 'driver_config', customer_name: "DRIVER_CONFIG", assigned_slot: selectId, driver_phone: driverPhone, customer_phone: driverPhone 
+                }]);
+            }
+        }
+    });
+
+    // Listen for ALL quote changes to sync boards instantly across the office
+    sb.channel('quotes-tracker')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, payload => {
+            console.log("Planner sync update received!");
+            // Only update if this specific planner isn't currently dragging a card
+            if (!isDragging) {
+                loadAll();
+            }
+        })
+        .subscribe();
+
+    sb.channel('jcc-tracker')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jcc_bookings' }, payload => {
+            console.log("JCC Booking Status Updated by Garage!", payload);
+            
+            let existingBooking = allJccBookings.find(b => b.id === payload.new.id);
+            
+            if (existingBooking) {
+                if (payload.new.accepted && !existingBooking.accepted) {
+                    playAlert('accept');
+                } else if (payload.new.rejected && !existingBooking.rejected) {
+                    playAlert('reject');
+                }
+            } else {
+                if (payload.new.accepted) playAlert('accept');
+                if (payload.new.rejected) playAlert('reject');
+            }
+
+            if (!isDragging) loadAll(); 
+        })
+        .subscribe();
+
+    window.onload = async () => { 
+        await checkMaintenance(); 
+        await loadAll(); 
+    };
+</script>
+</body>
+</html>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
