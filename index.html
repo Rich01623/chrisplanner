@@ -874,6 +874,39 @@
                 if (cD !== dD) isON = true;
             }
 
+            let targetWeek = getWeekOffsetFromNow(q.coll_datetime);
+            let delTargetWeek = q.del_datetime ? getWeekOffsetFromNow(q.del_datetime) : targetWeek;
+            let maxWeek = Math.max(targetWeek, delTargetWeek);
+
+            // --- NEW: AUTO-ARCHIVE HISTORY ENGINE (SUNDAY MIDNIGHT CLEANUP) ---
+            if (maxWeek < 0) {
+                if (q.status === 'assigned' || q.status === 'pending') {
+                    q.status = 'archived'; // Move to history
+                    sb.from('quotes').update({ status: 'archived', assigned_slot: null }).eq('id', q.id);
+                    return; // Skip rendering
+                } else if (q.status === 'completed') {
+                    // Remove from active board, but keep in Invoice Queue
+                    if (q.assigned_slot) {
+                        q.assigned_slot = null;
+                        sb.from('quotes').update({ assigned_slot: null }).eq('id', q.id);
+                    }
+                    return; // Skip rendering
+                }
+            }
+
+            // --- MIDNIGHT ROLLOVER FIX ---
+            if (q.assigned_slot && q.assigned_slot.startsWith('planner-w')) {
+                let savedWeekMatch = q.assigned_slot.match(/w(\d+)/);
+                if (savedWeekMatch) {
+                    let savedWeek = parseInt(savedWeekMatch[1]);
+                    if (savedWeek !== targetWeek && targetWeek >= 0 && targetWeek <= 3) {
+                        let newSlot = q.assigned_slot.replace(`w${savedWeek}`, `w${targetWeek}`);
+                        q.assigned_slot = newSlot; 
+                        sb.from('quotes').update({ assigned_slot: newSlot }).eq('id', q.id); 
+                    }
+                }
+            }
+
             const card = createCardElement(q, false, isON);
             
             let slot = null;
@@ -895,7 +928,6 @@
             slot.appendChild(card);
 
             if (isON && q.assigned_slot && !q.assigned_slot.includes('pool')) {
-                let delTargetWeek = getWeekOffsetFromNow(q.del_datetime);
                 let delDateObj = new Date(q.del_datetime);
                 let delDayIndex = (delDateObj.getDay() + 6) % 7; 
                 
@@ -926,7 +958,6 @@
         }
     }
 
-    // NEW: Safe Value Extraction Helper for Card Headers
     const getVal = (primary, fallback, defaultStr) => {
         let p = (primary || '').trim();
         let f = (fallback || '').trim();
@@ -989,7 +1020,6 @@
         } else {
             headerAlignment = "flex-start";
             
-            // --- NEW: FALLBACK ROUTING LOGIC ---
             let hasColl2 = (q.coll_postcode_2 && q.coll_postcode_2.trim() !== '') || (q.coll_town_2 && q.coll_town_2.trim() !== '');
             let hasDel2 = (q.del_postcode_2 && q.del_postcode_2.trim() !== '') || (q.del_town_2 && q.del_town_2.trim() !== '');
 
@@ -1176,7 +1206,6 @@
     // 7. JOB DATA HANDLING & DB OPERATIONS
     // ==========================================
     
-    // CUSTOMER AUTO-FILL LOGIC
     function showCustomerSuggestions() {
         const input = document.getElementById('n_cust_name').value.toLowerCase();
         const box = document.getElementById('cust-suggestions');
@@ -1271,7 +1300,6 @@
     async function saveJob() {
         const id = document.getElementById('sys_job_id').value;
         
-        // STANDARD PAYLOAD (Only Columns Guaranteed to Exist)
         const payload = {
             customer_name: document.getElementById('n_cust_name').value,
             customer_phone: document.getElementById('n_cust_phone').value,
@@ -1302,12 +1330,10 @@
             vehicle_type: document.getElementById('n_veh_type').value
         };
 
-        // NEW TABS DATA
         let cp2 = document.getElementById('n_coll_pc_2').value;
         let ct2 = document.getElementById('n_coll_town_2').value;
         let dt2 = document.getElementById('n_del_town_2').value;
 
-        // ONLY add these keys to the payload if they are not empty. 
         if (cp2) payload.coll_postcode_2 = cp2;
         if (ct2) payload.coll_town_2 = ct2;
         if (dt2) payload.del_town_2 = dt2;
@@ -1323,7 +1349,6 @@
             let errorObj = null;
 
             if (!id && diffHours > 24) {
-                // LEG 1: Collection to YARD
                 let p1 = { ...payload };
                 p1.del_postcode = "YARD";
                 p1.del_town = "YARD";
@@ -1334,7 +1359,6 @@
                 delete p1.del_town_2; 
                 p1.status = 'pending';
 
-                // LEG 2: YARD to Delivery
                 let p2 = { ...payload };
                 p2.customer_name = payload.customer_name + " (Leg 2)";
                 p2.coll_postcode = "YARD";
