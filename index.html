@@ -283,9 +283,18 @@
 
         <!-- Drop Spots Map View -->
         <section id="map-view" style="display:none; padding:10px; height:100%; box-sizing:border-box;">
-            <div style="background:var(--frost-black); color:white; padding:10px; border-radius:8px 8px 0 0; font-weight:bold; display:flex; justify-content:space-between;">
-                <span>🚚 Drop Spots Visualization <span style="font-size:0.75rem; margin-left:10px; font-weight:normal; background:#c1272d; padding:2px 6px; border-radius:3px;">🔴 > 6h Idle / Empty</span></span>
-                <span style="font-size:0.8rem; color:#aaa; font-weight:normal;">*Only valid, full postcodes are displayed</span>
+            <div style="background:var(--frost-black); color:white; padding:10px; border-radius:8px 8px 0 0; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <span>🚚 Drop Spots Visualization</span>
+                    <!-- NEW: Routing Toggle -->
+                    <label style="font-size:0.8rem; font-weight:normal; cursor:pointer; color:#eee; display:flex; align-items:center; gap:5px;">
+                        <input type="checkbox" id="toggle-routing" onchange="clearNextJobRouting()"> Show Next Route
+                    </label>
+                </div>
+                <div>
+                    <span style="font-size:0.75rem; margin-right:10px; font-weight:normal; background:#2e7d32; padding:2px 6px; border-radius:3px;">🟢 Next Coll</span>
+                    <span style="font-size:0.75rem; font-weight:normal; background:#c1272d; padding:2px 6px; border-radius:3px;">🔴 > 6h Idle / Empty</span>
+                </div>
             </div>
             <div id="map-container" style="border-radius: 0 0 8px 8px;"></div>
         </section>
@@ -526,7 +535,10 @@
     let fleetMap = null;
     let mapMarkers = [];
     
-    // Prevents board refresh if user is currently dragging a card
+    // NEW: Routing variables
+    let routeLineLayer = null;
+    let nextJobPinLayer = null;
+    
     let isDragging = false;
 
     // ==========================================
@@ -852,6 +864,7 @@
 
         document.querySelectorAll('.job-card').forEach(c => c.remove());
 
+        // --- VOR LOCKDOWN LOGIC ---
         document.querySelectorAll('.vor-active, .vor-header').forEach(el => {
             el.classList.remove('vor-active', 'vor-header');
         });
@@ -1723,11 +1736,19 @@
     // ==========================================
     // 9. LEAFLET MAP & DROP SPOTS LOGIC
     // ==========================================
+    function clearNextJobRouting() {
+        if (routeLineLayer && fleetMap) fleetMap.removeLayer(routeLineLayer);
+        if (nextJobPinLayer && fleetMap) fleetMap.removeLayer(nextJobPinLayer);
+        routeLineLayer = null;
+        nextJobPinLayer = null;
+    }
+
     async function updateMapPins() {
         if (!fleetMap) return;
 
         mapMarkers.forEach(m => fleetMap.removeLayer(m));
         mapMarkers = [];
+        clearNextJobRouting();
 
         const activeJobs = allJobsRaw.filter(j => 
             (j.status === 'assigned' || j.status === 'pending') && 
@@ -1739,7 +1760,13 @@
 
         if (activeJobs.length === 0) return;
 
-        const postcodes = [...new Set(activeJobs.map(j => j.del_postcode.toUpperCase().replace(/\s+/g, '')))];
+        let rawPostcodes = [];
+        activeJobs.forEach(j => {
+            if(j.del_postcode) rawPostcodes.push(j.del_postcode);
+            if(j.coll_postcode) rawPostcodes.push(j.coll_postcode);
+        });
+        const postcodes = [...new Set(rawPostcodes.map(pc => pc.toUpperCase().replace(/\s+/g, '')))];
+        
         let coords = {};
 
         for (let i = 0; i < postcodes.length; i += 100) {
@@ -1766,10 +1793,10 @@
             if (coords[pc]) {
                 const dt = j.del_datetime ? new Date(j.del_datetime).toLocaleString('en-GB', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : 'Time TBC';
                 
-                // --- NEW: IDLE TIME ENGINE ---
                 let isIdle = false;
                 let nextJobTimeStr = "None scheduled";
                 let diffHoursStr = "";
+                let nextJob = null;
 
                 if (j.assigned_driver && j.del_datetime) {
                     let currentDelTime = new Date(j.del_datetime).getTime();
@@ -1783,7 +1810,7 @@
 
                     if (nextJobs.length > 0) {
                         nextJobs.sort((a, b) => new Date(a.coll_datetime).getTime() - new Date(b.coll_datetime).getTime());
-                        let nextJob = nextJobs[0];
+                        nextJob = nextJobs[0];
                         let nextCollTime = new Date(nextJob.coll_datetime).getTime();
 
                         let diffHours = (nextCollTime - currentDelTime) / (1000 * 60 * 60);
@@ -1807,7 +1834,6 @@
                     popupAnchor: [1, -34],
                     shadowSize: [41, 41]
                 }) : new L.Icon.Default();
-                // --- END IDLE TIME ENGINE ---
 
                 const marker = L.marker([coords[pc].lat, coords[pc].lng], { icon: markerIcon }).addTo(fleetMap);
                 
@@ -1822,9 +1848,51 @@
                         <span style="font-size:0.75rem; color:#555;"><b>Vehicle:</b> ${j.vehicle_type} | <b>Driver:</b> <span style="text-transform:capitalize;">${j.assigned_driver || 'Unassigned'}</span></span>
                     </div>
                 `);
+
+                marker.on('click', () => {
+                    clearNextJobRouting();
+                    if (!document.getElementById('toggle-routing').checked) return;
+                    
+                    if (!isIdle && nextJob && nextJob.coll_postcode) {
+                        let nextPc = nextJob.coll_postcode.toUpperCase().replace(/\s+/g, '');
+                        if (coords[nextPc]) {
+                            
+                            let greenIcon = new L.Icon({
+                                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                                iconSize: [25, 41],
+                                iconAnchor: [12, 41],
+                                popupAnchor: [1, -34],
+                                shadowSize: [41, 41]
+                            });
+                            
+                            nextJobPinLayer = L.marker([coords[nextPc].lat, coords[nextPc].lng], {icon: greenIcon}).addTo(fleetMap);
+                            
+                            let nTime = new Date(nextJob.coll_datetime).toLocaleString('en-GB', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+                            nextJobPinLayer.bindPopup(`
+                                <div style="font-family:Segoe UI, sans-serif; font-size:0.85rem; line-height:1.4;">
+                                    <strong style="color:#2e7d32; font-size:0.95rem;">${nextJob.customer_name || 'Unknown'} (Next Job)</strong><br>
+                                    <b>Town:</b> ${nextJob.coll_town || 'Unknown'}<br>
+                                    <b>Postcode:</b> ${nextJob.coll_postcode}<br>
+                                    <b>Loading Time:</b> <span style="color:#0056b3;">${nTime}</span><br>
+                                    <hr style="border:0; border-top:1px solid #ccc; margin:5px 0;">
+                                    <span style="font-size:0.75rem; color:#555;"><b>Vehicle:</b> ${nextJob.vehicle_type} | <b>Driver:</b> <span style="text-transform:capitalize;">${nextJob.assigned_driver || 'Unassigned'}</span></span>
+                                </div>
+                            `);
+                            
+                            routeLineLayer = L.polyline([
+                                [coords[pc].lat, coords[pc].lng],
+                                [coords[nextPc].lat, coords[nextPc].lng]
+                            ], {color: '#2e7d32', weight: 4, dashArray: '8, 8'}).addTo(fleetMap);
+                        }
+                    }
+                });
+
                 mapMarkers.push(marker);
             }
         });
+
+        fleetMap.on('popupclose', clearNextJobRouting);
     }
 
     // ==========================================
@@ -2081,7 +2149,7 @@
     sb.channel('quotes-tracker')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, payload => {
             console.log("Planner sync update received!");
-            // Only update if this specific planner isn't currently dragging a card
+            // Only update if this specific planner isnt currently dragging a card
             if (!isDragging) {
                 loadAll();
             }
