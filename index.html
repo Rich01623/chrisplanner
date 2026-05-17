@@ -286,7 +286,7 @@
             <div style="background:var(--frost-black); color:white; padding:10px; border-radius:8px 8px 0 0; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
                 <div style="display:flex; align-items:center; gap:15px;">
                     <span>🚚 Drop Spots Visualization</span>
-                    <!-- NEW: Routing Toggle -->
+                    <!-- Routing Toggle -->
                     <label style="font-size:0.8rem; font-weight:normal; cursor:pointer; color:#eee; display:flex; align-items:center; gap:5px;">
                         <input type="checkbox" id="toggle-routing" onchange="clearNextJobRouting()"> Show Next Route
                     </label>
@@ -506,25 +506,23 @@
         "KU70 XNW", "KU70 XNX", "FJ69 WMC", "DK69 ZHM"
     ];
 
-    // ALL DRIVERS ALPHABETICALLY SORTED (WITH UNASSIGNED PINNED TO TOP)
     const drivers = [
         { name: "Unassigned", phone: "" },
         { name: "Andy Elston", phone: "447999811320" },
         { name: "Andy West", phone: "447734369810" },
         { name: "Callum Lee", phone: "447359390140" },
+        { name: "Johannes Van Neerven", phone: "447701238575" },
         { name: "Josh Harrison", phone: "447701238574" },
         { name: "Lee Woodcock", phone: "447701238577" },
         { name: "Marc Wickham", phone: "447701238576" },
-        { name: "Marco Marco", phone: "447759926814" },
+        { name: "Marco Marco", phone: "447701238566" },
         { name: "Neil Woods", phone: "447701238567" },
-        { name: "Rhys Hill", phone: "447701238572" },
+        { name: "Rhys Hill", phone: "447701238562" },
         { name: "Ricardo Morais", phone: "447746509636" },
-        { name: "Richard", phone: "447701238570" },
         { name: "Richard Spence", phone: "447701238570" },
         { name: "Roy Taylor", phone: "447701238558" },
-        { name: "Sean Walton", phone: "447792931496" },
-        { name: "Stuart Sleigh", phone: "447701238575" },
-        { name: "Suaunis Butnorious", phone: "447546702780" }
+        { name: "Sean Walton", phone: "447701238572" },
+        { name: "Svagunas Butnorius", phone: "447701238576" }
     ];
 
     let allJobsRaw = [];
@@ -535,7 +533,7 @@
     let fleetMap = null;
     let mapMarkers = [];
     
-    // NEW: Routing variables
+    // Routing variables
     let routeLineLayer = null;
     let nextJobPinLayer = null;
     
@@ -864,7 +862,6 @@
 
         document.querySelectorAll('.job-card').forEach(c => c.remove());
 
-        // --- VOR LOCKDOWN LOGIC ---
         document.querySelectorAll('.vor-active, .vor-header').forEach(el => {
             el.classList.remove('vor-active', 'vor-header');
         });
@@ -1868,10 +1865,10 @@
                             
                             nextJobPinLayer = L.marker([coords[nextPc].lat, coords[nextPc].lng], {icon: greenIcon}).addTo(fleetMap);
                             
-                            let nTime = new Date(nextJob.coll_datetime).toLocaleString('en-GB', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+                            let nTime = new Date(nextJob.coll_datetime).toLocaleString('en-GB', {weekday:'short', hour:'2-digit', minute:'2-digit'});
                             nextJobPinLayer.bindPopup(`
                                 <div style="font-family:Segoe UI, sans-serif; font-size:0.85rem; line-height:1.4;">
-                                    <strong style="color:#2e7d32; font-size:0.95rem;">${nextJob.customer_name || 'Unknown'} (Next Job)</strong><br>
+                                    <strong style="color:#2e7d32; font-size:0.95rem;">${nextJob.customer_name || 'Unknown'} <span style="font-size:0.65rem; background:#2e7d32; color:white; padding:2px 4px; border-radius:3px;">Next Job</span></strong><br>
                                     <b>Town:</b> ${nextJob.coll_town || 'Unknown'}<br>
                                     <b>Postcode:</b> ${nextJob.coll_postcode}<br>
                                     <b>Loading Time:</b> <span style="color:#0056b3;">${nTime}</span><br>
@@ -2149,7 +2146,7 @@
     sb.channel('quotes-tracker')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, payload => {
             console.log("Planner sync update received!");
-            // Only update if this specific planner isnt currently dragging a card
+            // Only update if this specific planner isn't currently dragging a card
             if (!isDragging) {
                 loadAll();
             }
