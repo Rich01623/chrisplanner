@@ -678,20 +678,21 @@
         }
     }
 
+    // --- REWRITTEN TO FIX PAST DATE MATH BUG ---
     function getWeekOffsetFromNow(dateStr) {
         if (!dateStr) return 0;
         let now = new Date();
-        let dayNum = now.getDay() || 7;
-        let currentSun = new Date(now);
-        currentSun.setDate(now.getDate() - dayNum + 7);
-        currentSun.setHours(23, 59, 59, 999);
+        let dayNum = now.getDay() || 7; 
+        
+        let currentMon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayNum + 1, 12, 0, 0);
 
         let target = new Date(dateStr);
-        if (target <= currentSun) return 0;
+        let targetNoon = new Date(target.getFullYear(), target.getMonth(), target.getDate(), 12, 0, 0);
 
-        let diff = target.getTime() - currentSun.getTime();
-        let weeks = Math.ceil(diff / (1000 * 60 * 60 * 24 * 7));
-        return weeks;
+        let diffTime = targetNoon.getTime() - currentMon.getTime();
+        let diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        
+        return Math.floor(diffDays / 7);
     }
 
     async function checkMaintenance() {
@@ -1865,7 +1866,7 @@
                             
                             nextJobPinLayer = L.marker([coords[nextPc].lat, coords[nextPc].lng], {icon: greenIcon}).addTo(fleetMap);
                             
-                            let nTime = new Date(nextJob.coll_datetime).toLocaleString('en-GB', {weekday:'short', hour:'2-digit', minute:'2-digit'});
+                            let nTime = new Date(nextJob.coll_datetime).toLocaleString('en-GB', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
                             nextJobPinLayer.bindPopup(`
                                 <div style="font-family:Segoe UI, sans-serif; font-size:0.85rem; line-height:1.4;">
                                     <strong style="color:#2e7d32; font-size:0.95rem;">${nextJob.customer_name || 'Unknown'} <span style="font-size:0.65rem; background:#2e7d32; color:white; padding:2px 4px; border-radius:3px;">Next Job</span></strong><br>
