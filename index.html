@@ -146,8 +146,13 @@
            ========================================== */
         .job-card { background: white; color: black; border: 1px solid var(--border-color); border-left: 4px solid var(--frost-red); padding: 8px; margin-bottom: 6px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: grab; font-size: 0.72rem; position: relative; transition: all 0.2s; z-index: 2; }
         .job-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        
+        /* NEW: Grey Lockout styling for Leg 1 */
         .job-card.completed-grey { background: #f0f0f0 !important; border-left-color: #bbb !important; color: #888 !important; opacity: 0.8; }
         
+        /* NEW: Orange Styling for Reassigned O/N Drops */
+        .job-card.reassigned-orange { background: #fff4e6 !important; border-left-color: #e67e22 !important; }
+
         /* Ghost Card Styling */
         .job-card.ghost-card { border: 2px dashed var(--frost-blue); background: #f4f9ff; opacity: 0.85; cursor: pointer; border-left: 4px solid var(--frost-blue); }
         .ghost-badge { background: var(--frost-blue); color: white; font-size: 0.65rem; padding: 3px 6px; border-radius: 3px; display: block; text-align: center; margin-bottom: 6px; font-weight: bold; letter-spacing: 0.5px; }
@@ -899,6 +904,89 @@
     }
 
     // ==========================================
+    // NEW: O/N DROP REASSIGNMENT ENGINE
+    // ==========================================
+    async function reassignONJob(e, id) {
+        e.stopPropagation();
+        if(!confirm("Reassign this O/N drop to a new driver? This will lock the original collection to the current driver and create a new orange job card for the delivery.")) return;
+        
+        const j = allJobsRaw.find(x => x.id == id);
+        if(!j) return;
+
+        let ghostSlotId = null;
+        let assignedDriver = null;
+        
+        let delTargetWeek = getWeekOffsetFromNow(j.del_datetime);
+        let delDateObj = new Date(j.del_datetime);
+        let delDayIndex = (delDateObj.getDay() + 6) % 7; 
+        
+        let match = j.assigned_slot ? j.assigned_slot.match(/dr(\d+)/) : null;
+        if (match) {
+            let vehIndex = match[1];
+            ghostSlotId = `planner-w${delTargetWeek}-dr${vehIndex}-s${delDayIndex}`;
+            let dropdown = document.getElementById(`sel-planner-w${delTargetWeek}-dr${vehIndex}`);
+            if(dropdown && dropdown.value) {
+                assignedDriver = dropdown.options[dropdown.selectedIndex].text.toLowerCase();
+                if(assignedDriver === 'unassigned') assignedDriver = null;
+            }
+        } else {
+            ghostSlotId = `pool-zone-${delDateObj.getDay()}`; 
+        }
+
+        // Job 1 (Collection Leg - locked to current driver)
+        let p1 = {
+            customer_name: j.customer_name + " (Leg 1)",
+            del_postcode: "YARD",
+            del_town: "YARD",
+            del_cust_name: "FROST YARD",
+            del_street: "Storage",
+            del_postcode_2: "",
+            del_town_2: ""
+        };
+
+        if (j.coll_datetime) {
+            let d = new Date(j.coll_datetime);
+            d.setHours(d.getHours() + 2);
+            let pad = n => n.toString().padStart(2, '0');
+            p1.del_datetime = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        // Job 2 (Delivery Leg - Free to move)
+        let p2 = { ...j };
+        delete p2.id;
+        delete p2.created_at;
+        p2.customer_name = j.customer_name + " (Leg 2)";
+        p2.coll_postcode = "YARD";
+        p2.coll_town = "YARD";
+        p2.coll_street = "FROST YARD";
+        p2.coll_ref = "From Storage";
+        delete p2.coll_postcode_2;
+        delete p2.coll_town_2;
+        
+        p2.status = ghostSlotId && ghostSlotId.includes('planner') ? 'assigned' : 'pending';
+        p2.assigned_slot = ghostSlotId;
+        p2.assigned_driver = assignedDriver;
+        p2.dispatch_status = 'unsent';
+        p2.total_price = "0";
+        
+        if (j.del_datetime) {
+            let d = new Date(j.del_datetime);
+            d.setHours(d.getHours() - 2);
+            let pad = n => n.toString().padStart(2, '0');
+            p2.coll_datetime = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        try {
+            await sb.from('quotes').update(p1).eq('id', j.id);
+            await sb.from('quotes').insert([p2]);
+            loadAll();
+        } catch(err) {
+            console.error(err);
+            alert("Error reassigning job: " + err.message);
+        }
+    }
+
+    // ==========================================
     // 6. MAIN DATA LOADING & RENDERING
     // ==========================================
     async function loadAll() {
@@ -1062,6 +1150,12 @@
         const isMaintenance = q.customer_name === "🔧 PLANNED MAINTENANCE";
         const isNote = q.customer_name === "📝 PLANNER NOTE";
         
+        const isLeg1 = q.customer_name && q.customer_name.endsWith('(Leg 1)');
+        const isLeg2 = q.customer_name && q.customer_name.endsWith('(Leg 2)');
+        
+        // Lock Leg 1 if it's already been assigned to a driver
+        const isLockedLeg1 = isLeg1 && q.assigned_slot && !q.assigned_slot.includes('pool');
+        
         let dispatchClass = "";
         if (q.dispatch_status === 'sent') dispatchClass = " status-sent";
         if (q.dispatch_status === 'acknowledged') dispatchClass = " status-ack";
@@ -1070,14 +1164,20 @@
         if (q.dispatch_status === 'del_arrived') dispatchClass = " status-del-arr";
         if (q.dispatch_status === 'tipped') dispatchClass = " status-tipped";
 
-        card.className = "job-card" + (isCompleted ? " completed-grey" : "") + dispatchClass; 
+        card.className = "job-card" + dispatchClass; 
+        
+        // Styling Overrides for Locked/Reassigned Legs
+        if (isCompleted || isLockedLeg1) card.classList.add('completed-grey');
+        if (isLeg2 && !isCompleted && !isGhost) card.classList.add('reassigned-orange');
         if (isGhost) card.classList.add('ghost-card');
         
         card.id = isGhost ? `ghost-${q.id}` : q.id; 
-        card.draggable = (!isCompleted && !isGhost); 
+        
+        // Prevent dragging for ghost cards, completed cards, and locked Leg 1 cards
+        card.draggable = (!isCompleted && !isGhost && !isLockedLeg1); 
         
         card.ondragstart = (e) => { 
-            if(!isGhost) {
+            if(card.draggable) {
                 isDragging = true;
                 e.dataTransfer.setData("text", e.target.id); 
             }
@@ -1133,9 +1233,9 @@
                 let leg1Date = null;
 
                 if (txtColl1.toUpperCase() === 'YARD' || (txtColl2 && txtColl2.toUpperCase() === 'YARD')) {
-                    let baseName = (q.customer_name || '').replace(' (Leg 2)', '').trim();
+                    let baseName = (q.customer_name || '').replace(' (Leg 2)', '').replace(' (Leg 1)', '').trim();
                     let leg1 = allJobsRaw.find(x => 
-                        (x.customer_name || '').replace(' (Leg 2)', '').trim() === baseName && 
+                        (x.customer_name || '').replace(' (Leg 2)', '').replace(' (Leg 1)', '').trim() === baseName && 
                         ((x.del_postcode && x.del_postcode.toUpperCase() === 'YARD') || (x.del_town && x.del_town.toUpperCase() === 'YARD'))
                     );
                     if (leg1) {
@@ -1195,20 +1295,30 @@
         }
 
         let ghostBanner = isGhost ? `<div class="ghost-badge">🚚 O/N DELIVERY</div>` : '';
-        let actionsHtml = isGhost ? '' : `
-            <div class="card-actions">
-                <div style="display:flex; gap:10px;">
-                    <span class="action-btn" onclick="dispatchJob(event, '${q.id}')" title="Send to Driver App">📲</span>
-                    <span class="action-btn" onclick="editJob(event, '${q.id}')" title="Edit">✎</span>
-                    <span class="action-btn" onclick="splitJob(event, '${q.id}')" title="Split">✂</span>
-                    <span class="action-btn" onclick="duplicateJob(event, '${q.id}')" title="Duplicate">❐</span>
-                    <span class="action-btn" onclick="window.open('${podFolder}', '_blank')" title="POD Drive">📎</span>
-                    <span class="action-btn" onclick="queryRoute(event, '${q.coll_postcode}', '${q.del_postcode}')" title="Maps">📍</span>
-                    ${!isCompleted ? `<span class="action-btn" onclick="markPODReceived(event, '${q.id}')" title="Complete POD">✅</span>` : ''}
+        let actionsHtml = '';
+        
+        if (isGhost) {
+            actionsHtml = `
+                <div class="card-actions" style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:8px; justify-content:center;">
+                    <button style="width:100%; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.75rem; box-shadow:0 2px 4px rgba(0,0,0,0.1);" onclick="reassignONJob(event, '${q.id}')">🔄 REASSIGN DROP TO NEW DRIVER</button>
                 </div>
-                <span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;">🗑️</span>
-            </div>
-        `;
+            `;
+        } else {
+            actionsHtml = `
+                <div class="card-actions">
+                    <div style="display:flex; gap:10px;">
+                        <span class="action-btn" onclick="dispatchJob(event, '${q.id}')" title="Send to Driver App">📲</span>
+                        <span class="action-btn" onclick="editJob(event, '${q.id}')" title="Edit">✎</span>
+                        <span class="action-btn" onclick="splitJob(event, '${q.id}')" title="Split">✂</span>
+                        <span class="action-btn" onclick="duplicateJob(event, '${q.id}')" title="Duplicate">❐</span>
+                        <span class="action-btn" onclick="window.open('${podFolder}', '_blank')" title="POD Drive">📎</span>
+                        <span class="action-btn" onclick="queryRoute(event, '${q.coll_postcode}', '${q.del_postcode}')" title="Maps">📍</span>
+                        ${!isCompleted ? `<span class="action-btn" onclick="markPODReceived(event, '${q.id}')" title="Complete POD">✅</span>` : ''}
+                    </div>
+                    <span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;">🗑️</span>
+                </div>
+            `;
+        }
 
         if (isNote) {
             card.style.borderLeftColor = "#f39c12"; 
@@ -1355,7 +1465,7 @@
         allJobsRaw.forEach(j => {
             if (j.customer_name && j.customer_name.toLowerCase().includes(input)) {
                 if (j.customer_name !== "🔧 PLANNED MAINTENANCE" && j.customer_name !== "📝 PLANNER NOTE" && j.customer_name !== "DRIVER_CONFIG") {
-                    let cleanName = j.customer_name.replace(' (Leg 2)', '');
+                    let cleanName = j.customer_name.replace(' (Leg 2)', '').replace(' (Leg 1)', '');
                     if (!customers[cleanName]) {
                         customers[cleanName] = {
                             name: cleanName,
@@ -1485,6 +1595,7 @@
 
             if (!id && diffHours > 24) {
                 let p1 = { ...payload };
+                p1.customer_name = payload.customer_name + " (Leg 1)"; // Automatic lock on initial save
                 p1.del_postcode = "YARD";
                 p1.del_town = "YARD";
                 p1.del_cust_name = "FROST YARD";
@@ -2006,7 +2117,7 @@
                             
                             nextJobPinLayer = L.marker([coords[nextPc].lat, coords[nextPc].lng], {icon: greenIcon}).addTo(fleetMap);
                             
-                            let nTime = new Date(nextJob.coll_datetime).toLocaleString('en-GB', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+                            let nTime = new Date(nextJob.coll_datetime).toLocaleString('en-GB', {weekday:'short', hour:'2-digit', minute:'2-digit'});
                             nextJobPinLayer.bindPopup(`
                                 <div style="font-family:Segoe UI, sans-serif; font-size:0.85rem; line-height:1.4;">
                                     <strong style="color:#2e7d32; font-size:0.95rem;">${nextJob.customer_name || 'Unknown'} <span style="font-size:0.65rem; background:#2e7d32; color:white; padding:2px 4px; border-radius:3px;">Next Job</span></strong><br>
