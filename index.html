@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FROST Transport Planner - V5.6 (Live Postcode Database)</title>
+    <title>FROST Transport Planner - V5.6 (Complete Restore)</title>
     
     <!-- EXTERNAL LIBRARIES -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -260,7 +260,7 @@
      MAIN CONTENT AREA
      ========================================== -->
 <main>
-    <!-- LEFT SIDEBAR: UNASSIGNED POOL (NOW SORTED BY DAY) -->
+    <!-- LEFT SIDEBAR: UNASSIGNED POOL -->
     <section id="unassigned-sidebar">
         <div style="padding:10px; background:#e0e0e0; color:black; font-weight:bold; display:flex; justify-content:space-between; border-bottom: 1px solid #ccc;">
             POOL <span onclick="toggleUnassigned()" style="cursor:pointer; color: var(--frost-red);">✕</span>
@@ -305,21 +305,20 @@
     <!-- RIGHT CONTENT: GRIDS & VIEWS -->
     <div id="content-area">
         
-        <!-- Planner Boards (Dynamically injected) -->
+        <!-- Planner Boards -->
         <section id="planner-board"></section>
 
         <!-- Drop Spots Map View -->
         <section id="map-view" style="display:none; padding:10px; height:100%; box-sizing:border-box;">
             <div style="background:var(--frost-black); color:white; padding:10px; border-radius:8px 8px 0 0; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
                 <div style="display:flex; align-items:center; gap:15px;">
-                    <span>🚚 Drop Spots Visualization</span>
-                    <!-- Routing Toggle -->
+                    <span>🚚 Drop Spots (Current Week Only)</span>
                     <label style="font-size:0.8rem; font-weight:normal; cursor:pointer; color:#eee; display:flex; align-items:center; gap:5px;">
                         <input type="checkbox" id="toggle-routing" onchange="clearNextJobRouting()"> Show Next Route
                     </label>
                 </div>
                 <div>
-                    <span style="font-size:0.75rem; margin-right:10px; font-weight:normal; background:#2e7d32; padding:2px 6px; border-radius:3px;">🟢 Next Coll</span>
+                    <span style="font-size:0.75rem; margin-right:10px; font-weight:normal; background:#2e7d32; padding:2px 6px; border-radius:3px;">🟢 Next Coll (< 6hrs)</span>
                     <span style="font-size:0.75rem; font-weight:normal; background:#c1272d; padding:2px 6px; border-radius:3px;">🔴 > 6h Idle / Empty</span>
                 </div>
             </div>
@@ -441,7 +440,6 @@
                 <div style="flex: 1;">
                     <h4 style="margin:0 0 10px 0; color:#0056b3;">CUSTOMER INFO</h4>
                     
-                    <!-- AUTOCOMPLETE CUSTOMER NAME BOX -->
                     <div class="form-group" style="position: relative;">
                         <label>Booking Customer Name</label>
                         <input type="text" id="n_cust_name" onkeyup="showCustomerSuggestions()" autocomplete="off" placeholder="Start typing...">
@@ -675,7 +673,6 @@
         if (!dropdown || !dropdown.value) return alert("The selected driver does not have a valid phone number assigned in the system.");
 
         const driverPhone = dropdown.value;
-        const driverName = dropdown.options[dropdown.selectedIndex].text;
 
         const formatDt = (iso) => {
             if (!iso) return 'TBA';
@@ -986,7 +983,6 @@
             ghostSlotId = `pool-zone-${delDateObj.getDay()}`; 
         }
 
-        // Job 1 (Collection Leg - locked to current driver)
         let p1 = {
             customer_name: j.customer_name + " (Leg 1)",
             del_postcode: "YARD",
@@ -1004,7 +1000,6 @@
             p1.del_datetime = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
         }
 
-        // Job 2 (Delivery Leg - Free to move)
         let p2 = { ...j };
         delete p2.id;
         delete p2.created_at;
@@ -1354,7 +1349,6 @@
                 </div>
             `;
         } else {
-            // NEW: 💬 Button added here
             actionsHtml = `
                 <div class="card-actions">
                     <div style="display:flex; gap:10px;">
@@ -2051,13 +2045,22 @@
         mapMarkers = [];
         clearNextJobRouting();
 
-        const activeJobs = allJobsRaw.filter(j => 
-            (j.status === 'assigned' || j.status === 'pending') && 
-            j.del_postcode && 
-            j.del_postcode.trim() !== '' &&
-            j.del_postcode !== 'NOTE' &&
-            j.del_postcode !== 'BOOK INSPECTION'
-        );
+        // DATE FILTER: Show only jobs from Today through the end of the Current Week
+        let now = new Date();
+        let startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        let dayNum = now.getDay() || 7; 
+        let endOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (7 - dayNum), 23, 59, 59, 999).getTime();
+
+        const activeJobs = allJobsRaw.filter(j => {
+            if (j.status !== 'assigned' && j.status !== 'pending') return false;
+            if (!j.del_postcode || j.del_postcode.trim() === '' || j.del_postcode === 'NOTE' || j.del_postcode === 'BOOK INSPECTION') return false;
+            if (!j.del_datetime) return false;
+            
+            let jobTime = new Date(j.del_datetime).getTime();
+            if (jobTime < startOfToday || jobTime > endOfWeek) return false; // Hide past/future jobs
+            
+            return true;
+        });
 
         if (activeJobs.length === 0) return;
 
@@ -2094,7 +2097,7 @@
             if (coords[pc]) {
                 const dt = j.del_datetime ? new Date(j.del_datetime).toLocaleString('en-GB', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : 'Time TBC';
                 
-                let isIdle = false;
+                let isIdle = true; // DEFAULT TO RED
                 let nextJobTimeStr = "None scheduled";
                 let diffHoursStr = "";
                 let nextJob = null;
@@ -2102,11 +2105,14 @@
                 if (j.assigned_driver && j.del_datetime) {
                     let currentDelTime = new Date(j.del_datetime).getTime();
 
+                    // Find future jobs for this specific driver
                     let nextJobs = allJobsRaw.filter(nextJ =>
                         nextJ.assigned_driver === j.assigned_driver &&
                         nextJ.coll_datetime &&
                         new Date(nextJ.coll_datetime).getTime() >= currentDelTime &&
-                        nextJ.id !== j.id
+                        nextJ.id !== j.id &&
+                        nextJ.status !== 'cancelled' &&
+                        nextJ.status !== 'archived'
                     );
 
                     if (nextJobs.length > 0) {
@@ -2115,16 +2121,13 @@
                         let nextCollTime = new Date(nextJob.coll_datetime).getTime();
 
                         let diffHours = (nextCollTime - currentDelTime) / (1000 * 60 * 60);
-                        if (diffHours > 6) {
-                            isIdle = true;
+                        if (diffHours <= 6) {
+                            isIdle = false; // Blue Pin - Job found within 6 hours!
+                        } else {
                             diffHoursStr = ` (${Math.round(diffHours)}h gap)`;
                         }
                         nextJobTimeStr = new Date(nextJob.coll_datetime).toLocaleString('en-GB', {weekday:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'}) + diffHoursStr;
-                    } else {
-                        isIdle = true; 
                     }
-                } else if (j.status === 'pending') {
-                    isIdle = false;
                 }
                 
                 let markerIcon = isIdle ? new L.Icon({
@@ -2169,7 +2172,7 @@
                             
                             nextJobPinLayer = L.marker([coords[nextPc].lat, coords[nextPc].lng], {icon: greenIcon}).addTo(fleetMap);
                             
-                            let nTime = new Date(nextJob.coll_datetime).toLocaleString('en-GB', {weekday:'short', hour:'2-digit', minute:'2-digit'});
+                            let nTime = new Date(nextJob.coll_datetime).toLocaleString('en-GB', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
                             nextJobPinLayer.bindPopup(`
                                 <div style="font-family:Segoe UI, sans-serif; font-size:0.85rem; line-height:1.4;">
                                     <strong style="color:#2e7d32; font-size:0.95rem;">${nextJob.customer_name || 'Unknown'} <span style="font-size:0.65rem; background:#2e7d32; color:white; padding:2px 4px; border-radius:3px;">Next Job</span></strong><br>
@@ -2200,13 +2203,33 @@
     // 10. UI UPDATERS & UTILS
     // ==========================================
     function updateCalculations() {
-        let grand = 0; const boardId = `planner-w${currentWeekOffset}`;
+        let grand = 0;
+        
+        // Reset per-vehicle totals in header
         vehicles.forEach((_, i) => {
-            let sum = 0; document.querySelectorAll(`[id^="${boardId}-dr${i}-s"] .data-price`).forEach(p => sum += parseFloat(p.innerText) || 0);
-            const el = document.getElementById(`${boardId}-total-${i}`);
-            if (el) el.innerText = `Week: £${sum.toFixed(2)}`;
-            grand += sum;
+            const el = document.getElementById(`planner-w${currentWeekOffset}-total-${i}`);
+            if (el) el.innerText = `Week: £0.00`;
         });
+
+        // Use source data, not DOM scraping
+        let vehicleTotals = {};
+        allJobsRaw.forEach(q => {
+            if(q.assigned_slot && q.assigned_slot.includes(`planner-w${currentWeekOffset}`) && q.status !== 'archived') {
+                let price = parseFloat(q.total_price) || 0;
+                let match = q.assigned_slot.match(/dr(\d+)/);
+                if(match) {
+                    let vIdx = match[1];
+                    vehicleTotals[vIdx] = (vehicleTotals[vIdx] || 0) + price;
+                }
+            }
+        });
+
+        for(let vIdx in vehicleTotals) {
+            const el = document.getElementById(`planner-w${currentWeekOffset}-total-${vIdx}`);
+            if(el) el.innerText = `Week: £${vehicleTotals[vIdx].toFixed(2)}`;
+            grand += vehicleTotals[vIdx];
+        }
+        
         document.getElementById('grand-total').innerText = "£" + grand.toFixed(2);
     }
 
@@ -2450,7 +2473,6 @@
     sb.channel('quotes-tracker')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, payload => {
             console.log("Planner sync update received!");
-            // Only update if this specific planner isn't currently dragging a card
             if (!isDragging) {
                 loadAll();
             }
@@ -2531,7 +2553,6 @@
             }
         });
 
-        // Clean up the interval when dropping or canceling a drag
         const stopScroll = () => {
             if (scrollInterval) {
                 clearInterval(scrollInterval);
