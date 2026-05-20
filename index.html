@@ -147,10 +147,10 @@
         .job-card { background: white; color: black; border: 1px solid var(--border-color); border-left: 4px solid var(--frost-red); padding: 8px; margin-bottom: 6px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: grab; font-size: 0.72rem; position: relative; transition: all 0.2s; z-index: 2; }
         .job-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
         
-        /* NEW: Grey Lockout styling for Leg 1 */
+        /* Grey Lockout styling for Leg 1 */
         .job-card.completed-grey { background: #f0f0f0 !important; border-left-color: #bbb !important; color: #888 !important; opacity: 0.8; }
         
-        /* NEW: Orange Styling for Reassigned O/N Drops */
+        /* Orange Styling for Reassigned O/N Drops */
         .job-card.reassigned-orange { background: #fff4e6 !important; border-left-color: #e67e22 !important; }
 
         /* Ghost Card Styling */
@@ -661,6 +661,59 @@
     }
 
     // ==========================================
+    // NEW: WHATSAPP DISPATCH FALLBACK
+    // ==========================================
+    function sendWhatsApp(e, id) {
+        e.stopPropagation();
+        const j = allJobsRaw.find(x => x.id == id);
+        if (!j || !j.assigned_slot || j.assigned_slot.includes('pool')) {
+            return alert("Please assign the job to a driver's row first so the system knows whose phone number to use.");
+        }
+
+        const cellId = j.assigned_slot.split('-s')[0]; 
+        const dropdown = document.getElementById(`sel-${cellId}`);
+        if (!dropdown || !dropdown.value) return alert("The selected driver does not have a valid phone number assigned in the system.");
+
+        const driverPhone = dropdown.value;
+        const driverName = dropdown.options[dropdown.selectedIndex].text;
+
+        const formatDt = (iso) => {
+            if (!iso) return 'TBA';
+            const d = new Date(iso);
+            return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
+        };
+
+        let msg = `🚚 *FROST TRANSPORT - NEW JOB*\n\n`;
+        msg += `*Customer:* ${j.customer_name || 'N/A'}\n\n`;
+        
+        msg += `🟢 *COLLECTION:*\n`;
+        if(j.coll_street) msg += `${j.coll_street}\n`;
+        if(j.coll_town) msg += `${j.coll_town}\n`;
+        if(j.coll_county) msg += `${j.coll_county}\n`;
+        msg += `*Postcode:* ${j.coll_postcode || 'TBA'}\n`;
+        msg += `*Time:* ${formatDt(j.coll_datetime)}\n`;
+        msg += `*Ref:* ${j.coll_ref || 'N/A'}\n\n`;
+
+        msg += `🔴 *DELIVERY:*\n`;
+        if(j.del_cust_name) msg += `${j.del_cust_name}\n`;
+        if(j.del_street) msg += `${j.del_street}\n`;
+        if(j.del_town) msg += `${j.del_town}\n`;
+        if(j.del_county) msg += `${j.del_county}\n`;
+        msg += `*Postcode:* ${j.del_postcode || 'TBA'}\n`;
+        msg += `*Time:* ${formatDt(j.del_datetime)}\n`;
+        msg += `*Ref:* ${j.del_ref || 'N/A'}\n\n`;
+
+        msg += `📦 *GOODS:*\n`;
+        msg += `Vehicle: ${j.vehicle_type || 'N/A'}\n`;
+        msg += `Pallets: ${j.total_pallets || 'N/A'} | Weight: ${j.total_weight ? j.total_weight + 'kg' : 'N/A'}\n`;
+
+        const encodedMsg = encodeURIComponent(msg);
+        const waUrl = `https://wa.me/${driverPhone}?text=${encodedMsg}`;
+        
+        window.open(waUrl, '_blank');
+    }
+
+    // ==========================================
     // 4. PLANNER GRID GENERATION
     // ==========================================
     const plannerBoard = document.getElementById('planner-board');
@@ -904,7 +957,7 @@
     }
 
     // ==========================================
-    // NEW: O/N DROP REASSIGNMENT ENGINE
+    // O/N DROP REASSIGNMENT ENGINE
     // ==========================================
     async function reassignONJob(e, id) {
         e.stopPropagation();
@@ -1153,7 +1206,6 @@
         const isLeg1 = q.customer_name && q.customer_name.endsWith('(Leg 1)');
         const isLeg2 = q.customer_name && q.customer_name.endsWith('(Leg 2)');
         
-        // Lock Leg 1 if it's already been assigned to a driver
         const isLockedLeg1 = isLeg1 && q.assigned_slot && !q.assigned_slot.includes('pool');
         
         let dispatchClass = "";
@@ -1166,14 +1218,12 @@
 
         card.className = "job-card" + dispatchClass; 
         
-        // Styling Overrides for Locked/Reassigned Legs
         if (isCompleted || isLockedLeg1) card.classList.add('completed-grey');
         if (isLeg2 && !isCompleted && !isGhost) card.classList.add('reassigned-orange');
         if (isGhost) card.classList.add('ghost-card');
         
         card.id = isGhost ? `ghost-${q.id}` : q.id; 
         
-        // Prevent dragging for ghost cards, completed cards, and locked Leg 1 cards
         card.draggable = (!isCompleted && !isGhost && !isLockedLeg1); 
         
         card.ondragstart = (e) => { 
@@ -1304,10 +1354,12 @@
                 </div>
             `;
         } else {
+            // NEW: 💬 Button added here
             actionsHtml = `
                 <div class="card-actions">
                     <div style="display:flex; gap:10px;">
                         <span class="action-btn" onclick="dispatchJob(event, '${q.id}')" title="Send to Driver App">📲</span>
+                        <span class="action-btn" onclick="sendWhatsApp(event, '${q.id}')" title="Send via WhatsApp">💬</span>
                         <span class="action-btn" onclick="editJob(event, '${q.id}')" title="Edit">✎</span>
                         <span class="action-btn" onclick="splitJob(event, '${q.id}')" title="Split">✂</span>
                         <span class="action-btn" onclick="duplicateJob(event, '${q.id}')" title="Duplicate">❐</span>
@@ -1595,7 +1647,7 @@
 
             if (!id && diffHours > 24) {
                 let p1 = { ...payload };
-                p1.customer_name = payload.customer_name + " (Leg 1)"; // Automatic lock on initial save
+                p1.customer_name = payload.customer_name + " (Leg 1)"; 
                 p1.del_postcode = "YARD";
                 p1.del_town = "YARD";
                 p1.del_cust_name = "FROST YARD";
