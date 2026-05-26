@@ -245,11 +245,17 @@
         .pod-detail-box button { background: var(--frost-blue); color: white; border: none; border-radius: 5px; padding: 8px 12px; font-weight: bold; cursor: pointer; white-space: nowrap; }
         .pod-detail-box button:hover { background: #004494; }
         .pod-detail-url { font-size: 0.75rem; color: #555; word-break: break-all; text-align: right; }
+        .invoice-number-banner { margin-bottom: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .invoice-number-pill { background: white; border: 1px solid #ddd; border-left: 4px solid var(--frost-red); border-radius: 8px; padding: 10px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .invoice-number-pill.customer { border-left-color: var(--frost-blue); }
+        .invoice-number-pill b { display: block; font-size: 0.72rem; color: #555; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+        .invoice-number-pill span { font-size: 1rem; font-weight: 800; color: var(--frost-black); word-break: break-word; }
         @media (max-width: 800px) {
             .full-job-detail-grid { grid-template-columns: 1fr; }
             .full-detail-row { flex-direction: column; gap: 3px; }
             .full-detail-row span { text-align: left; }
             .pod-detail-box { flex-direction: column; align-items: flex-start; }
+            .invoice-number-banner { grid-template-columns: 1fr; }
             .pod-detail-url { text-align: left; }
         }
 
@@ -384,6 +390,8 @@
                             <th>Date</th>
                             <th>Customer Name</th>
                             <th>Route</th>
+                            <th>FTS Invoice</th>
+                            <th>Customer Invoice</th>
                             <th>Ref Number</th>
                             <th>Price</th>
                             <th style="text-align:right;">Action</th>
@@ -407,6 +415,8 @@
                             <th>Date</th>
                             <th>Customer Name</th>
                             <th>Route</th>
+                            <th>FTS Invoice</th>
+                            <th>Customer Invoice</th>
                             <th>Ref Number</th>
                             <th>Price</th>
                             <th style="text-align:right;">Actions</th>
@@ -558,6 +568,11 @@
 
         <!-- Full Width Bottom Section -->
         <hr class="section-divider">
+        <h4 style="margin:5px 0 10px 0; color:#1a1a1a;">INVOICE NUMBERS</h4>
+        <div style="display:flex; gap:15px; align-items:flex-end; flex-wrap:wrap;">
+            <div class="form-group" style="flex:1; min-width:220px;"><label>Customers Invoice Number</label><input type="text" id="n_customers_own_invoice_number" placeholder="Customer's own invoice / booking number"></div>
+            <div class="form-group" style="flex:1; min-width:220px;"><label>FTS Invoice Number</label><input type="text" id="n_fts_invoice_number" readonly placeholder="Auto generated" style="font-weight:bold; color:var(--frost-red); background:#f8fafc;"></div>
+        </div>
         <h4 style="margin:5px 0 10px 0; color:#1a1a1a;">LOGISTICS</h4>
         <div style="display:flex; gap:15px; align-items:flex-end;">
             <div class="form-group" style="flex:1;"><label>Vehicle Required</label><select id="n_veh_type"><option>Artic</option><option>Rigid</option><option>7.5t</option><option>Van</option></select></div>
@@ -1250,6 +1265,60 @@
         return defaultStr;
     }
 
+    const FTS_INVOICE_PREFIX = 'FTS-';
+    const FTS_INVOICE_START_NUMBER = 55001;
+    let ftsInvoicePrefillToken = 0;
+
+    function parseFtsInvoiceNumber(value) {
+        const match = String(value || '').trim().toUpperCase().match(/^FTS-(\d+)$/);
+        return match ? parseInt(match[1], 10) : null;
+    }
+
+    function formatFtsInvoiceNumber(number) {
+        return `${FTS_INVOICE_PREFIX}${number}`;
+    }
+
+    function getHighestFtsInvoiceNumberFromList(rows) {
+        return (rows || []).reduce((highest, row) => {
+            const parsed = parseFtsInvoiceNumber(row && row.fts_invoice_number);
+            return parsed && parsed > highest ? parsed : highest;
+        }, FTS_INVOICE_START_NUMBER - 1);
+    }
+
+    async function getNextFtsInvoiceNumber() {
+        let highest = getHighestFtsInvoiceNumberFromList(allJobsRaw);
+        try {
+            const { data, error } = await sb.from('quotes').select('fts_invoice_number');
+            if (!error && data) highest = Math.max(highest, getHighestFtsInvoiceNumberFromList(data));
+        } catch (err) {
+            console.warn('Could not refresh FTS invoice numbers from Supabase, using loaded planner data instead.', err);
+        }
+        return formatFtsInvoiceNumber(Math.max(FTS_INVOICE_START_NUMBER, highest + 1));
+    }
+
+    function getNextFtsInvoiceNumberAfter(value) {
+        const parsed = parseFtsInvoiceNumber(value);
+        return formatFtsInvoiceNumber((parsed || (FTS_INVOICE_START_NUMBER - 1)) + 1);
+    }
+
+    async function prefillNextFtsInvoiceNumber() {
+        const field = document.getElementById('n_fts_invoice_number');
+        if (!field) return;
+        const token = ++ftsInvoicePrefillToken;
+        field.value = 'Generating...';
+        const nextNumber = await getNextFtsInvoiceNumber();
+        const isStillNewJob = !document.getElementById('sys_job_id').value;
+        if (token === ftsInvoicePrefillToken && isStillNewJob) field.value = nextNumber;
+    }
+
+    function buildInvoiceNumberBanner(job) {
+        return `
+            <div class="invoice-number-banner">
+                <div class="invoice-number-pill"><b>FTS Invoice Number</b><span>${detailDisplayValue(job.fts_invoice_number)}</span></div>
+                <div class="invoice-number-pill customer"><b>Customer's Invoice Number</b><span>${detailDisplayValue(job.customers_own_invoice_number)}</span></div>
+            </div>`;
+    }
+
 
     function escapeHtml(value) {
         return String(value ?? '')
@@ -1296,7 +1365,7 @@
 
     function buildFullJobDetailsHtml(job, isGhost = false) {
         const knownFields = new Set([
-            'id', 'created_at', 'customer_name', 'customer_phone', 'customer_email',
+            'id', 'created_at', 'customer_name', 'customer_phone', 'customer_email', 'customers_own_invoice_number', 'fts_invoice_number',
             'coll_postcode', 'coll_street', 'coll_town', 'coll_county', 'coll_ref', 'coll_datetime', 'coll_postcode_2', 'coll_town_2',
             'del_postcode', 'del_cust_name', 'del_phone', 'del_email', 'del_street', 'del_town', 'del_county', 'del_ref', 'del_datetime', 'del_postcode_2', 'del_town_2',
             'total_price', 'total_pallets', 'total_weight', 'vehicle_type', 'status', 'dispatch_status', 'assigned_slot', 'assigned_driver', 'driver_phone',
@@ -1305,6 +1374,8 @@
 
         const bookingRows = [
             fullDetailRow('Job / booking ID', job.id),
+            fullDetailRow('FTS invoice number', job.fts_invoice_number),
+            fullDetailRow('Customer invoice number', job.customers_own_invoice_number),
             fullDetailRow('Created', job.created_at, true),
             fullDetailRow('Booking customer', job.customer_name),
             fullDetailRow('Customer telephone', job.customer_phone),
@@ -1398,7 +1469,8 @@
         const body = document.getElementById('job-detail-body');
 
         const routeTitle = `${job.coll_postcode || job.coll_town || 'Collection'} ➔ ${job.del_postcode || job.del_town || 'Delivery'}`;
-        title.innerText = `${job.customer_name || 'Job Details'} | ${routeTitle}`;
+        const ftsTitle = job.fts_invoice_number ? `${job.fts_invoice_number} | ` : '';
+        title.innerText = `${ftsTitle}${job.customer_name || 'Job Details'} | ${routeTitle}`;
 
         body.innerHTML = '';
         const detailCard = sourceCard.cloneNode(true);
@@ -1410,6 +1482,7 @@
         detailCard.ondragstart = null;
         detailCard.ondragend = null;
 
+        body.insertAdjacentHTML('beforeend', buildInvoiceNumberBanner(job));
         body.appendChild(detailCard);
         body.insertAdjacentHTML('beforeend', buildFullJobDetailsHtml(job, isGhost));
 
@@ -1714,21 +1787,8 @@
                         <span class="price-tag">£<span class="data-price">${q.total_price}</span></span>
                     </div>
                     
-                    <span class="card-section-label contact">LIVE TIMESTAMPS (DEMURRAGE)</span>
-                    <div class="detail-row" style="color:#0056b3;"><b>Acknowledged:</b> <span>${tOnly(q.ack_timestamp)}</span></div>
-                    <div class="detail-row" style="color:#2e7d32;"><b>Arrived Coll:</b> <span>${tOnly(q.arrived_timestamp)}</span></div>
-                    <div class="detail-row" style="color:#8e44ad;"><b>Loaded:</b> <span>${tOnly(q.loaded_timestamp)}</span></div>
-                    <div class="detail-row" style="color:#d68910;"><b>Arrived Del:</b> <span>${tOnly(q.del_arrived_timestamp)}</span></div>
-                    <div class="detail-row" style="color:#1abc9c;"><b>Tipped:</b> <span>${tOnly(q.tipped_timestamp)}</span></div>
-
-                    <span class="card-section-label">COLLECTION</span>
-                    <div class="detail-row"><b>Street:</b> <span>${q.coll_street || '-'}</span></div>
-                    <div class="detail-row"><b>Town:</b> <span>${q.coll_town || '-'}</span></div>
-                    <div class="detail-row"><b>Time:</b> <span>${dtFormat(q.coll_datetime)}</span></div>
-                    <span class="card-section-label del">DELIVERY</span>
-                    <div class="detail-row"><b>Company:</b> <span>${q.del_cust_name || '-'}</span></div>
-                    <div class="detail-row"><b>Town:</b> <span>${q.del_town || '-'}</span></div>
-                    <div class="detail-row"><b>Time:</b> <span>${dtFormat(q.del_datetime)}</span></div>
+                    <!-- Duplicate live timestamps and compact collection/delivery rows removed from the top modal card.
+                         The full details are shown once in the neat cards below. -->
 
                     ${extraActions}
                 </div>`;
@@ -1862,8 +1922,16 @@
             total_price: document.getElementById('n_price').value || "0",
             total_pallets: document.getElementById('n_total_pallets').value,
             total_weight: document.getElementById('n_total_weight').value,
-            vehicle_type: document.getElementById('n_veh_type').value
+            vehicle_type: document.getElementById('n_veh_type').value,
+            customers_own_invoice_number: document.getElementById('n_customers_own_invoice_number').value,
+            fts_invoice_number: document.getElementById('n_fts_invoice_number').value
         };
+
+        if (!id) {
+            payload.fts_invoice_number = await getNextFtsInvoiceNumber();
+            const ftsField = document.getElementById('n_fts_invoice_number');
+            if (ftsField) ftsField.value = payload.fts_invoice_number;
+        }
 
         let cp2 = document.getElementById('n_coll_pc_2').value;
         let ct2 = document.getElementById('n_coll_town_2').value;
@@ -1905,7 +1973,8 @@
                 delete p2.coll_postcode_2; 
                 delete p2.coll_town_2;
                 p2.status = 'pending';
-                p2.total_price = "0"; 
+                p2.total_price = "0";
+                p2.fts_invoice_number = getNextFtsInvoiceNumberAfter(p1.fts_invoice_number);
 
                 const { error } = await sb.from('quotes').insert([p1, p2]);
                 errorObj = error;
@@ -1939,6 +2008,8 @@
         if(!j) return;
         resetForm();
         document.getElementById('sys_job_id').value = id;
+        document.getElementById('n_customers_own_invoice_number').value = j.customers_own_invoice_number || '';
+        document.getElementById('n_fts_invoice_number').value = j.fts_invoice_number || '';
         document.getElementById('n_cust_name').value = j.customer_name || '';
         document.getElementById('n_cust_phone').value = j.customer_phone || '';
         document.getElementById('n_cust_email').value = j.customer_email || '';
@@ -2015,7 +2086,19 @@
         }
     }
 
-    async function duplicateJob(e, id) { e.stopPropagation(); const j = {...allJobsRaw.find(x => x.id == id)}; delete j.id; j.status = 'pending'; j.assigned_slot = null; await sb.from('quotes').insert([j]); loadAll(); }
+    async function duplicateJob(e, id) {
+        e.stopPropagation();
+        const source = allJobsRaw.find(x => x.id == id);
+        if (!source) return;
+        const j = { ...source };
+        delete j.id;
+        delete j.created_at;
+        j.status = 'pending';
+        j.assigned_slot = null;
+        j.fts_invoice_number = await getNextFtsInvoiceNumber();
+        await sb.from('quotes').insert([j]);
+        loadAll();
+    }
     async function splitJob(e, id) { e.stopPropagation(); if(confirm("Split this job?")) await duplicateJob(e, id); }
     function queryRoute(e, pc1, pc2) { e.stopPropagation(); window.open(`https://www.google.com/maps/dir/${pc1}/${pc2}`, '_blank'); }
     function openPODImage(e, id) {
@@ -2132,6 +2215,8 @@
                 <td class="col-date">${formatUKDate(j.coll_datetime)}</td>
                 <td><b>${j.customer_name || '-'}</b></td>
                 <td class="col-route">${coll} ➔ ${del}</td>
+                <td><b>${j.fts_invoice_number || '-'}</b></td>
+                <td>${j.customers_own_invoice_number || '-'}</td>
                 <td>${j.coll_ref || '-'}</td>
                 <td class="col-price">£${j.total_price || '0.00'}</td>
                 <td class="action-col">
@@ -2152,6 +2237,8 @@
                 <td class="col-date">${formatUKDate(j.coll_datetime)}</td>
                 <td><b>${j.customer_name || '-'}</b></td>
                 <td class="col-route">${coll} ➔ ${del}</td>
+                <td><b>${j.fts_invoice_number || '-'}</b></td>
+                <td>${j.customers_own_invoice_number || '-'}</td>
                 <td>${j.coll_ref || '-'}</td>
                 <td class="col-price">£${j.total_price || '0.00'}</td>
                 <td class="action-col">
@@ -2566,7 +2653,8 @@
 
     function resetForm() {
         document.getElementById('sys_job_id').value = '';
-        ['n_cust_name','n_cust_phone', 'n_cust_email','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
+        ['n_cust_name','n_cust_phone', 'n_cust_email','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2', 'n_customers_own_invoice_number', 'n_fts_invoice_number'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
+        prefillNextFtsInvoiceNumber();
         switchFormTab('leg1');
     }
 
