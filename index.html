@@ -2108,7 +2108,16 @@
         if (!podUrl) return alert("No POD image has been uploaded for this job yet.");
         window.open(podUrl, '_blank', 'noopener,noreferrer');
     }
-    async function markPODReceived(e, id) { e.stopPropagation(); if(confirm("Move to Invoicing?")) { await sb.from('quotes').update({ status: 'completed' }).eq('id', id); loadAll(); } }
+    async function markPODReceived(e, id) {
+        e.stopPropagation();
+        if(confirm("Move to Invoicing?")) {
+            const job = allJobsRaw.find(x => x.id == id);
+            const updatePayload = { status: 'completed' };
+            if (!job || !job.tipped_timestamp) updatePayload.tipped_timestamp = new Date().toISOString();
+            await sb.from('quotes').update(updatePayload).eq('id', id);
+            loadAll();
+        }
+    }
     async function deleteJob(id) { if(confirm("Delete permanently?")) { await sb.from('quotes').delete().eq('id', id); loadAll(); } }
 
     async function drop(ev) {
@@ -2290,73 +2299,274 @@
     function generatePDF(event, id) {
         event.stopPropagation();
         const j = allJobsRaw.find(x => x.id == id);
-        const { jsPDF } = window.jspdf; 
-        const doc = new jsPDF();
-        
-        doc.setFontSize(18);
-        doc.setTextColor(193, 39, 45); 
-        doc.text(`FROST TRANSPORT - JOB MANIFEST`, 14, 20);
-        
-        doc.setFontSize(11);
-        doc.setTextColor(0, 0, 0);
-        doc.text(`Job Reference: ${j.id.slice(0,8).toUpperCase()}`, 14, 28);
-        doc.text(`Date Created: ${new Date(j.created_at).toLocaleDateString('en-GB')}`, 14, 34);
+        if (!j) return alert("Could not find this job to generate the invoice PDF.");
 
-        doc.autoTable({ 
-            startY: 40,
-            theme: 'grid',
-            headStyles: { fillColor: [26, 26, 26], textColor: [255, 255, 255] },
-            bodyStyles: { textColor: [0, 0, 0] },
-            head: [['Field', 'Details']],
-            body: [
-                ['Customer Name', j.customer_name || 'N/A'],
-                ['Customer Phone', j.customer_phone || 'N/A'],
-                ['Customer Email', j.customer_email || 'N/A'],
-                ['Vehicle Required', j.vehicle_type || 'N/A'],
-                ['Total Price', `£${j.total_price || '0.00'}`]
-            ] 
-        });
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-        doc.autoTable({ 
-            startY: doc.lastAutoTable.finalY + 10,
-            theme: 'grid',
-            headStyles: { fillColor: [193, 39, 45], textColor: [255, 255, 255] },
-            head: [['COLLECTION DETAILS', '']],
-            body: [
-                ['Collection Ref', j.coll_ref || 'N/A'],
-                ['Address', `${j.coll_street || ''}, ${j.coll_town || ''}, ${j.coll_county || ''}`.replace(/^, |, $/g, '').trim() || 'N/A'],
-                ['Postcode', j.coll_postcode || 'N/A'],
-                ['Date & Time', j.coll_datetime ? j.coll_datetime.replace('T', ' ') : 'N/A']
-            ] 
-        });
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+        const margin = 14;
+        const frostRed = [193, 39, 45];
+        const frostBlack = [26, 26, 26];
+        const frostBlue = [0, 86, 179];
+        const frostGreen = [46, 125, 50];
+        const softGrey = [245, 247, 250];
+        const lineGrey = [220, 224, 230];
 
-        doc.autoTable({ 
-            startY: doc.lastAutoTable.finalY + 10,
-            theme: 'grid',
-            headStyles: { fillColor: [46, 125, 50], textColor: [255, 255, 255] },
-            head: [['DELIVERY DETAILS (1)', '']],
-            body: [
-                ['Delivery Company', j.del_cust_name || 'N/A'],
-                ['Delivery Ref', j.del_ref || 'N/A'],
-                ['Address', `${j.del_street || ''}, ${j.del_town || ''}, ${j.del_county || ''}`.replace(/^, |, $/g, '').trim() || 'N/A'],
-                ['Postcode', j.del_postcode || 'N/A'],
-                ['Date & Time', j.del_datetime ? j.del_datetime.replace('T', ' ') : 'N/A']
-            ] 
-        });
+        const value = (v, fallback = 'N/A') => {
+            if (v === null || v === undefined) return fallback;
+            const str = String(v).trim();
+            return str ? str : fallback;
+        };
 
-        if (j.del_postcode_2) {
-            doc.autoTable({ 
-                startY: doc.lastAutoTable.finalY + 10,
-                theme: 'grid',
-                headStyles: { fillColor: [214, 137, 16], textColor: [255, 255, 255] },
-                head: [['DELIVERY DETAILS (2 - Multidrop)', '']],
-                body: [
-                    ['Postcode', j.del_postcode_2 || 'N/A']
-                ] 
-            });
+        const money = (v) => {
+            const str = value(v, '0.00').replace('£', '').trim();
+            const n = Number(str);
+            return isNaN(n) ? `£${str}` : `£${n.toFixed(2)}`;
+        };
+
+        const fmtDateTime = (v) => {
+            if (!v) return 'N/A';
+            const d = new Date(v);
+            if (isNaN(d)) return String(v).replace('T', ' ');
+            return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        };
+
+        const safeFile = (v) => value(v, 'FROST-INVOICE').replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '');
+
+        const addressBlock = (...parts) => parts
+            .map(p => value(p, ''))
+            .filter(Boolean)
+            .join('\n') || 'N/A';
+
+        const completedAt = j.tipped_timestamp || j.completed_at || j.completed_timestamp || j.del_arrived_timestamp || '';
+        const completionText = completedAt ? fmtDateTime(completedAt) : 'Not recorded on this job row';
+        const ftsInvoice = value(j.fts_invoice_number, `JOB-${String(j.id).slice(0, 8).toUpperCase()}`);
+        const customerInvoice = value(j.customers_own_invoice_number, 'Not supplied');
+        const podUrl = value(j.pod_url, '');
+        const tippedGpsRaw = value(j.tipped_gps, '');
+        const getGpsUrl = (gpsValue) => {
+            if (!gpsValue) return '';
+            const raw = String(gpsValue).trim();
+            if (!raw) return '';
+            if (/^https?:\/\//i.test(raw)) return raw;
+
+            // Supports common formats such as "53.12345,-1.23456", "53.12345 -1.23456",
+            // or text saved by the driver app containing latitude/longitude values.
+            const coords = raw.match(/(-?\d{1,3}(?:\.\d+)?)\s*[, ]\s*(-?\d{1,3}(?:\.\d+)?)/);
+            if (coords) return `https://www.google.com/maps?q=${coords[1]},${coords[2]}`;
+
+            return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(raw)}`;
+        };
+        const gpsUrl = getGpsUrl(tippedGpsRaw);
+        const gpsDisplay = gpsUrl ? (tippedGpsRaw || 'Open delivery GPS location') : 'No delivery GPS saved against this job';
+
+        function addPageHeader() {
+            doc.setFillColor(...frostBlack);
+            doc.rect(0, 0, pageW, 22, 'F');
+            doc.setFillColor(...frostRed);
+            doc.rect(0, 22, pageW, 2.5, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.text('FROST TRANSPORT SOLUTIONS', margin, 14);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8.5);
+            doc.text('Professional Transport Invoice / Job Summary', margin, 19);
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(13);
+            doc.text('INVOICE', pageW - margin, 14, { align: 'right' });
+            doc.setFontSize(8.5);
+            doc.setFont('helvetica', 'normal');
+            doc.text(ftsInvoice, pageW - margin, 19, { align: 'right' });
         }
 
-        doc.save(`FROST_Job_${j.id.slice(0,5)}.pdf`);
+        function addFooter() {
+            const pages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pages; i++) {
+                doc.setPage(i);
+                doc.setDrawColor(...lineGrey);
+                doc.line(margin, pageH - 14, pageW - margin, pageH - 14);
+                doc.setFontSize(8);
+                doc.setTextColor(120, 120, 120);
+                doc.text(`Generated ${fmtDateTime(new Date().toISOString())}`, margin, pageH - 8);
+                doc.text(`Page ${i} of ${pages}`, pageW - margin, pageH - 8, { align: 'right' });
+            }
+        }
+
+        function sectionTitle(title, y, rgb = frostBlack) {
+            if (y > pageH - 40) {
+                doc.addPage();
+                addPageHeader();
+                y = 34;
+            }
+            doc.setFillColor(...rgb);
+            doc.roundedRect(margin, y, pageW - (margin * 2), 7, 1.5, 1.5, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.text(title.toUpperCase(), margin + 3, y + 5);
+            return y + 10;
+        }
+
+        function infoTable(startY, body, options = {}) {
+            doc.autoTable({
+                startY,
+                theme: 'plain',
+                margin: { left: margin, right: margin },
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 8.5,
+                    cellPadding: { top: 2.2, right: 2.5, bottom: 2.2, left: 2.5 },
+                    lineColor: lineGrey,
+                    lineWidth: 0.1,
+                    valign: 'top'
+                },
+                columnStyles: {
+                    0: { fontStyle: 'bold', textColor: [80, 80, 80], cellWidth: options.labelWidth || 42, fillColor: softGrey },
+                    1: { textColor: [20, 20, 20] },
+                    2: { fontStyle: 'bold', textColor: [80, 80, 80], cellWidth: options.labelWidth || 42, fillColor: softGrey },
+                    3: { textColor: [20, 20, 20] }
+                },
+                body
+            });
+            return doc.lastAutoTable.finalY + 6;
+        }
+
+        addPageHeader();
+
+        let y = 34;
+
+        doc.setFillColor(250, 250, 250);
+        doc.roundedRect(margin, y, pageW - (margin * 2), 28, 2, 2, 'F');
+        doc.setDrawColor(...lineGrey);
+        doc.roundedRect(margin, y, pageW - (margin * 2), 28, 2, 2, 'S');
+
+        doc.setTextColor(...frostBlack);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text('Booking Customer', margin + 4, y + 7);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text(value(j.customer_name), margin + 4, y + 13);
+        doc.setFontSize(8.5);
+        doc.text(`Tel: ${value(j.customer_phone)}`, margin + 4, y + 19);
+        doc.text(`Email: ${value(j.customer_email)}`, margin + 4, y + 24);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('FTS Invoice No', pageW - margin - 4, y + 7, { align: 'right' });
+        doc.setTextColor(...frostRed);
+        doc.setFontSize(13);
+        doc.text(ftsInvoice, pageW - margin - 4, y + 14, { align: 'right' });
+        doc.setTextColor(...frostBlack);
+        doc.setFontSize(8.5);
+        doc.text(`Customer Invoice No: ${customerInvoice}`, pageW - margin - 4, y + 21, { align: 'right' });
+        doc.text(`Job ID: ${String(j.id).slice(0, 8).toUpperCase()}`, pageW - margin - 4, y + 25.5, { align: 'right' });
+
+        y += 36;
+
+        y = sectionTitle('Job Summary', y, frostBlack);
+        y = infoTable(y, [
+            ['FTS invoice number', ftsInvoice, 'Customer invoice number', customerInvoice],
+            ['Booking customer', value(j.customer_name), 'Job status', value(j.status)],
+            ['Vehicle required', value(j.vehicle_type), 'Agreed price', money(j.total_price)],
+            ['Total pallets', value(j.total_pallets), 'Total weight', j.total_weight ? `${j.total_weight} kg` : 'N/A'],
+            ['Planner slot', value(j.assigned_slot), 'Assigned driver', value(j.assigned_driver)],
+            ['Created', fmtDateTime(j.created_at), 'Completed / tipped', completionText]
+        ]);
+
+        y = sectionTitle('Collection Details', y, frostBlue);
+        y = infoTable(y, [
+            ['Collection company', value(j.customer_name), 'Collection ref', value(j.coll_ref)],
+            ['Telephone', value(j.customer_phone), 'Email', value(j.customer_email)],
+            ['Address', addressBlock(j.coll_street, j.coll_town, j.coll_county, j.coll_postcode), 'Date & time', fmtDateTime(j.coll_datetime)],
+            ['Second collection postcode', value(j.coll_postcode_2), 'Second collection town', value(j.coll_town_2)]
+        ]);
+
+        y = sectionTitle('Delivery Details', y, frostGreen);
+        y = infoTable(y, [
+            ['Delivery company', value(j.del_cust_name), 'Delivery ref', value(j.del_ref)],
+            ['Telephone', value(j.del_phone), 'Email', value(j.del_email)],
+            ['Address', addressBlock(j.del_street, j.del_town, j.del_county, j.del_postcode), 'Date & time', fmtDateTime(j.del_datetime)],
+            ['Second delivery postcode', value(j.del_postcode_2), 'Second delivery town', value(j.del_town_2)]
+        ]);
+
+        y = sectionTitle('Driver App Milestones', y, [80, 80, 80]);
+        y = infoTable(y, [
+            ['Acknowledged', fmtDateTime(j.ack_timestamp), 'Arrived collection', fmtDateTime(j.arrived_timestamp)],
+            ['Loaded', fmtDateTime(j.loaded_timestamp), 'Arrived delivery', fmtDateTime(j.del_arrived_timestamp)],
+            ['Completed / tipped', completionText, 'POD status', podUrl ? 'POD link available' : 'No POD URL saved']
+        ]);
+
+        y = sectionTitle('References & Proof of Delivery', y, frostRed);
+        y = infoTable(y, [
+            ['Collection reference', value(j.coll_ref), 'Delivery reference', value(j.del_ref)],
+            ['FTS invoice number', ftsInvoice, 'Customer invoice number', customerInvoice],
+            ['POD URL', podUrl || 'No POD URL saved against this job', 'GPS Location', gpsDisplay]
+        ], { labelWidth: 38 });
+
+        if (podUrl) {
+            if (y > pageH - 25) {
+                doc.addPage();
+                addPageHeader();
+                y = 34;
+            }
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(...frostRed);
+            doc.textWithLink('Click here to open the POD image', margin, y, { url: podUrl });
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(90, 90, 90);
+            doc.text('If the link does not open from your PDF viewer, copy the POD URL shown above.', margin, y + 5);
+            y += 12;
+        }
+
+        if (gpsUrl) {
+            if (y > pageH - 25) {
+                doc.addPage();
+                addPageHeader();
+                y = 34;
+            }
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(...frostBlue);
+            doc.textWithLink('Click here to open the delivery GPS location', margin, y, { url: gpsUrl });
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(90, 90, 90);
+            doc.text('This opens the GPS point saved when the driver completed the delivery.', margin, y + 5);
+            y += 12;
+        }
+
+        if (y > pageH - 42) {
+            doc.addPage();
+            addPageHeader();
+            y = 34;
+        }
+
+        doc.setDrawColor(...lineGrey);
+        doc.line(margin, y, pageW - margin, y);
+        y += 8;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(...frostBlack);
+        doc.text('Invoice Total', pageW - margin - 45, y);
+        doc.setFontSize(16);
+        doc.setTextColor(...frostGreen);
+        doc.text(money(j.total_price), pageW - margin, y, { align: 'right' });
+        y += 8;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(100, 100, 100);
+        doc.text('Thank you for choosing Frost Transport Solutions.', margin, y);
+
+        addFooter();
+        doc.save(`${safeFile(ftsInvoice)}_${safeFile(j.customer_name)}.pdf`);
     }
 
     function filterHistory() {
