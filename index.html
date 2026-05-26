@@ -165,7 +165,7 @@
         .job-card.status-del-arr { background: #fef9e7; border-left-color: #f1c40f; }
         .job-card.status-tipped { background: #e8f8f5; border-left-color: #1abc9c; }
 
-        .postcode-header { display: flex; font-weight: bold; margin-bottom: 5px; font-size: 0.85rem; pointer-events: none; justify-content: center; }
+        .postcode-header { display: flex; font-weight: bold; margin-bottom: 5px; font-size: 0.85rem; pointer-events: auto; justify-content: center; cursor: pointer; }
         .pc-coll { color: royalblue; display: block;} 
         .pc-del { color: #2e7d32; display: block;} 
         .pc-del-2 { color: #d68910; display: block;}
@@ -208,6 +208,51 @@
         /* Auto-Complete Dropdown Styles */
         .autocomplete-suggestions { display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid var(--frost-blue); border-radius: 0 0 4px 4px; max-height:160px; overflow-y:auto; z-index:1000; box-shadow:0 4px 6px rgba(0,0,0,0.1); }
         .autocomplete-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+
+
+        /* Larger job detail pop-up opened from job card route headers */
+        .job-detail-modal-content { width: 900px; max-width: 95vw; padding: 0; overflow: hidden; }
+        .job-detail-modal-header { background: var(--frost-black); color: white; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 4px solid var(--frost-red); }
+        .job-detail-modal-header h2 { margin: 0; font-size: 1rem; }
+        .job-detail-close { background: var(--frost-red); color: white; border: none; border-radius: 50%; width: 32px; height: 32px; font-weight: bold; cursor: pointer; font-size: 1rem; line-height: 1; }
+        .job-detail-close:hover { background: #a02025; }
+        #job-detail-body { padding: 18px; background: #f4f4f4; max-height: calc(85vh - 70px); overflow-y: auto; }
+        .modal-job-card-copy { cursor: default !important; margin: 0 !important; padding: 14px !important; font-size: 0.85rem !important; border-radius: 8px !important; box-shadow: 0 4px 14px rgba(0,0,0,0.12) !important; }
+        .modal-job-card-copy .postcode-header { font-size: 1.1rem !important; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px; margin-bottom: 14px; cursor: default; gap: 8px; }
+        .modal-job-card-copy .card-body { display: block !important; border-top: none !important; padding-top: 0 !important; margin-top: 0 !important; line-height: 1.55; }
+        .modal-job-card-copy .card-actions { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px; margin-bottom: 14px; }
+        .modal-job-card-copy .action-btn { font-size: 1.25rem; }
+        .modal-job-card-copy .card-section-label { font-size: 0.72rem; margin-top: 14px; padding-top: 8px; border-top: 1px solid #eee; }
+        .modal-job-card-copy .detail-row { padding: 6px 0; font-size: 0.85rem; gap: 20px; }
+        .modal-job-card-copy .detail-row b { font-size: 0.78rem; }
+        .modal-job-card-copy .detail-row span { text-align: right; max-width: 65%; word-break: break-word; }
+        .modal-job-card-copy .vehicle-tag,
+        .modal-job-card-copy .price-tag { font-size: 0.78rem; padding: 3px 7px; }
+        .full-job-detail-panel { margin-top: 16px; background: white; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .full-job-detail-panel h3 { margin: 0; background: var(--frost-black); color: white; padding: 10px 14px; font-size: 0.9rem; border-bottom: 3px solid var(--frost-red); }
+        .full-job-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 14px; }
+        .full-detail-section { border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background: #fff; }
+        .full-detail-section h4 { margin: 0; padding: 8px 10px; font-size: 0.78rem; color: white; background: #34495e; text-transform: uppercase; letter-spacing: 0.4px; }
+        .full-detail-section.collection h4 { background: #0056b3; }
+        .full-detail-section.delivery h4 { background: #2e7d32; }
+        .full-detail-section.financial h4 { background: #2e7d32; }
+        .full-detail-section.system h4 { background: #555; }
+        .full-detail-row { display: flex; justify-content: space-between; gap: 18px; padding: 7px 10px; border-bottom: 1px solid #f1f1f1; font-size: 0.82rem; }
+        .full-detail-row:last-child { border-bottom: none; }
+        .full-detail-row b { color: #444; min-width: 135px; }
+        .full-detail-row span { text-align: right; word-break: break-word; color: #111; }
+        .pod-detail-box { margin: 0 14px 14px 14px; border: 1px dashed #0056b3; background: #f4f9ff; border-radius: 8px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .pod-detail-box button { background: var(--frost-blue); color: white; border: none; border-radius: 5px; padding: 8px 12px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .pod-detail-box button:hover { background: #004494; }
+        .pod-detail-url { font-size: 0.75rem; color: #555; word-break: break-all; text-align: right; }
+        @media (max-width: 800px) {
+            .full-job-detail-grid { grid-template-columns: 1fr; }
+            .full-detail-row { flex-direction: column; gap: 3px; }
+            .full-detail-row span { text-align: left; }
+            .pod-detail-box { flex-direction: column; align-items: flex-start; }
+            .pod-detail-url { text-align: left; }
+        }
+
         .autocomplete-item:hover { background: #f0f7ff; }
         .ac-name { font-weight: bold; color: var(--frost-black); }
         .ac-details { font-size: 0.7rem; color: #888; }
@@ -555,6 +600,19 @@
         <button type="button" class="week-btn" onclick="closeModal('modal-note')" style="width:100%; margin-top:8px; background:#ddd; color:#333;">Cancel</button>
     </div>
 </div>
+
+
+<!-- Larger Job Detail Modal -->
+<div id="modal-job-detail" class="modal-overlay" onclick="closeJobDetailsOnOutsideClick(event)">
+    <div class="modal-content job-detail-modal-content" onclick="event.stopPropagation();">
+        <div class="job-detail-modal-header">
+            <h2 id="job-detail-title">Job Details</h2>
+            <button type="button" class="job-detail-close" onclick="closeJobDetailsModal()">✕</button>
+        </div>
+        <div id="job-detail-body"></div>
+    </div>
+</div>
+
 
 <script>
     // ==========================================
@@ -1192,6 +1250,189 @@
         return defaultStr;
     }
 
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function escapeInlineArg(value) {
+        return String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    function detailDisplayValue(value) {
+        if (value === null || value === undefined || String(value).trim() === '') return '-';
+        if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+        if (typeof value === 'object') return escapeHtml(JSON.stringify(value));
+        return escapeHtml(String(value));
+    }
+
+    function detailDateTime(value) {
+        if (!value) return '-';
+        const d = new Date(value);
+        if (isNaN(d)) return detailDisplayValue(value);
+        return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
+    }
+
+    function fullDetailRow(label, value, isDateTime = false) {
+        return `<div class="full-detail-row"><b>${escapeHtml(label)}:</b><span>${isDateTime ? detailDateTime(value) : detailDisplayValue(value)}</span></div>`;
+    }
+
+    function fullDetailSection(title, rows, sectionClass = '') {
+        return `<div class="full-detail-section ${sectionClass}"><h4>${escapeHtml(title)}</h4>${rows.join('')}</div>`;
+    }
+
+    function buildPodDetailBox(job) {
+        const podUrl = (job.pod_url || '').trim();
+        if (!podUrl) {
+            return `<div class="pod-detail-box"><b>📎 POD Image</b><span class="pod-detail-url">No POD image URL saved against this job yet.</span></div>`;
+        }
+        return `<div class="pod-detail-box"><button type="button" onclick="openPODImage(event, '${escapeInlineArg(job.id)}')">📎 Open POD Image</button><span class="pod-detail-url">${escapeHtml(podUrl)}</span></div>`;
+    }
+
+    function buildFullJobDetailsHtml(job, isGhost = false) {
+        const knownFields = new Set([
+            'id', 'created_at', 'customer_name', 'customer_phone', 'customer_email',
+            'coll_postcode', 'coll_street', 'coll_town', 'coll_county', 'coll_ref', 'coll_datetime', 'coll_postcode_2', 'coll_town_2',
+            'del_postcode', 'del_cust_name', 'del_phone', 'del_email', 'del_street', 'del_town', 'del_county', 'del_ref', 'del_datetime', 'del_postcode_2', 'del_town_2',
+            'total_price', 'total_pallets', 'total_weight', 'vehicle_type', 'status', 'dispatch_status', 'assigned_slot', 'assigned_driver', 'driver_phone',
+            'ack_timestamp', 'arrived_timestamp', 'loaded_timestamp', 'del_arrived_timestamp', 'tipped_timestamp', 'pod_url'
+        ]);
+
+        const bookingRows = [
+            fullDetailRow('Job / booking ID', job.id),
+            fullDetailRow('Created', job.created_at, true),
+            fullDetailRow('Booking customer', job.customer_name),
+            fullDetailRow('Customer telephone', job.customer_phone),
+            fullDetailRow('Customer email', job.customer_email),
+            fullDetailRow('Status', job.status),
+            fullDetailRow('Dispatch status', job.dispatch_status),
+            fullDetailRow('Assigned driver', job.assigned_driver),
+            fullDetailRow('Planner slot', job.assigned_slot)
+        ];
+
+        const collectionRows = [
+            fullDetailRow('Collection company/customer', job.customer_name),
+            fullDetailRow('Telephone', job.customer_phone),
+            fullDetailRow('Email', job.customer_email),
+            fullDetailRow('Street', job.coll_street),
+            fullDetailRow('Town', job.coll_town),
+            fullDetailRow('County', job.coll_county),
+            fullDetailRow('Postcode', job.coll_postcode),
+            fullDetailRow('Collection ref / booking no', job.coll_ref),
+            fullDetailRow('Date & time', job.coll_datetime, true),
+            fullDetailRow('Second collection postcode', job.coll_postcode_2),
+            fullDetailRow('Second collection town', job.coll_town_2)
+        ];
+
+        const deliveryRows = [
+            fullDetailRow('Delivery company/customer', job.del_cust_name),
+            fullDetailRow('Telephone', job.del_phone),
+            fullDetailRow('Email', job.del_email),
+            fullDetailRow('Street', job.del_street),
+            fullDetailRow('Town', job.del_town),
+            fullDetailRow('County', job.del_county),
+            fullDetailRow('Postcode', job.del_postcode),
+            fullDetailRow('Delivery ref / booking no', job.del_ref),
+            fullDetailRow('Date & time', job.del_datetime, true),
+            fullDetailRow('Second delivery postcode', job.del_postcode_2),
+            fullDetailRow('Second delivery town', job.del_town_2)
+        ];
+
+        const logisticsRows = [
+            fullDetailRow('Vehicle required', job.vehicle_type),
+            fullDetailRow('Total pallets', job.total_pallets),
+            fullDetailRow('Total weight', job.total_weight ? `${job.total_weight} kg` : ''),
+            fullDetailRow('Agreed price', job.total_price ? `£${job.total_price}` : ''),
+            fullDetailRow('Driver phone', job.driver_phone)
+        ];
+
+        const timestampRows = [
+            fullDetailRow('Acknowledged', job.ack_timestamp, true),
+            fullDetailRow('Arrived collection', job.arrived_timestamp, true),
+            fullDetailRow('Loaded', job.loaded_timestamp, true),
+            fullDetailRow('Arrived delivery', job.del_arrived_timestamp, true),
+            fullDetailRow('Tipped', job.tipped_timestamp, true)
+        ];
+
+        const extraRows = Object.keys(job)
+            .filter(key => !knownFields.has(key))
+            .sort()
+            .map(key => fullDetailRow(key.replace(/_/g, ' '), job[key]));
+
+        const extraSection = extraRows.length ? fullDetailSection('Additional stored quote fields', extraRows, 'system') : '';
+
+        return `
+            <div class="full-job-detail-panel">
+                <h3>Complete Job Information${isGhost ? ' - O/N Delivery View' : ''}</h3>
+                <div class="full-job-detail-grid">
+                    ${fullDetailSection('Booking / Customer', bookingRows, 'system')}
+                    ${fullDetailSection('Logistics & Price', logisticsRows, 'financial')}
+                    ${fullDetailSection('Collection Details', collectionRows, 'collection')}
+                    ${fullDetailSection('Delivery Details', deliveryRows, 'delivery')}
+                    ${fullDetailSection('Driver App Timestamps', timestampRows, 'system')}
+                    ${extraSection}
+                </div>
+                ${buildPodDetailBox(job)}
+            </div>`;
+    }
+
+
+    function openJobDetailsModal(e, id, isGhost = false) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (isDragging) return;
+
+        const sourceCard = document.getElementById(isGhost ? `ghost-${id}` : id);
+        const job = allJobsRaw.find(x => String(x.id) === String(id));
+        if (!sourceCard || !job) return;
+
+        const modal = document.getElementById('modal-job-detail');
+        const title = document.getElementById('job-detail-title');
+        const body = document.getElementById('job-detail-body');
+
+        const routeTitle = `${job.coll_postcode || job.coll_town || 'Collection'} ➔ ${job.del_postcode || job.del_town || 'Delivery'}`;
+        title.innerText = `${job.customer_name || 'Job Details'} | ${routeTitle}`;
+
+        body.innerHTML = '';
+        const detailCard = sourceCard.cloneNode(true);
+        detailCard.id = `modal-copy-${sourceCard.id}`;
+        detailCard.draggable = false;
+        detailCard.removeAttribute('draggable');
+        detailCard.classList.add('expanded', 'modal-job-card-copy');
+        detailCard.onclick = null;
+        detailCard.ondragstart = null;
+        detailCard.ondragend = null;
+
+        body.appendChild(detailCard);
+        body.insertAdjacentHTML('beforeend', buildFullJobDetailsHtml(job, isGhost));
+
+        body.onclick = (ev) => {
+            if (ev.target.closest('.action-btn, button')) {
+                setTimeout(() => closeJobDetailsModal(), 50);
+            }
+        };
+
+        modal.style.display = 'flex';
+    }
+
+    function closeJobDetailsModal() {
+        const modal = document.getElementById('modal-job-detail');
+        const body = document.getElementById('job-detail-body');
+        if (modal) modal.style.display = 'none';
+        if (body) body.innerHTML = '';
+    }
+
+    function closeJobDetailsOnOutsideClick(e) {
+        if (e.target.id === 'modal-job-detail') closeJobDetailsModal();
+    }
+
     function createCardElement(q, isGhost = false, isON = false) {
         const card = document.createElement('div');
         const isCompleted = q.status === 'completed';
@@ -1231,7 +1472,10 @@
             isDragging = false; 
         };
 
-        card.onclick = (e) => { if(!e.target.classList.contains('action-btn')) card.classList.toggle('expanded'); };
+        card.onclick = (e) => {
+            if (e.target.closest('.action-btn, button, input, select, textarea, a')) return;
+            openJobDetailsModal(e, q.id, isGhost);
+        };
         const dtFormat = (str) => str ? str.replace('T', ' ') : '-';
         const tOnly = (iso) => iso ? new Date(iso).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}) : '--:--';
 
@@ -1357,7 +1601,7 @@
                         <span class="action-btn" onclick="editJob(event, '${q.id}')" title="Edit">✎</span>
                         <span class="action-btn" onclick="splitJob(event, '${q.id}')" title="Split">✂</span>
                         <span class="action-btn" onclick="duplicateJob(event, '${q.id}')" title="Duplicate">❐</span>
-                        <span class="action-btn" onclick="window.open('${podFolder}', '_blank')" title="POD Drive">📎</span>
+                        <span class="action-btn" onclick="openPODImage(event, '${q.id}')" title="Open POD Image">📎</span>
                         <span class="action-btn" onclick="queryRoute(event, '${q.coll_postcode}', '${q.del_postcode}')" title="Maps">📍</span>
                         ${!isCompleted ? `<span class="action-btn" onclick="markPODReceived(event, '${q.id}')" title="Complete POD">✅</span>` : ''}
                     </div>
@@ -1774,6 +2018,13 @@
     async function duplicateJob(e, id) { e.stopPropagation(); const j = {...allJobsRaw.find(x => x.id == id)}; delete j.id; j.status = 'pending'; j.assigned_slot = null; await sb.from('quotes').insert([j]); loadAll(); }
     async function splitJob(e, id) { e.stopPropagation(); if(confirm("Split this job?")) await duplicateJob(e, id); }
     function queryRoute(e, pc1, pc2) { e.stopPropagation(); window.open(`https://www.google.com/maps/dir/${pc1}/${pc2}`, '_blank'); }
+    function openPODImage(e, id) {
+        if (e) e.stopPropagation();
+        const j = allJobsRaw.find(x => String(x.id) === String(id));
+        const podUrl = j && j.pod_url ? String(j.pod_url).trim() : '';
+        if (!podUrl) return alert("No POD image has been uploaded for this job yet.");
+        window.open(podUrl, '_blank', 'noopener,noreferrer');
+    }
     async function markPODReceived(e, id) { e.stopPropagation(); if(confirm("Move to Invoicing?")) { await sb.from('quotes').update({ status: 'completed' }).eq('id', id); loadAll(); } }
     async function deleteJob(id) { if(confirm("Delete permanently?")) { await sb.from('quotes').delete().eq('id', id); loadAll(); } }
 
