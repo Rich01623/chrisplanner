@@ -140,6 +140,10 @@
         .btn-pdf { background-color: var(--frost-red); color: white; }
         .btn-invoice-move { background-color: #f39c12; color: white; }
         .btn-success { background-color: var(--price-green); color: white; }
+        .btn-edit-invoice { background-color: var(--frost-blue); color: white; }
+        .btn-send-invoice { background-color: #16a085; color: white; }
+        #invoicing-view .action-col { min-width: 330px; }
+        .demurrage-chip { display:inline-block; margin-top:4px; background:#fff3cd; color:#7a4d00; border:1px solid #ffe08a; border-radius:4px; padding:2px 6px; font-size:0.65rem; font-weight:700; }
 
         /* ==========================================
            6. JOB CARDS & GHOST CARDS
@@ -613,6 +617,37 @@
         </div>
         <button type="button" onclick="saveNote()" style="width: 100%; background: #f39c12; color: white; border: none; padding: 12px; font-weight: bold; cursor: pointer; border-radius: 4px; margin-top:5px;">Save Note</button>
         <button type="button" class="week-btn" onclick="closeModal('modal-note')" style="width:100%; margin-top:8px; background:#ddd; color:#333;">Cancel</button>
+    </div>
+</div>
+
+<!-- Invoice Adjustment Modal -->
+<div id="modal-invoice-edit" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-invoice-edit')">
+    <div class="modal-content" style="width: 430px; max-width: 95vw;" onclick="event.stopPropagation();">
+        <h3 style="margin-top:0; color:var(--frost-blue);">Invoice Adjustments</h3>
+        <p style="font-size:0.8rem; color:#666; margin-bottom:14px;">Add extra invoice charges without changing the original job price. Demurrage will be shown clearly as a separate line on the invoice PDF.</p>
+        <input type="hidden" id="invoice_edit_job_id">
+        <div class="form-group">
+            <label>Job / Customer</label>
+            <input type="text" id="invoice_edit_job_summary" readonly style="background:#f8fafc; font-weight:bold;">
+        </div>
+        <div style="display:flex; gap:10px;">
+            <div class="form-group" style="flex:1;">
+                <label>Base Job Price (£)</label>
+                <input type="text" id="invoice_edit_base_price" readonly style="background:#f8fafc;">
+            </div>
+            <div class="form-group" style="flex:1;">
+                <label>Demurrage (£)</label>
+                <input type="number" step="0.01" min="0" id="invoice_edit_demurrage_amount" placeholder="0.00">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Demurrage Notes</label>
+            <textarea id="invoice_edit_demurrage_notes" rows="3" placeholder="e.g. 2 hours waiting time at collection / delivery"></textarea>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button type="button" class="week-btn" onclick="closeModal('modal-invoice-edit')" style="flex:1; background:#ddd; color:#333;">Cancel</button>
+            <button type="button" class="week-btn" onclick="saveInvoiceAdjustments()" style="flex:2; background:var(--frost-blue); color:white;">Save Invoice Extras</button>
+        </div>
     </div>
 </div>
 
@@ -2213,6 +2248,154 @@
         }
     }
 
+    function parseCurrencyValue(v) {
+        if (v === null || v === undefined) return 0;
+        const cleaned = String(v).replace(/£/g, '').replace(/,/g, '').trim();
+        const n = Number(cleaned);
+        return isNaN(n) ? 0 : n;
+    }
+
+    function formatCurrencyValue(v) {
+        return `£${parseCurrencyValue(v).toFixed(2)}`;
+    }
+
+    function getDemurrageAmount(job) {
+        return parseCurrencyValue(job && job.demurrage_amount);
+    }
+
+    function getInvoiceTotal(job) {
+        return parseCurrencyValue(job && job.total_price) + getDemurrageAmount(job);
+    }
+
+    function invoiceTextValue(v, fallback = 'N/A') {
+        if (v === null || v === undefined) return fallback;
+        const str = String(v).trim();
+        return str ? str : fallback;
+    }
+
+    function formatInvoiceDateTime(v) {
+        if (!v) return 'N/A';
+        const d = new Date(v);
+        if (isNaN(d)) return String(v).replace('T', ' ');
+        return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function invoiceAddressLine(...parts) {
+        return parts
+            .map(p => invoiceTextValue(p, ''))
+            .filter(Boolean)
+            .join(', ') || 'N/A';
+    }
+
+    function buildDeliveryGpsUrl(gpsValue) {
+        if (!gpsValue) return '';
+        const raw = String(gpsValue).trim();
+        if (!raw || raw === 'GPS Not Available') return '';
+        if (/^https?:\/\//i.test(raw)) return raw;
+
+        const coords = raw.match(/(-?\d{1,3}(?:\.\d+)?)\s*[, ]\s*(-?\d{1,3}(?:\.\d+)?)/);
+        if (coords) return `https://www.google.com/maps?q=${coords[1]},${coords[2]}`;
+
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(raw)}`;
+    }
+
+    function getInvoiceRecipientEmail(job) {
+        return invoiceTextValue(job.customer_email || job.cust_email || job.email || job.del_email, '').trim();
+    }
+
+    function sendInvoiceEmail(event, id) {
+        event.stopPropagation();
+        const j = allJobsRaw.find(x => x.id == id);
+        if (!j) return alert('Could not find this job to send the invoice.');
+
+        let recipient = getInvoiceRecipientEmail(j);
+        if (!recipient) {
+            recipient = prompt('No booking customer email is saved on this job. Enter the client email address to send this invoice:') || '';
+            recipient = recipient.trim();
+        }
+        if (!recipient) return;
+
+        const ftsInvoice = invoiceTextValue(j.fts_invoice_number, `JOB-${String(j.id).slice(0, 8).toUpperCase()}`);
+        const customerInvoice = invoiceTextValue(j.customers_own_invoice_number, '');
+        const baseCharge = parseCurrencyValue(j.total_price);
+        const demurrageCharge = getDemurrageAmount(j);
+        const invoiceTotal = getInvoiceTotal(j);
+        const completedAt = j.tipped_timestamp || j.completed_at || j.completed_timestamp || j.del_arrived_timestamp || '';
+        const podUrl = invoiceTextValue(j.pod_url, '');
+        const gpsUrl = buildDeliveryGpsUrl(j.tipped_gps);
+
+        const subject = `Invoice ${ftsInvoice} - Frost Transport Solutions`;
+        const bodyLines = [
+            'Hello,',
+            '',
+            `Please find attached invoice ${ftsInvoice} for the transport job below.`,
+            customerInvoice ? `Customer invoice / reference number: ${customerInvoice}` : '',
+            '',
+            `Booking customer: ${invoiceTextValue(j.customer_name)}`,
+            `Collection: ${invoiceAddressLine(j.coll_street, j.coll_town, j.coll_county, j.coll_postcode)}`,
+            `Collection date/time: ${formatInvoiceDateTime(j.coll_datetime)}`,
+            `Collection reference: ${invoiceTextValue(j.coll_ref)}`,
+            '',
+            `Delivery: ${invoiceAddressLine(j.del_cust_name, j.del_street, j.del_town, j.del_county, j.del_postcode)}`,
+            `Delivery date/time: ${formatInvoiceDateTime(j.del_datetime)}`,
+            `Delivery reference: ${invoiceTextValue(j.del_ref)}`,
+            `Completed: ${completedAt ? formatInvoiceDateTime(completedAt) : 'Not recorded'}`,
+            '',
+            `Haulage charge: ${formatCurrencyValue(baseCharge)}`,
+            demurrageCharge > 0 ? `Demurrage: ${formatCurrencyValue(demurrageCharge)}${j.demurrage_notes ? ' - ' + j.demurrage_notes : ''}` : '',
+            `Invoice total: ${formatCurrencyValue(invoiceTotal)}`,
+            podUrl ? `POD: ${podUrl}` : '',
+            gpsUrl ? `Delivery GPS location: ${gpsUrl}` : '',
+            '',
+            'Kind regards,',
+            'Frost Transport Solutions'
+        ].filter(line => line !== '').join('\n');
+
+        const proceed = confirm('This will download the invoice PDF and then open your email app with the client email, subject and invoice details filled in.\n\nPlease attach the downloaded PDF before sending.');
+        if (!proceed) return;
+
+        generatePDF({ stopPropagation: function(){} }, id);
+
+        const mailtoUrl = `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines)}`;
+        window.location.href = mailtoUrl;
+    }
+
+    function openInvoiceEdit(e, id) {
+        e.stopPropagation();
+        const j = allJobsRaw.find(x => x.id == id);
+        if (!j) return alert('Could not find this job to edit invoice extras.');
+
+        document.getElementById('invoice_edit_job_id').value = j.id;
+        document.getElementById('invoice_edit_job_summary').value = `${j.fts_invoice_number || 'No FTS invoice'} | ${j.customer_name || 'Unknown customer'}`;
+        document.getElementById('invoice_edit_base_price').value = formatCurrencyValue(j.total_price);
+        document.getElementById('invoice_edit_demurrage_amount').value = getDemurrageAmount(j) ? getDemurrageAmount(j).toFixed(2) : '';
+        document.getElementById('invoice_edit_demurrage_notes').value = j.demurrage_notes || '';
+        openModal('modal-invoice-edit');
+    }
+
+    async function saveInvoiceAdjustments() {
+        const id = document.getElementById('invoice_edit_job_id').value;
+        if (!id) return alert('No job selected.');
+
+        const rawAmount = document.getElementById('invoice_edit_demurrage_amount').value;
+        const demurrageAmount = rawAmount === '' ? null : parseCurrencyValue(rawAmount);
+        const demurrageNotes = document.getElementById('invoice_edit_demurrage_notes').value.trim();
+
+        try {
+            const { error } = await sb.from('quotes').update({
+                demurrage_amount: demurrageAmount,
+                demurrage_notes: demurrageNotes
+            }).eq('id', id);
+
+            if (error) throw error;
+
+            closeModal('modal-invoice-edit');
+            await loadAll();
+        } catch (err) {
+            alert('Could not save invoice extras. Make sure the quotes table has columns named demurrage_amount and demurrage_notes. Error: ' + (err.message || err));
+        }
+    }
+
     function renderInvoiceList() {
         const body = document.getElementById('invoice-list-body');
         if (!body) return; body.innerHTML = "";
@@ -2227,9 +2410,14 @@
                 <td><b>${j.fts_invoice_number || '-'}</b></td>
                 <td>${j.customers_own_invoice_number || '-'}</td>
                 <td>${j.coll_ref || '-'}</td>
-                <td class="col-price">£${j.total_price || '0.00'}</td>
+                <td class="col-price">
+                    ${formatCurrencyValue(getInvoiceTotal(j))}
+                    ${getDemurrageAmount(j) ? `<br><span class="demurrage-chip">+ Demurrage ${formatCurrencyValue(getDemurrageAmount(j))}</span>` : ''}
+                </td>
                 <td class="action-col">
                     <button class="action-btn-small btn-pdf" onclick="generatePDF(event, '${j.id}')">📄 PDF</button>
+                    <button class="action-btn-small btn-edit-invoice" onclick="openInvoiceEdit(event, '${j.id}')">✏️ EDIT</button>
+                    <button class="action-btn-small btn-send-invoice" onclick="sendInvoiceEmail(event, '${j.id}')">✉️ SEND</button>
                     <button class="action-btn-small btn-success" onclick="markAsBilled(event, '${j.id}')">MARK BILLED</button>
                 </td>
             </tr>`;
@@ -2361,6 +2549,11 @@
         };
         const gpsUrl = getGpsUrl(tippedGpsRaw);
         const gpsDisplay = gpsUrl ? (tippedGpsRaw || 'Open delivery GPS location') : 'No delivery GPS saved against this job';
+        const baseCharge = parseCurrencyValue(j.total_price);
+        const demurrageCharge = getDemurrageAmount(j);
+        const invoiceTotal = baseCharge + demurrageCharge;
+        const demurrageNotes = value(j.demurrage_notes, 'Waiting time / demurrage charge');
+        const moneyFromNumber = (n) => `£${Number(n || 0).toFixed(2)}`;
 
         function addPageHeader() {
             doc.setFillColor(...frostBlack);
@@ -2473,7 +2666,8 @@
         y = infoTable(y, [
             ['FTS invoice number', ftsInvoice, 'Customer invoice number', customerInvoice],
             ['Booking customer', value(j.customer_name), 'Job status', value(j.status)],
-            ['Vehicle required', value(j.vehicle_type), 'Agreed price', money(j.total_price)],
+            ['Vehicle required', value(j.vehicle_type), 'Base job price', moneyFromNumber(baseCharge)],
+            ['Demurrage', demurrageCharge ? moneyFromNumber(demurrageCharge) : 'None', 'Invoice total', moneyFromNumber(invoiceTotal)],
             ['Total pallets', value(j.total_pallets), 'Total weight', j.total_weight ? `${j.total_weight} kg` : 'N/A'],
             ['Planner slot', value(j.assigned_slot), 'Assigned driver', value(j.assigned_driver)],
             ['Created', fmtDateTime(j.created_at), 'Completed / tipped', completionText]
@@ -2543,11 +2737,33 @@
             y += 12;
         }
 
-        if (y > pageH - 42) {
+        if (y > pageH - 60) {
             doc.addPage();
             addPageHeader();
             y = 34;
         }
+
+        y = sectionTitle('Invoice Charges', y, frostBlack);
+        const chargeRows = [
+            ['Haulage charge', `${value(j.coll_postcode)} to ${value(j.del_postcode)}`, moneyFromNumber(baseCharge)]
+        ];
+        if (demurrageCharge > 0) {
+            chargeRows.push(['Demurrage', demurrageNotes, moneyFromNumber(demurrageCharge)]);
+        }
+        doc.autoTable({
+            startY: y,
+            theme: 'grid',
+            margin: { left: margin, right: margin },
+            head: [['Item', 'Details', 'Amount']],
+            body: chargeRows,
+            styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2.5, lineColor: lineGrey, lineWidth: 0.1 },
+            headStyles: { fillColor: frostBlack, textColor: [255,255,255], fontStyle: 'bold' },
+            columnStyles: {
+                0: { cellWidth: 40, fontStyle: 'bold' },
+                2: { cellWidth: 32, halign: 'right', fontStyle: 'bold' }
+            }
+        });
+        y = doc.lastAutoTable.finalY + 8;
 
         doc.setDrawColor(...lineGrey);
         doc.line(margin, y, pageW - margin, y);
@@ -2558,7 +2774,7 @@
         doc.text('Invoice Total', pageW - margin - 45, y);
         doc.setFontSize(16);
         doc.setTextColor(...frostGreen);
-        doc.text(money(j.total_price), pageW - margin, y, { align: 'right' });
+        doc.text(moneyFromNumber(invoiceTotal), pageW - margin, y, { align: 'right' });
         y += 8;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8.5);
