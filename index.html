@@ -254,12 +254,26 @@
         .invoice-number-pill.customer { border-left-color: var(--frost-blue); }
         .invoice-number-pill b { display: block; font-size: 0.72rem; color: #555; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
         .invoice-number-pill span { font-size: 1rem; font-weight: 800; color: var(--frost-black); word-break: break-word; }
+        .job-eta-panel { margin: 16px 0; background: white; border: 1px solid #d7e3f3; border-left: 5px solid var(--frost-blue); border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .job-eta-panel h3 { margin: 0; background: #0f172a; color: white; padding: 10px 14px; font-size: 0.9rem; border-bottom: 3px solid var(--frost-blue); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .job-eta-refresh { background: var(--frost-blue); color: white; border: none; border-radius: 5px; padding: 6px 9px; font-weight: bold; cursor: pointer; font-size: 0.72rem; white-space: nowrap; }
+        .job-eta-refresh:hover { background: #004494; }
+        .job-eta-content { padding: 14px; }
+        .job-eta-state { font-weight: 800; color: var(--frost-black); margin-bottom: 8px; font-size: 0.92rem; }
+        .job-eta-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+        .job-eta-metric { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; }
+        .job-eta-metric b { display: block; color: #555; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+        .job-eta-metric span { display: block; color: #111; font-size: 1rem; font-weight: 900; word-break: break-word; }
+        .job-eta-note { margin-top: 10px; color: #555; font-size: 0.78rem; line-height: 1.35; }
+        .job-eta-warning { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; border-radius: 8px; padding: 10px; font-weight: 700; font-size: 0.82rem; }
+        .job-eta-ok { background: #ecfdf5; border: 1px solid #bbf7d0; color: #166534; border-radius: 8px; padding: 10px; font-weight: 800; font-size: 0.88rem; }
         @media (max-width: 800px) {
             .full-job-detail-grid { grid-template-columns: 1fr; }
             .full-detail-row { flex-direction: column; gap: 3px; }
             .full-detail-row span { text-align: left; }
             .pod-detail-box { flex-direction: column; align-items: flex-start; }
             .invoice-number-banner { grid-template-columns: 1fr; }
+            .job-eta-grid { grid-template-columns: 1fr; }
             .pod-detail-url { text-align: left; }
         }
 
@@ -1398,13 +1412,310 @@
         return `<div class="pod-detail-box"><button type="button" onclick="openPODImage(event, '${escapeInlineArg(job.id)}')">📎 Open POD Image</button><span class="pod-detail-url">${escapeHtml(podUrl)}</span></div>`;
     }
 
+
+    function etaSafeId(value) {
+        return String(value || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+
+    function parseGpsCoordinates(value) {
+        if (!value) return null;
+        const match = String(value).match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+        if (!match) return null;
+
+        const lat = parseFloat(match[1]);
+        const lng = parseFloat(match[2]);
+
+        if (!isFinite(lat) || !isFinite(lng)) return null;
+        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+
+        return { lat, lng };
+    }
+
+    function formatGpsAge(createdAt) {
+        if (!createdAt) return 'N/A';
+        const t = new Date(createdAt).getTime();
+        if (isNaN(t)) return 'N/A';
+
+        const diffMins = Math.max(0, Math.round((Date.now() - t) / 60000));
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? '' : 's'} ago`;
+
+        const hours = Math.floor(diffMins / 60);
+        const mins = diffMins % 60;
+        return `${hours}h ${mins}m ago`;
+    }
+
+    function formatEtaDuration(totalMinutes) {
+        const mins = Math.max(1, Math.round(totalMinutes || 0));
+        if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'}`;
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        return `${h}h ${m.toString().padStart(2, '0')}m`;
+    }
+
+    function haversineMiles(a, b) {
+        const R = 3958.7613;
+        const toRad = deg => deg * Math.PI / 180;
+        const dLat = toRad(b.lat - a.lat);
+        const dLng = toRad(b.lng - a.lng);
+        const lat1 = toRad(a.lat);
+        const lat2 = toRad(b.lat);
+
+        const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+        return 2 * R * Math.asin(Math.sqrt(h));
+    }
+
+    function getEtaStage(job) {
+        const status = String(job.dispatch_status || '').toLowerCase();
+
+        if (status === 'loaded') {
+            return {
+                active: true,
+                label: 'ETA to Delivery',
+                destinationLabel: 'Delivery postcode',
+                postcode: job.del_postcode,
+                stage: 'delivery'
+            };
+        }
+
+        if (status === 'sent' || status === 'acknowledged') {
+            return {
+                active: true,
+                label: 'ETA to Collection',
+                destinationLabel: 'Collection postcode',
+                postcode: job.coll_postcode,
+                stage: 'collection'
+            };
+        }
+
+        if (status === 'arrived') {
+            return { active: false, message: 'Driver has arrived at collection. ETA to delivery will show once the job is marked loaded.' };
+        }
+
+        if (status === 'del_arrived') {
+            return { active: false, message: 'Driver has arrived at the delivery address.' };
+        }
+
+        if (status === 'tipped' || status === 'completed') {
+            return { active: false, message: 'Job has been tipped / completed. No active ETA is needed.' };
+        }
+
+        return { active: false, message: 'ETA will appear once this job has been sent to the driver or marked loaded.' };
+    }
+
+    function buildJobEtaPanel(job) {
+        const etaId = etaSafeId(job && job.id);
+        return `
+            <div class="job-eta-panel" id="job-eta-panel-${etaId}">
+                <h3>
+                    <span>Live ETA Window</span>
+                    <button type="button" class="job-eta-refresh" onclick="refreshJobEta('${etaId}')">Refresh ETA</button>
+                </h3>
+                <div class="job-eta-content" id="job-eta-content-${etaId}">
+                    <div class="job-eta-warning">Calculating ETA from driver GPS and job postcode...</div>
+                </div>
+            </div>
+        `;
+    }
+
+    function setJobEtaContent(jobId, html) {
+        const etaId = etaSafeId(jobId);
+        const el = document.getElementById(`job-eta-content-${etaId}`);
+        if (el) el.innerHTML = html;
+    }
+
+    async function getLatestDriverLocationForEta(job, stage) {
+        const driverName = (job.assigned_driver || '').trim();
+
+        if (driverName) {
+            try {
+                const { data, error } = await sb
+                    .from('vehicle_tracking')
+                    .select('coordinates, created_at, speed, heading')
+                    .ilike('driver_name', driverName)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (!error && data && data.length > 0) {
+                    const gps = parseGpsCoordinates(data[0].coordinates);
+                    if (gps) {
+                        return {
+                            gps,
+                            source: 'Live driver tracking',
+                            gpsAge: formatGpsAge(data[0].created_at),
+                            createdAt: data[0].created_at,
+                            speed: data[0].speed,
+                            heading: data[0].heading
+                        };
+                    }
+                }
+            } catch (err) {
+                console.warn('ETA live tracking lookup failed:', err);
+            }
+        }
+
+        const fallbackFields = stage.stage === 'delivery'
+            ? [
+                ['arrived_gps', 'Collection arrival GPS'],
+                ['ack_gps', 'Acknowledgement GPS'],
+                ['tipped_gps', 'Tipped GPS']
+            ]
+            : [
+                ['ack_gps', 'Acknowledgement GPS'],
+                ['arrived_gps', 'Collection arrival GPS'],
+                ['tipped_gps', 'Tipped GPS']
+            ];
+
+        for (const [field, label] of fallbackFields) {
+            const gps = parseGpsCoordinates(job[field]);
+            if (gps) {
+                return {
+                    gps,
+                    source: label,
+                    gpsAge: field === 'ack_gps'
+                        ? formatGpsAge(job.ack_timestamp)
+                        : field === 'arrived_gps'
+                            ? formatGpsAge(job.arrived_timestamp)
+                            : formatGpsAge(job.tipped_timestamp),
+                    createdAt: field === 'ack_gps'
+                        ? job.ack_timestamp
+                        : field === 'arrived_gps'
+                            ? job.arrived_timestamp
+                            : job.tipped_timestamp
+                };
+            }
+        }
+
+        return null;
+    }
+
+    async function geocodeUkPostcodeForEta(postcode) {
+        if (!postcode) return null;
+
+        const cleanPostcode = String(postcode).trim().replace(/\s+/g, '');
+        const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(cleanPostcode)}`);
+        if (!res.ok) return null;
+
+        const json = await res.json();
+        if (!json || !json.result || json.result.latitude === null || json.result.longitude === null) return null;
+
+        return {
+            lat: Number(json.result.latitude),
+            lng: Number(json.result.longitude),
+            postcode: json.result.postcode || postcode
+        };
+    }
+
+    async function calculateRoadEtaForJob(driverGps, destinationGps) {
+        try {
+            const url = `https://router.project-osrm.org/route/v1/driving/${driverGps.lng},${driverGps.lat};${destinationGps.lng},${destinationGps.lat}?overview=false&alternatives=false&steps=false`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Routing service unavailable');
+
+            const json = await res.json();
+            if (!json.routes || !json.routes.length) throw new Error('No route returned');
+
+            const route = json.routes[0];
+            return {
+                distanceMiles: route.distance / 1609.344,
+                durationMinutes: route.duration / 60,
+                source: 'Road route estimate'
+            };
+        } catch (err) {
+            const straightMiles = haversineMiles(driverGps, destinationGps);
+            return {
+                distanceMiles: straightMiles,
+                durationMinutes: (straightMiles / 45) * 60,
+                source: 'Straight-line fallback estimate'
+            };
+        }
+    }
+
+    async function refreshJobEta(jobId) {
+        const job = allJobsRaw.find(x => etaSafeId(x.id) === String(jobId) || String(x.id) === String(jobId));
+        if (!job) return;
+
+        await updateJobEtaPanel(job);
+    }
+
+    async function updateJobEtaPanel(job) {
+        if (!job) return;
+
+        const stage = getEtaStage(job);
+
+        if (!stage.active) {
+            setJobEtaContent(job.id, `<div class="job-eta-ok">${stage.message}</div>`);
+            return;
+        }
+
+        setJobEtaContent(job.id, `<div class="job-eta-warning">Calculating ${stage.label.toLowerCase()}...</div>`);
+
+        if (!stage.postcode) {
+            setJobEtaContent(job.id, `<div class="job-eta-warning">No ${stage.destinationLabel.toLowerCase()} is saved on this job, so an ETA cannot be calculated.</div>`);
+            return;
+        }
+
+        const driverLocation = await getLatestDriverLocationForEta(job, stage);
+        if (!driverLocation) {
+            setJobEtaContent(job.id, `
+                <div class="job-eta-warning">
+                    Waiting for usable driver GPS. This will use live tracking first, then fall back to ack_gps / arrived_gps when available.
+                </div>
+            `);
+            return;
+        }
+
+        const destinationGps = await geocodeUkPostcodeForEta(stage.postcode);
+        if (!destinationGps) {
+            setJobEtaContent(job.id, `<div class="job-eta-warning">Could not locate postcode ${escapeHtml(stage.postcode)} for ETA.</div>`);
+            return;
+        }
+
+        const eta = await calculateRoadEtaForJob(driverLocation.gps, destinationGps);
+        const destinationText = `${destinationGps.postcode || stage.postcode}`;
+        const gpsText = `${driverLocation.gps.lat.toFixed(5)}, ${driverLocation.gps.lng.toFixed(5)}`;
+
+        setJobEtaContent(job.id, `
+            <div class="job-eta-state">${stage.label}</div>
+            <div class="job-eta-grid">
+                <div class="job-eta-metric">
+                    <b>Distance</b>
+                    <span>${eta.distanceMiles.toFixed(1)} miles</span>
+                </div>
+                <div class="job-eta-metric">
+                    <b>Estimated drive time</b>
+                    <span>${formatEtaDuration(eta.durationMinutes)}</span>
+                </div>
+                <div class="job-eta-metric">
+                    <b>Destination</b>
+                    <span>${escapeHtml(destinationText)}</span>
+                </div>
+                <div class="job-eta-metric">
+                    <b>GPS source</b>
+                    <span>${escapeHtml(driverLocation.source)}</span>
+                </div>
+                <div class="job-eta-metric">
+                    <b>GPS age</b>
+                    <span>${escapeHtml(driverLocation.gpsAge)}</span>
+                </div>
+                <div class="job-eta-metric">
+                    <b>Driver GPS</b>
+                    <span>${escapeHtml(gpsText)}</span>
+                </div>
+            </div>
+            <div class="job-eta-note">
+                ${escapeHtml(eta.source)}. This is an estimate only and may not include live traffic, diversions, driver breaks or site waiting time.
+            </div>
+        `);
+    }
+
     function buildFullJobDetailsHtml(job, isGhost = false) {
         const knownFields = new Set([
             'id', 'created_at', 'customer_name', 'customer_phone', 'customer_email', 'customers_own_invoice_number', 'fts_invoice_number',
             'coll_postcode', 'coll_street', 'coll_town', 'coll_county', 'coll_ref', 'coll_datetime', 'coll_postcode_2', 'coll_town_2',
             'del_postcode', 'del_cust_name', 'del_phone', 'del_email', 'del_street', 'del_town', 'del_county', 'del_ref', 'del_datetime', 'del_postcode_2', 'del_town_2',
             'total_price', 'total_pallets', 'total_weight', 'vehicle_type', 'status', 'dispatch_status', 'assigned_slot', 'assigned_driver', 'driver_phone',
-            'ack_timestamp', 'arrived_timestamp', 'loaded_timestamp', 'del_arrived_timestamp', 'tipped_timestamp', 'pod_url'
+            'ack_timestamp', 'ack_gps', 'arrived_timestamp', 'arrived_gps', 'loaded_timestamp', 'del_arrived_timestamp', 'tipped_timestamp', 'tipped_gps', 'pod_url'
         ]);
 
         const bookingRows = [
@@ -1459,10 +1770,13 @@
 
         const timestampRows = [
             fullDetailRow('Acknowledged', job.ack_timestamp, true),
+            fullDetailRow('Acknowledgement GPS', job.ack_gps),
             fullDetailRow('Arrived collection', job.arrived_timestamp, true),
+            fullDetailRow('Collection arrival GPS', job.arrived_gps),
             fullDetailRow('Loaded', job.loaded_timestamp, true),
             fullDetailRow('Arrived delivery', job.del_arrived_timestamp, true),
-            fullDetailRow('Tipped', job.tipped_timestamp, true)
+            fullDetailRow('Tipped', job.tipped_timestamp, true),
+            fullDetailRow('Tipped GPS', job.tipped_gps)
         ];
 
         const extraRows = Object.keys(job)
@@ -1518,8 +1832,10 @@
         detailCard.ondragend = null;
 
         body.insertAdjacentHTML('beforeend', buildInvoiceNumberBanner(job));
+        body.insertAdjacentHTML('beforeend', buildJobEtaPanel(job));
         body.appendChild(detailCard);
         body.insertAdjacentHTML('beforeend', buildFullJobDetailsHtml(job, isGhost));
+        updateJobEtaPanel(job);
 
         body.onclick = (ev) => {
             if (ev.target.closest('.action-btn, button')) {
