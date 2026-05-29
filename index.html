@@ -76,10 +76,15 @@
         /* ==========================================
            4. PLANNER GRID & CELLS
            ========================================== */
-        table.planner-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 3000px; } 
+        table.planner-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 3720px; } 
         
         .corner-header { position: sticky; top: 0; left: 0; z-index: 30; background: var(--frost-black); color: white; border-right: 3px solid var(--frost-red); border-bottom: 3px solid var(--frost-red); width: 120px; text-align: center; }
         .vehicle-col-header { position: sticky; top: 0; z-index: 20; background: var(--frost-black); color: white; border-right: 1px solid var(--border-color); border-bottom: 3px solid var(--frost-red); padding: 10px; min-width: 240px; vertical-align: top; text-align: left; transition: background-color 0.3s; }
+        .vehicle-col-header.palletforce-header { background: #f58220; border-bottom-color: #c85f00; color: white; }
+        .vehicle-col-header.palletforce-header .reg-title { color: white; }
+        .vehicle-col-header.palletforce-header .driver-weekly-total { color: rgba(255,255,255,0.85); }
+        .vehicle-col-header.palletforce-header .trailer-tag { background: rgba(0,0,0,0.28); color: white; }
+        .palletforce-badge { display: inline-block; margin-top: 4px; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.4px; background: rgba(0,0,0,0.22); color: white; padding: 2px 6px; border-radius: 999px; }
         .date-cell { position: sticky; left: 0; z-index: 10; background: #eee; color: var(--frost-black); border-right: 3px solid var(--frost-red); border-bottom: 1px solid var(--border-color); padding: 10px; min-width: 120px; text-align: center; font-weight: bold; }
         
         .day-name { font-size: 0.95rem; color: var(--frost-red); margin-bottom: 4px; }
@@ -98,6 +103,8 @@
 
         table.planner-table td { border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); min-height: 125px; height: 125px; vertical-align: top; padding: 6px; background: white; transition: background 0.2s; position: relative; }
         table.planner-table td:hover { background: #fdfdfd; }
+        table.planner-table td.palletforce-cell { background: #fff3e6; }
+        table.planner-table td.palletforce-cell:hover { background: #ffe8cf; }
 
         /* VOR LOCKDOWN STYLES */
         th.vor-header { background-color: #8a1c20 !important; }
@@ -293,7 +300,7 @@
         <div id="week-display-box" class="week-info-box">WK -- | MON --/--/--</div>
         <button class="week-btn" id="btn-map" onclick="switchView('map')" style="background:#27ae60; color:white;">🗺️ DROP SPOTS</button>
         <button class="week-btn" id="btn-toggle-header" onclick="toggleHeaderView()" style="background:#34495e; color:white;">🔄 TOWNS</button>
-        <button class="week-btn" onclick="loadAll()">SYNC</button>
+        <button class="week-btn" onclick="syncMaintenanceAndLoadAll()">SYNC</button>
         <div class="grand-total-box"><span class="grand-total-value" id="grand-total">£0.00</span></div>
     </div>
 </header>
@@ -690,8 +697,24 @@
     const vehicles = [
         "FN21 HLZ", "FR72 FTS", "FS72 FTS", "FT72 FTS", 
         "KU70 XNR", "KU70 XNS", "KU70 XNT", "KU70 XNV", 
-        "KU70 XNW", "KU70 XNX", "FJ69 WMC", "DK69 ZHM"
+        "KU70 XNW", "KU70 XNX",
+        // PalletForce contract vehicles are kept together on the far right.
+        // FJ69 WMC and DK69 ZHM stay in their original indexes to avoid existing planner jobs jumping columns.
+        "FJ69 WMC", "DK69 ZHM", "FJ69 WML", "FD65 VZA", "HS19 YNH"
     ];
+
+    const palletforceVehicles = ["FJ69 WMC", "FJ69 WML", "DK69 ZHM", "FD65 VZA", "HS19 YNH"];
+    const palletforceFixedBadges = { "FD65 VZA": "26t", "HS19 YNH": "18t" };
+
+    function isPalletforceVehicle(reg) {
+        return palletforceVehicles.includes(reg);
+    }
+
+    function getVehicleRegFromControlId(controlId) {
+        const match = String(controlId || '').match(/dr(\d+)/);
+        if (!match) return '';
+        return vehicles[parseInt(match[1], 10)] || '';
+    }
 
     const drivers = [
         { name: "Unassigned", phone: "" },
@@ -848,9 +871,12 @@
         
         vehicles.forEach((reg, i) => {
             let driverOptions = drivers.map(d => `<option value="${d.phone}">${d.name}</option>`).join('');
+            const isPalletforce = isPalletforceVehicle(reg);
+            const fixedBadge = palletforceFixedBadges[reg] || '';
             headRow.innerHTML += `
-                <th class="vehicle-col-header" id="header-w${week}-dr${i}">
-                    <span class="reg-title">${reg} <span class="trailer-tag" id="trl-planner-w${week}-dr${i}"></span></span>
+                <th class="vehicle-col-header ${isPalletforce ? 'palletforce-header' : ''}" id="header-w${week}-dr${i}">
+                    <span class="reg-title">${reg} <span class="trailer-tag ${fixedBadge ? 'visible' : ''}" id="trl-planner-w${week}-dr${i}">${fixedBadge}</span></span>
+                    ${isPalletforce ? '<span class="palletforce-badge">PALLETFORCE</span>' : ''}
                     <select class="driver-sel" id="sel-planner-w${week}-dr${i}">
                         ${driverOptions}
                     </select>
@@ -870,7 +896,8 @@
             row.innerHTML = `<th class="date-cell" id="date-w${week}-d${day}">...</th>`;
             
             for(let veh = 0; veh < vehicles.length; veh++) {
-                row.innerHTML += `<td id="planner-w${week}-dr${veh}-s${day}" ondrop="drop(event)" ondragover="allowDrop(event)"></td>`;
+                const reg = vehicles[veh];
+                row.innerHTML += `<td id="planner-w${week}-dr${veh}-s${day}" class="${isPalletforceVehicle(reg) ? 'palletforce-cell' : ''}" ondrop="drop(event)" ondragover="allowDrop(event)"></td>`;
             }
             tbody.appendChild(row);
         }
@@ -887,6 +914,15 @@
         const trailerSpan = document.getElementById(trailerSpanId);
         
         if (!trailerSpan) return;
+
+        const reg = getVehicleRegFromControlId(selectEl.id);
+        const fixedBadge = palletforceFixedBadges[reg];
+
+        if (fixedBadge) {
+            trailerSpan.innerText = fixedBadge;
+            trailerSpan.classList.add('visible');
+            return;
+        }
 
         if (driverName === 'Unassigned' || !driverName) {
             trailerSpan.innerText = '';
@@ -934,97 +970,155 @@
         return Math.floor(diffDays / 7);
     }
 
-    async function checkMaintenance() {
+    const MAINTENANCE_CUSTOMER_NAME = "🔧 PLANNED MAINTENANCE";
+    const MAINTENANCE_FINAL_STATUSES = ['archived', 'billed', 'subbed', 'cancelled'];
+    let maintenanceSyncInProgress = false;
+
+    function normaliseMaintenanceReg(reg) {
+        return String(reg || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    }
+
+    function getMaintenanceWeekWindow() {
+        const now = new Date();
+        const dayNum = now.getDay() || 7;
+        const currentMonday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayNum + 1, 0, 0, 0, 0);
+        const week4Sunday = new Date(currentMonday);
+        week4Sunday.setDate(currentMonday.getDate() + 27);
+        week4Sunday.setHours(23, 59, 59, 999);
+        return { currentMonday, week4Sunday };
+    }
+
+    function getISOWeekNumber(dateStr) {
+        if (!dateStr) return "-";
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return "-";
+        const utcDate = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        const dNum = utcDate.getUTCDay() || 7;
+        utcDate.setUTCDate(utcDate.getUTCDate() + 4 - dNum);
+        const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
+        return Math.ceil((((utcDate - yearStart) / 86400000) + 1) / 7);
+    }
+
+    function getMaintenanceDueInfo(vehicle, currentMonday, week4Sunday) {
+        const types = [];
+        let earliestDate = null;
+
+        const checkDate = (dateStr, typeName) => {
+            if (!dateStr) return;
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return;
+            if (d <= week4Sunday) {
+                types.push(typeName);
+                if (!earliestDate || d < earliestDate) earliestDate = d;
+            }
+        };
+
+        checkDate(vehicle.mot_due, "MOT");
+        checkDate(vehicle.pmi_due, "PMI");
+        checkDate(vehicle.brake_test, "BRAKE TEST");
+
+        if (!types.length) return null;
+
+        // If a maintenance date is already overdue, keep the card alive in the current week
+        // instead of creating a card in a past week that immediately archives itself.
+        let cardDate = earliestDate ? new Date(earliestDate) : new Date(currentMonday);
+        if (cardDate < currentMonday) cardDate = new Date(currentMonday);
+        cardDate.setHours(9, 0, 0, 0);
+
+        return {
+            maintenanceType: types.join(" & "),
+            cardDate,
+            isoWeek: getISOWeekNumber(cardDate)
+        };
+    }
+
+    function buildMaintenanceJobPayload(vehicle, dueInfo) {
+        return {
+            customer_name: MAINTENANCE_CUSTOMER_NAME,
+            coll_postcode: vehicle.registration_number,
+            del_postcode: "BOOK INSPECTION",
+            coll_ref: dueInfo.maintenanceType,
+            del_ref: `Week ${dueInfo.isoWeek}`,
+            coll_town: "YARD",
+            del_town: "GARAGE",
+            total_price: "0",
+            vehicle_type: "Any",
+            status: "pending",
+            dispatch_status: "unsent",
+            coll_datetime: dueInfo.cardDate.toISOString()
+        };
+    }
+
+    async function checkMaintenance(options = {}) {
+        if (maintenanceSyncInProgress) return;
+        maintenanceSyncInProgress = true;
+
         try {
+            const { currentMonday, week4Sunday } = getMaintenanceWeekWindow();
+
             const { data: vehiclesData, error: vehError } = await sb.from('vehicles').select('*');
-            if (vehError || !vehiclesData || vehiclesData.length === 0) return;
+            if (vehError) throw vehError;
+            if (!vehiclesData || vehiclesData.length === 0) return;
 
             const { data: existingQuotes, error: qError } = await sb.from('quotes')
-                .select('coll_postcode')
-                .eq('customer_name', '🔧 PLANNED MAINTENANCE');
-            
-            const existingRegs = existingQuotes ? existingQuotes.map(q => q.coll_postcode) : [];
+                .select('id, customer_name, coll_postcode, coll_ref, del_ref, coll_datetime, status, assigned_slot, dispatch_status')
+                .eq('customer_name', MAINTENANCE_CUSTOMER_NAME);
+            if (qError) throw qError;
 
-            const pendingVehicles = vehiclesData.filter(v => 
-                v.planned !== true && 
-                v.planned !== 'true' && 
-                !existingRegs.includes(v.registration_number)
+            const activeMaintenance = (existingQuotes || []).filter(q =>
+                !MAINTENANCE_FINAL_STATUSES.includes(String(q.status || '').toLowerCase())
             );
 
-            if (pendingVehicles.length === 0) return;
+            const vehiclesToMarkPlanned = [];
 
-            let jobsToInsert = [];
-            let vehiclesToUpdate = [];
+            for (const vehicle of vehiclesData) {
+                if (!vehicle.registration_number) continue;
 
-            const now = new Date();
-            const dayNum = now.getDay() || 7;
-            const sun = new Date(now); sun.setDate(now.getDate() - dayNum + 7); sun.setHours(23,59,59,999);
-            const week4Sun = new Date(sun); week4Sun.setDate(sun.getDate() + 21);
+                const dueInfo = getMaintenanceDueInfo(vehicle, currentMonday, week4Sunday);
+                if (!dueInfo) continue;
 
-            const getISOWeek = (dateStr) => {
-                if (!dateStr) return "-";
-                const d = new Date(dateStr);
-                const dNum = d.getUTCDay() || 7;
-                d.setUTCDate(d.getUTCDate() + 4 - dNum);
-                const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-                return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
-            };
+                const reg = normaliseMaintenanceReg(vehicle.registration_number);
+                const existing = activeMaintenance.find(q => normaliseMaintenanceReg(q.coll_postcode) === reg);
+                const payload = buildMaintenanceJobPayload(vehicle, dueInfo);
 
-            pendingVehicles.forEach(v => {
-                const isDue = (dateStr) => {
-                    if (!dateStr) return false;
-                    const d = new Date(dateStr);
-                    return d <= week4Sun; 
-                };
-
-                const types = [];
-                let earliestDate = null;
-
-                const checkDate = (dateStr, typeName) => {
-                    if (isDue(dateStr)) {
-                        types.push(typeName);
-                        const d = new Date(dateStr);
-                        if (!earliestDate || d < earliestDate) earliestDate = d;
-                    }
-                };
-
-                checkDate(v.mot_due, "MOT");
-                checkDate(v.pmi_due, "PMI");
-                checkDate(v.brake_test, "BRAKE TEST");
-
-                if (types.length > 0) {
-                    const maintenanceType = types.join(" & ");
-                    const primaryDate = earliestDate ? earliestDate.toISOString() : new Date().toISOString();
-                    const weekNumber = getISOWeek(primaryDate);
-
-                    jobsToInsert.push({
-                        customer_name: "🔧 PLANNED MAINTENANCE",
-                        coll_postcode: v.registration_number,
-                        del_postcode: "BOOK INSPECTION", 
-                        coll_ref: maintenanceType, 
-                        del_ref: `Week ${weekNumber}`, 
-                        coll_town: "YARD",
-                        del_town: "GARAGE",
-                        total_price: "0",
-                        vehicle_type: "Any",
-                        status: "pending", 
-                        dispatch_status: "unsent",
-                        coll_datetime: primaryDate
-                    });
-                    
-                    vehiclesToUpdate.push(v.registration_number);
+                if (!existing) {
+                    await sb.from('quotes').insert([payload]);
+                    activeMaintenance.push({ ...payload, id: `new-${reg}-${Date.now()}` });
+                    vehiclesToMarkPlanned.push(vehicle.registration_number);
+                    continue;
                 }
-            });
 
-            if (jobsToInsert.length > 0) {
-                await sb.from('quotes').insert(jobsToInsert);
-                for (let reg of vehiclesToUpdate) {
-                    await sb.from('vehicles').update({ planned: true }).eq('registration_number', reg);
+                const existingTime = existing.coll_datetime ? new Date(existing.coll_datetime).getTime() : null;
+                const newTime = new Date(payload.coll_datetime).getTime();
+                const needsUpdate =
+                    String(existing.coll_ref || '') !== String(payload.coll_ref || '') ||
+                    String(existing.del_ref || '') !== String(payload.del_ref || '') ||
+                    !existingTime ||
+                    existingTime !== newTime ||
+                    String(existing.dispatch_status || '') === '';
+
+                if (needsUpdate) {
+                    await sb.from('quotes').update(payload).eq('id', existing.id);
                 }
+
+                vehiclesToMarkPlanned.push(vehicle.registration_number);
+            }
+
+            // Keep the existing vehicles.planned flag updated for backwards compatibility,
+            // but do not rely on it to decide whether a missing card should be recreated.
+            for (let reg of [...new Set(vehiclesToMarkPlanned)]) {
+                await sb.from('vehicles').update({ planned: true }).eq('registration_number', reg);
             }
         } catch (err) {
             console.error("Maintenance Sync Error:", err);
+        } finally {
+            maintenanceSyncInProgress = false;
         }
+    }
+
+    async function syncMaintenanceAndLoadAll() {
+        await checkMaintenance({ force: true });
+        await loadAll();
     }
 
     async function bookAtJCC(event, jobId) {
@@ -1147,8 +1241,9 @@
         }
 
         try {
-            await sb.from('quotes').update(p1).eq('id', j.id);
-            await sb.from('quotes').insert([p2]);
+            const linkedGroup = await ensureLinkedGroupForJob(j.id);
+            await updateQuoteWithOptionalLinkedGroup(j.id, p1, linkedGroup);
+            await insertQuoteWithOptionalLinkedGroup(p2, linkedGroup);
             loadAll();
         } catch(err) {
             console.error(err);
@@ -2081,7 +2176,7 @@
             card.style.borderLeftColor = cardBorder;
 
             let cancelBtn = isGhost ? '' : `<button class="action-btn" style="flex:1; padding:6px; font-size:0.7rem; background:#c1272d; color:white; border:none; border-radius:3px; font-weight:bold;" onclick="markCancelled(event, '${q.id}')">CANCEL</button>`;
-            let delBtn = isGhost ? '' : `<span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;" title="Delete">🗑️</span>`;
+            let delBtn = isGhost ? '' : `<span style="font-size:0.65rem; color:#8e44ad; font-weight:bold;" title="Maintenance cards are protected and will be regenerated automatically if missing.">🔒 PROTECTED</span>`;
 
             card.innerHTML = `
                 ${ghostBanner}
@@ -2396,18 +2491,156 @@
         openModal('modal-add');
     }
 
+
+    // ==========================================
+    // LINKED JOB / SPLIT JOB ACTION HELPERS
+    // ==========================================
+    const LINKED_JOB_GROUP_COLUMN = 'linked_job_group';
+    let linkedJobGroupColumnAvailable = true;
+
+    function makeLinkedJobGroup(id) {
+        return `job-group-${id}`;
+    }
+
+    function getJobById(id) {
+        return allJobsRaw.find(x => String(x.id) === String(id));
+    }
+
+    function cleanLegCustomerName(name) {
+        return String(name || '').replace(/\s*\(Leg\s*\d+\)\s*$/i, '').trim().toLowerCase();
+    }
+
+    function hasLegSuffix(name) {
+        return /\(Leg\s*\d+\)\s*$/i.test(String(name || ''));
+    }
+
+    function getLinkedJobs(id) {
+        const source = getJobById(id);
+        if (!source) return [];
+
+        const linked = new Map();
+        linked.set(String(source.id), source);
+
+        const group = source[LINKED_JOB_GROUP_COLUMN];
+        if (group !== null && group !== undefined && String(group).trim() !== '') {
+            allJobsRaw.forEach(job => {
+                if (String(job[LINKED_JOB_GROUP_COLUMN] || '') === String(group)) {
+                    linked.set(String(job.id), job);
+                }
+            });
+        }
+
+        // Fallback for older O/N reassigned Leg 1 / Leg 2 jobs created before linked_job_group existed.
+        // This only joins jobs with the explicit "(Leg 1)" / "(Leg 2)" suffix so unrelated customer names are not touched.
+        if (hasLegSuffix(source.customer_name)) {
+            const cleanSourceName = cleanLegCustomerName(source.customer_name);
+            allJobsRaw.forEach(job => {
+                if (hasLegSuffix(job.customer_name) && cleanLegCustomerName(job.customer_name) === cleanSourceName) {
+                    linked.set(String(job.id), job);
+                }
+            });
+        }
+
+        return Array.from(linked.values());
+    }
+
+    function getLinkedJobIds(id) {
+        return getLinkedJobs(id).map(job => job.id);
+    }
+
+    async function setLinkedGroupOnIds(ids, group) {
+        if (!linkedJobGroupColumnAvailable || !ids || ids.length === 0) return false;
+        const payload = {};
+        payload[LINKED_JOB_GROUP_COLUMN] = group;
+
+        const { error } = await sb.from('quotes').update(payload).in('id', ids);
+        if (error) {
+            const msg = error.message || String(error);
+            if (/linked_job_group|schema cache|column/i.test(msg)) {
+                linkedJobGroupColumnAvailable = false;
+                console.warn('linked_job_group column not available yet. Linked actions will still work for O/N ghost cards and Leg 1/Leg 2 fallback jobs, but split-job linking needs the Supabase column.', error);
+                return false;
+            }
+            throw error;
+        }
+        return true;
+    }
+
+    async function ensureLinkedGroupForJob(id) {
+        const source = getJobById(id);
+        if (!source) return makeLinkedJobGroup(id);
+
+        const existingGroup = source[LINKED_JOB_GROUP_COLUMN];
+        const group = existingGroup && String(existingGroup).trim() !== '' ? String(existingGroup) : makeLinkedJobGroup(source.id);
+
+        if (!existingGroup) {
+            const ids = getLinkedJobIds(id);
+            if (!ids.some(x => String(x) === String(source.id))) ids.push(source.id);
+            await setLinkedGroupOnIds(ids, group);
+        }
+
+        return group;
+    }
+
+    async function updateQuoteWithOptionalLinkedGroup(id, payload, group) {
+        const updatePayload = { ...payload };
+        if (group && linkedJobGroupColumnAvailable) updatePayload[LINKED_JOB_GROUP_COLUMN] = group;
+
+        let { error } = await sb.from('quotes').update(updatePayload).eq('id', id);
+        if (error && group && /linked_job_group|schema cache|column/i.test(error.message || String(error))) {
+            linkedJobGroupColumnAvailable = false;
+            delete updatePayload[LINKED_JOB_GROUP_COLUMN];
+            const retry = await sb.from('quotes').update(updatePayload).eq('id', id);
+            error = retry.error;
+        }
+        if (error) throw error;
+    }
+
+    async function insertQuoteWithOptionalLinkedGroup(payload, group) {
+        const insertPayload = { ...payload };
+        if (group && linkedJobGroupColumnAvailable) insertPayload[LINKED_JOB_GROUP_COLUMN] = group;
+
+        let { error } = await sb.from('quotes').insert([insertPayload]);
+        if (error && group && /linked_job_group|schema cache|column/i.test(error.message || String(error))) {
+            linkedJobGroupColumnAvailable = false;
+            delete insertPayload[LINKED_JOB_GROUP_COLUMN];
+            const retry = await sb.from('quotes').insert([insertPayload]);
+            error = retry.error;
+        }
+        if (error) throw error;
+    }
+
+    async function updateLinkedJobs(id, payload) {
+        const ids = getLinkedJobIds(id);
+        if (!ids.length) return;
+        const { error } = await sb.from('quotes').update(payload).in('id', ids);
+        if (error) throw error;
+    }
+
+    async function deleteLinkedJobs(id) {
+        const ids = getLinkedJobIds(id);
+        if (!ids.length) return;
+        const { error } = await sb.from('quotes').delete().in('id', ids);
+        if (error) throw error;
+    }
+
+    function linkedActionLabel(id) {
+        const count = getLinkedJobIds(id).length;
+        return count > 1 ? ` This will also update the linked split/leg card (${count} linked records total).` : '';
+    }
+
     async function markSubbed(e, id) {
         e.stopPropagation();
-        if(confirm("Move this job to Subbed to Contractor?")) {
-            await sb.from('quotes').update({ status: 'subbed', assigned_slot: null, dispatch_status: 'unsent' }).eq('id', id);
+        if(confirm("Move this job to Subbed to Contractor?" + linkedActionLabel(id))) {
+            await updateLinkedJobs(id, { status: 'subbed', assigned_slot: null, dispatch_status: 'unsent' });
             loadAll();
         }
     }
 
     async function markCancelled(e, id) {
         e.stopPropagation();
-        if(confirm("Cancel this job?")) {
-            await sb.from('quotes').update({ status: 'cancelled', assigned_slot: null, dispatch_status: 'unsent' }).eq('id', id);
+        if(confirm("Cancel this job?" + linkedActionLabel(id))) {
+            await updateLinkedJobs(id, { status: 'cancelled', assigned_slot: null, dispatch_status: 'unsent' });
             loadAll();
         }
     }
@@ -2441,13 +2674,16 @@
         e.stopPropagation();
         const source = allJobsRaw.find(x => x.id == id);
         if (!source) return;
+        const linkedGroup = await ensureLinkedGroupForJob(id);
         const j = { ...source };
         delete j.id;
         delete j.created_at;
         j.status = 'pending';
         j.assigned_slot = null;
+        j.dispatch_status = 'unsent';
+        j.assigned_driver = null;
         j.fts_invoice_number = await getNextFtsInvoiceNumber();
-        await sb.from('quotes').insert([j]);
+        await insertQuoteWithOptionalLinkedGroup(j, linkedGroup);
         loadAll();
     }
     async function splitJob(e, id) { e.stopPropagation(); if(confirm("Split this job?")) await duplicateJob(e, id); }
@@ -2461,15 +2697,25 @@
     }
     async function markPODReceived(e, id) {
         e.stopPropagation();
-        if(confirm("Move to Invoicing?")) {
-            const job = allJobsRaw.find(x => x.id == id);
+        if(confirm("Move to Invoicing?" + linkedActionLabel(id))) {
+            const linkedJobs = getLinkedJobs(id);
             const updatePayload = { status: 'completed' };
-            if (!job || !job.tipped_timestamp) updatePayload.tipped_timestamp = new Date().toISOString();
-            await sb.from('quotes').update(updatePayload).eq('id', id);
+            if (linkedJobs.some(job => !job.tipped_timestamp)) updatePayload.tipped_timestamp = new Date().toISOString();
+            await updateLinkedJobs(id, updatePayload);
             loadAll();
         }
     }
-    async function deleteJob(id) { if(confirm("Delete permanently?")) { await sb.from('quotes').delete().eq('id', id); loadAll(); } }
+    async function deleteJob(id) {
+        const job = getJobById(id);
+        if (job && job.customer_name === MAINTENANCE_CUSTOMER_NAME) {
+            alert("Maintenance cards are protected. They are generated automatically from the vehicles table and cannot be deleted from the planner. If a maintenance card is wrong, update the maintenance dates/status in the vehicles table instead.");
+            return;
+        }
+        if(confirm("Delete permanently?" + linkedActionLabel(id))) {
+            await deleteLinkedJobs(id);
+            loadAll();
+        }
+    }
 
     async function drop(ev) {
         ev.preventDefault();
@@ -2542,24 +2788,26 @@
         const checkedBoxes = document.querySelectorAll('.invoice-check:checked');
         if(checkedBoxes.length === 0) return alert("Please select at least one job to mark as billed.");
         
-        if(confirm(`Are you sure you want to mark ${checkedBoxes.length} job(s) as billed? They will be moved to the Historical Archive.`)) {
-            for(let box of checkedBoxes) {
-                await sb.from('quotes').update({ status: 'billed' }).eq('id', box.value);
-            }
+        const linkedIds = new Set();
+        checkedBoxes.forEach(box => getLinkedJobIds(box.value).forEach(id => linkedIds.add(id)));
+
+        if(confirm(`Are you sure you want to mark ${linkedIds.size} linked job record(s) as billed? They will be moved to the Historical Archive.`)) {
+            const { error } = await sb.from('quotes').update({ status: 'billed' }).in('id', Array.from(linkedIds));
+            if (error) return alert("Error marking invoices as billed: " + error.message);
             loadAll();
         }
     }
 
     async function markAsBilled(e, id) { 
         e.stopPropagation(); 
-        await sb.from('quotes').update({ status: 'billed' }).eq('id', id); 
+        await updateLinkedJobs(id, { status: 'billed' }); 
         loadAll(); 
     }
 
     async function moveToInvoicing(e, id) {
         e.stopPropagation();
-        if(confirm("Move this archived job back to the Invoicing queue?")) {
-            await sb.from('quotes').update({ status: 'completed' }).eq('id', id);
+        if(confirm("Move this archived job back to the Invoicing queue?" + linkedActionLabel(id))) {
+            await updateLinkedJobs(id, { status: 'completed' });
             loadAll();
         }
     }
@@ -3585,14 +3833,13 @@
     sb.channel('vehicles-tracker')
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vehicles' }, payload => {
             console.log("Vehicle Status Updated!");
-            if (!isDragging) loadAll();
+            if (!isDragging) syncMaintenanceAndLoadAll();
         })
         .subscribe();
 
     window.onload = async () => { 
         setupAutoScroll(); 
-        await checkMaintenance(); 
-        await loadAll(); 
+        await syncMaintenanceAndLoadAll(); 
     };
 
     // ==========================================
