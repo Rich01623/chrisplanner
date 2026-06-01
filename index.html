@@ -170,6 +170,7 @@
 
         /* Dispatch Colors */
         .job-card.status-sent { border-left-color: #f39c12; } 
+        .job-card.status-scheduled { background: #f8fafc; border-left-color: #64748b; } 
         .job-card.status-ack { background: #e3f2fd; border-left-color: #0056b3; } 
         .job-card.status-arr { background: #e8f5e9; border-left-color: #2e7d32; } 
         .job-card.status-load { background: #f5eef8; border-left-color: #8e44ad; }
@@ -739,6 +740,8 @@
     let allJccBookings = []; 
     let historicalTrailers = {}; 
     let currentWeekOffset = 0;
+    let activePlannerView = 0;
+    let plannerRefreshTimer = null;
     let showTownsInHeader = false;
     let fleetMap = null;
     let mapMarkers = [];
@@ -748,6 +751,19 @@
     let nextJobPinLayer = null;
     
     let isDragging = false;
+
+    function schedulePlannerRefresh(delay = 650) {
+        if (plannerRefreshTimer) clearTimeout(plannerRefreshTimer);
+        plannerRefreshTimer = setTimeout(() => {
+            plannerRefreshTimer = null;
+            if (!isDragging) loadAll();
+        }, delay);
+    }
+
+    function restoreActivePlannerView() {
+        if (activePlannerView === undefined || activePlannerView === null) activePlannerView = currentWeekOffset || 0;
+        switchView(activePlannerView);
+    }
 
     // ==========================================
     // 2. AUDIO & ALERTS
@@ -1276,7 +1292,7 @@
             });
         }
 
-        document.querySelectorAll('.job-card').forEach(c => c.remove());
+        document.querySelectorAll('.job-card:not(.modal-job-card-copy)').forEach(c => c.remove());
 
         document.querySelectorAll('.vor-active, .vor-header').forEach(el => {
             el.classList.remove('vor-active', 'vor-header');
@@ -1394,7 +1410,7 @@
         renderCancelledList();
         updateCalculations();
         restoreDrivers(allJobsRaw);
-        switchView(currentWeekOffset); 
+        restoreActivePlannerView(); 
 
         if (document.getElementById('map-view').style.display === 'block') {
             updateMapPins();
@@ -1562,6 +1578,11 @@
 
     function getEtaStage(job) {
         const status = String(job.dispatch_status || '').toLowerCase();
+
+        if (status === 'scheduled') {
+            const releaseText = job.dispatch_release_date ? ` This job is scheduled for ${job.dispatch_release_date}.` : '';
+            return { active: false, message: 'This job has been preloaded to the driver app but is not live yet.' + releaseText + ' The ETA will appear once the driver starts shift and the job is released.' };
+        }
 
         if (status === 'loaded') {
             return {
@@ -1809,7 +1830,7 @@
             'id', 'created_at', 'customer_name', 'customer_phone', 'customer_email', 'customers_own_invoice_number', 'fts_invoice_number',
             'coll_postcode', 'coll_street', 'coll_town', 'coll_county', 'coll_ref', 'coll_datetime', 'coll_postcode_2', 'coll_town_2',
             'del_postcode', 'del_cust_name', 'del_phone', 'del_email', 'del_street', 'del_town', 'del_county', 'del_ref', 'del_datetime', 'del_postcode_2', 'del_town_2',
-            'total_price', 'total_pallets', 'total_weight', 'vehicle_type', 'status', 'dispatch_status', 'assigned_slot', 'assigned_driver', 'driver_phone',
+            'total_price', 'total_pallets', 'total_weight', 'vehicle_type', 'status', 'dispatch_status', 'dispatch_release_date', 'dispatch_sequence', 'dispatch_scheduled_at', 'released_at', 'assigned_slot', 'assigned_driver', 'driver_phone',
             'ack_timestamp', 'ack_gps', 'arrived_timestamp', 'arrived_gps', 'loaded_timestamp', 'del_arrived_timestamp', 'tipped_timestamp', 'tipped_gps', 'pod_url'
         ]);
 
@@ -1823,6 +1844,10 @@
             fullDetailRow('Customer email', job.customer_email),
             fullDetailRow('Status', job.status),
             fullDetailRow('Dispatch status', job.dispatch_status),
+            fullDetailRow('Dispatch release date', job.dispatch_release_date),
+            fullDetailRow('Dispatch sequence', job.dispatch_sequence),
+            fullDetailRow('Scheduled to driver app', job.dispatch_scheduled_at, true),
+            fullDetailRow('Released to driver', job.released_at, true),
             fullDetailRow('Assigned driver', job.assigned_driver),
             fullDetailRow('Planner slot', job.assigned_slot)
         ];
@@ -1964,6 +1989,7 @@
         const isLockedLeg1 = isLeg1 && q.assigned_slot && !q.assigned_slot.includes('pool');
         
         let dispatchClass = "";
+        if (q.dispatch_status === 'scheduled') dispatchClass = " status-scheduled";
         if (q.dispatch_status === 'sent') dispatchClass = " status-sent";
         if (q.dispatch_status === 'acknowledged') dispatchClass = " status-ack";
         if (q.dispatch_status === 'arrived') dispatchClass = " status-arr";
@@ -2204,6 +2230,7 @@
                 
         } else {
             let dispatchBadge = '';
+            if (q.dispatch_status === 'scheduled') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#64748b; border:1px solid #64748b; padding:1px 4px; border-radius:3px; background:white;">SCHEDULED</span>`;
             if (q.dispatch_status === 'sent') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#f39c12; border:1px solid #f39c12; padding:1px 4px; border-radius:3px; background:white;">SENT</span>`;
             if (q.dispatch_status === 'acknowledged') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#0056b3; border:1px solid #0056b3; padding:1px 4px; border-radius:3px; background:white;">ACKNOWLEDGED</span>`;
             if (q.dispatch_status === 'arrived') dispatchBadge = `<span style="float:right; font-size:0.6rem; color:#2e7d32; border:1px solid #2e7d32; padding:1px 4px; border-radius:3px; background:white;">AT COLLECTION</span>`;
@@ -2632,7 +2659,7 @@
     async function markSubbed(e, id) {
         e.stopPropagation();
         if(confirm("Move this job to Subbed to Contractor?" + linkedActionLabel(id))) {
-            await updateLinkedJobs(id, { status: 'subbed', assigned_slot: null, dispatch_status: 'unsent' });
+            await updateLinkedJobs(id, { status: 'subbed', assigned_slot: null, dispatch_status: 'unsent', dispatch_release_date: null, dispatch_sequence: null, dispatch_scheduled_at: null, released_at: null });
             loadAll();
         }
     }
@@ -2640,9 +2667,49 @@
     async function markCancelled(e, id) {
         e.stopPropagation();
         if(confirm("Cancel this job?" + linkedActionLabel(id))) {
-            await updateLinkedJobs(id, { status: 'cancelled', assigned_slot: null, dispatch_status: 'unsent' });
+            await updateLinkedJobs(id, { status: 'cancelled', assigned_slot: null, dispatch_status: 'unsent', dispatch_release_date: null, dispatch_sequence: null, dispatch_scheduled_at: null, released_at: null });
             loadAll();
         }
+    }
+
+    function getLocalDateKeyFromValue(value) {
+        if (!value) return null;
+        const d = new Date(value);
+        if (isNaN(d.getTime())) {
+            const m = String(value).match(/^(\d{4}-\d{2}-\d{2})/);
+            return m ? m[1] : null;
+        }
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+
+    function getTodayLocalDateKey() {
+        const d = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+
+    function getJobDispatchReleaseDate(job) {
+        return getLocalDateKeyFromValue(job.dispatch_release_date) || getLocalDateKeyFromValue(job.coll_datetime) || getTodayLocalDateKey();
+    }
+
+    function isReleaseDateTodayOrPast(releaseDate) {
+        return String(releaseDate || getTodayLocalDateKey()) <= getTodayLocalDateKey();
+    }
+
+    function getNextDispatchSequence(driverName, releaseDate, currentJobId) {
+        const sameDriverSameDate = (allJobsRaw || []).filter(job => {
+            if (String(job.id) === String(currentJobId)) return false;
+            if (String(job.assigned_driver || '').toLowerCase() !== String(driverName || '').toLowerCase()) return false;
+            return getJobDispatchReleaseDate(job) === releaseDate;
+        });
+
+        const highestSaved = sameDriverSameDate.reduce((max, job) => {
+            const n = parseInt(job.dispatch_sequence, 10);
+            return Number.isFinite(n) && n > max ? n : max;
+        }, 0);
+
+        return highestSaved + 1;
     }
 
     async function dispatchJob(e, id) {
@@ -2657,16 +2724,31 @@
         if (!dropdown || !dropdown.value) return alert("Please select a driver in the row's dropdown first.");
         
         const driverName = dropdown.options[dropdown.selectedIndex].text.toLowerCase();
+        const releaseDate = getJobDispatchReleaseDate(j);
+        const releaseNow = isReleaseDateTodayOrPast(releaseDate);
+        const sequence = j.dispatch_sequence || getNextDispatchSequence(driverName, releaseDate, id);
+        const nowIso = new Date().toISOString();
+        const nextStatus = releaseNow ? 'sent' : 'scheduled';
         
         try {
             await sb.from('quotes').update({ 
-                dispatch_status: 'sent',
-                assigned_driver: driverName 
+                dispatch_status: nextStatus,
+                assigned_driver: driverName,
+                dispatch_release_date: releaseDate,
+                dispatch_sequence: sequence,
+                dispatch_scheduled_at: nowIso,
+                released_at: releaseNow ? nowIso : null
             }).eq('id', id);
             
+            if (releaseNow) {
+                alert("Job sent live to the driver's app.");
+            } else {
+                alert(`Job scheduled for ${releaseDate}. It will sit in the driver's Jobs card and will not become active until that date after the driver starts shift.`);
+            }
+
             loadAll(); 
         } catch(err) {
-            alert("Error dispatching job: " + err.message);
+            alert("Error dispatching/scheduling job: " + err.message + "\n\nIf this mentions dispatch_release_date, dispatch_sequence, dispatch_scheduled_at or released_at, run the SQL I provided to add the new columns to quotes.");
         }
     }
 
@@ -2682,6 +2764,10 @@
         j.assigned_slot = null;
         j.dispatch_status = 'unsent';
         j.assigned_driver = null;
+        j.dispatch_release_date = null;
+        j.dispatch_sequence = null;
+        j.dispatch_scheduled_at = null;
+        j.released_at = null;
         j.fts_invoice_number = await getNextFtsInvoiceNumber();
         await insertQuoteWithOptionalLinkedGroup(j, linkedGroup);
         loadAll();
@@ -3562,6 +3648,7 @@
     }
 
     function switchView(view) {
+        activePlannerView = view;
         document.querySelectorAll('.week-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('planner-board').style.display = 'none';
         document.getElementById('invoicing-view').style.display = 'none';
@@ -3803,7 +3890,7 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, payload => {
             console.log("Planner sync update received!");
             if (!isDragging) {
-                loadAll();
+                schedulePlannerRefresh();
             }
         })
         .subscribe();
@@ -3825,7 +3912,7 @@
                 if (payload.new.rejected) playAlert('reject');
             }
 
-            if (!isDragging) loadAll(); 
+            if (!isDragging) schedulePlannerRefresh(); 
         })
         .subscribe();
 
@@ -3833,7 +3920,10 @@
     sb.channel('vehicles-tracker')
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vehicles' }, payload => {
             console.log("Vehicle Status Updated!");
-            if (!isDragging) syncMaintenanceAndLoadAll();
+            if (!isDragging) {
+                if (plannerRefreshTimer) clearTimeout(plannerRefreshTimer);
+                plannerRefreshTimer = setTimeout(() => syncMaintenanceAndLoadAll(), 1000);
+            }
         })
         .subscribe();
 
