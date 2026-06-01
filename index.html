@@ -13,7 +13,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        /* ==========================================
+/* ==========================================
            1. GLOBAL VARIABLES & RESET
            ========================================== */
         :root {
@@ -176,6 +176,22 @@
         .job-card.status-load { background: #f5eef8; border-left-color: #8e44ad; }
         .job-card.status-del-arr { background: #fef9e7; border-left-color: #f1c40f; }
         .job-card.status-tipped { background: #e8f8f5; border-left-color: #1abc9c; }
+        .job-card.palletforce-job-card { background: #fff3e6 !important; border-left-color: #f58220 !important; }
+        .job-card.palletforce-job-card:hover { background: #ffe8cf !important; }
+        .job-card.palletforce-job-card .postcode-header { background: rgba(245,130,32,0.10); border-radius: 4px; padding: 4px; }
+        .palletforce-job-badge { display:inline-block; font-size:0.58rem; color:#9a4d00; border:1px solid #f58220; padding:1px 5px; border-radius:999px; background:#fff7ed; margin-left:4px; font-weight:800; letter-spacing:0.2px; }
+        #add-job-modal-content.palletforce-job-form { background: #fff3e6; border: 2px solid #f58220; }
+        #add-job-modal-content.palletforce-job-form input,
+        #add-job-modal-content.palletforce-job-form select,
+        #add-job-modal-content.palletforce-job-form textarea { background: #fffaf5; }
+        #add-job-modal-content.palletforce-job-form .section-divider { border-top-color: #f5b26c; }
+        .palletforce-mode-btn { background:#f58220 !important; color:white !important; border:none; padding:7px 11px; border-radius:4px; font-size:0.72rem; font-weight:800; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+        .palletforce-mode-btn:hover { background:#d96f14 !important; }
+        .palletforce-mode-btn.active { outline:3px solid rgba(245,130,32,0.25); background:#b85b0c !important; }
+        .palletforce-mode-banner { display:none; margin: 0 0 12px 0; padding: 9px 12px; border-radius: 6px; background:#f58220; color:white; font-weight:800; font-size:0.78rem; letter-spacing:0.2px; }
+        #add-job-modal-content.palletforce-job-form .palletforce-mode-banner { display:block; }
+        .invoice-fields-disabled { opacity:0.55; filter: grayscale(1); }
+        .invoice-fields-disabled input { background:#e5e7eb !important; color:#666 !important; cursor:not-allowed; }
 
         .postcode-header { display: flex; font-weight: bold; margin-bottom: 5px; font-size: 0.85rem; pointer-events: auto; justify-content: center; cursor: pointer; }
         .pc-coll { color: royalblue; display: block;} 
@@ -288,7 +304,8 @@
         .autocomplete-item:hover { background: #f0f7ff; }
         .ac-name { font-weight: bold; color: var(--frost-black); }
         .ac-details { font-size: 0.7rem; color: #888; }
-    </style>
+
+</style>
 </head>
 <body>
 
@@ -501,11 +518,15 @@
 
 <!-- TABBED Add Job Modal -->
 <div id="modal-add" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-add')">
-    <div class="modal-content" style="width: 1100px; max-width: 95vw;">
+    <div class="modal-content" id="add-job-modal-content" style="width: 1100px; max-width: 95vw;">
         
         <!-- MODAL TAB HEADER -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 2px solid var(--frost-red); padding-bottom: 10px;">
-            <h2 style="margin:0;">Job Details</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 2px solid var(--frost-red); padding-bottom: 10px; gap:15px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <h2 style="margin:0;">Job Details</h2>
+                <button type="button" class="palletforce-mode-btn" id="btn-pf-assist" onclick="setJobBookingMode('PalletForce Assist')">PalletForce Assist</button>
+                <button type="button" class="palletforce-mode-btn" id="btn-npc" onclick="setJobBookingMode('NPC')">NPC</button>
+            </div>
             <div id="form-tabs" style="display:flex; gap:10px;">
                 <button type="button" class="week-btn active" id="tab-btn-leg1" onclick="switchFormTab('leg1')" style="background:var(--frost-red);">Main Route</button>
                 <button type="button" class="week-btn" id="tab-btn-coll2" onclick="switchFormTab('coll2')" style="background:#0056b3;">+ Collection 2</button>
@@ -514,6 +535,8 @@
         </div>
 
         <input type="hidden" id="sys_job_id">
+        <input type="hidden" id="n_job_contract_type" value="">
+        <div class="palletforce-mode-banner" id="palletforce-mode-banner">PALLETFORCE JOB MODE ACTIVE</div>
         
         <!-- TAB 1: MAIN ROUTE -->
         <div id="tab-content-leg1" class="tab-content-zone active">
@@ -595,7 +618,7 @@
         <!-- Full Width Bottom Section -->
         <hr class="section-divider">
         <h4 style="margin:5px 0 10px 0; color:#1a1a1a;">INVOICE NUMBERS</h4>
-        <div style="display:flex; gap:15px; align-items:flex-end; flex-wrap:wrap;">
+        <div id="invoice-number-fields-wrapper" style="display:flex; gap:15px; align-items:flex-end; flex-wrap:wrap;">
             <div class="form-group" style="flex:1; min-width:220px;"><label>Customers Invoice Number</label><input type="text" id="n_customers_own_invoice_number" placeholder="Customer's own invoice / booking number"></div>
             <div class="form-group" style="flex:1; min-width:220px;"><label>FTS Invoice Number</label><input type="text" id="n_fts_invoice_number" readonly placeholder="Auto generated" style="font-weight:bold; color:var(--frost-red); background:#f8fafc;"></div>
         </div>
@@ -687,6 +710,115 @@
 
 
 <script>
+// ==========================================
+// STAGE 2 HELPERS RESTORED INLINE
+// ==========================================
+// ==========================================
+// FROST Transport Planner - Stage 2 Utilities
+// Moved out of index.html to make the main file easier to maintain.
+// These are safe helper/display functions only.
+// ==========================================
+
+function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function escapeInlineArg(value) {
+        return String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    function detailDisplayValue(value) {
+        if (value === null || value === undefined || String(value).trim() === '') return '-';
+        if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+        if (typeof value === 'object') return escapeHtml(JSON.stringify(value));
+        return escapeHtml(String(value));
+    }
+
+    function detailDateTime(value) {
+        if (!value) return '-';
+        const d = new Date(value);
+        if (isNaN(d)) return detailDisplayValue(value);
+        return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
+    }
+
+    function fullDetailRow(label, value, isDateTime = false) {
+        return `<div class="full-detail-row"><b>${escapeHtml(label)}:</b><span>${isDateTime ? detailDateTime(value) : detailDisplayValue(value)}</span></div>`;
+    }
+
+    function fullDetailSection(title, rows, sectionClass = '') {
+        return `<div class="full-detail-section ${sectionClass}"><h4>${escapeHtml(title)}</h4>${rows.join('')}</div>`;
+    }
+
+    function buildPodDetailBox(job) {
+        const podUrl = (job.pod_url || '').trim();
+        if (!podUrl) {
+            return `<div class="pod-detail-box"><b>📎 POD Image</b><span class="pod-detail-url">No POD image URL saved against this job yet.</span></div>`;
+        }
+        return `<div class="pod-detail-box"><button type="button" onclick="openPODImage(event, '${escapeInlineArg(job.id)}')">📎 Open POD Image</button><span class="pod-detail-url">${escapeHtml(podUrl)}</span></div>`;
+    }
+
+
+    function etaSafeId(value) {
+        return String(value || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+
+    function parseGpsCoordinates(value) {
+        if (!value) return null;
+        const match = String(value).match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+        if (!match) return null;
+
+        const lat = parseFloat(match[1]);
+        const lng = parseFloat(match[2]);
+
+        if (!isFinite(lat) || !isFinite(lng)) return null;
+        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+
+        return { lat, lng };
+    }
+
+    function formatGpsAge(createdAt) {
+        if (!createdAt) return 'N/A';
+        const t = new Date(createdAt).getTime();
+        if (isNaN(t)) return 'N/A';
+
+        const diffMins = Math.max(0, Math.round((Date.now() - t) / 60000));
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? '' : 's'} ago`;
+
+        const hours = Math.floor(diffMins / 60);
+        const mins = diffMins % 60;
+        return `${hours}h ${mins}m ago`;
+    }
+
+    function formatEtaDuration(totalMinutes) {
+        const mins = Math.max(1, Math.round(totalMinutes || 0));
+        if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'}`;
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        return `${h}h ${m.toString().padStart(2, '0')}m`;
+    }
+
+    function haversineMiles(a, b) {
+        const R = 3958.7613;
+        const toRad = deg => deg * Math.PI / 180;
+        const dLat = toRad(b.lat - a.lat);
+        const dLng = toRad(b.lng - a.lng);
+        const lat1 = toRad(a.lat);
+        const lat2 = toRad(b.lat);
+
+        const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+        return 2 * R * Math.asin(Math.sqrt(h));
+    }
+
+
+</script>
+
+<script>
     // ==========================================
     // 1. CONFIGURATION & STATE
     // ==========================================
@@ -752,12 +884,35 @@
     
     let isDragging = false;
 
-    function schedulePlannerRefresh(delay = 650) {
+    // Performance guardrails for multi-planner live use.
+    // Keep Supabase Realtime quick, but prevent overlapping full-board reloads.
+    let loadAllInProgress = false;
+    let loadAllQueued = false;
+    let lastFullLoadAt = 0;
+    const NORMAL_REFRESH_DELAY_MS = 300;
+    const MODAL_REFRESH_DELAY_MS = 900;
+
+    function isPlannerModalOpen() {
+        return Array.from(document.querySelectorAll('.modal-overlay')).some(modal => {
+            const style = window.getComputedStyle(modal);
+            return style.display !== 'none' && style.visibility !== 'hidden';
+        });
+    }
+
+    function schedulePlannerRefresh(delay = null) {
+        if (isDragging) {
+            loadAllQueued = true;
+            return;
+        }
+
+        const modalOpen = isPlannerModalOpen();
+        const effectiveDelay = delay !== null ? delay : (modalOpen ? MODAL_REFRESH_DELAY_MS : NORMAL_REFRESH_DELAY_MS);
+
         if (plannerRefreshTimer) clearTimeout(plannerRefreshTimer);
         plannerRefreshTimer = setTimeout(() => {
             plannerRefreshTimer = null;
             if (!isDragging) loadAll();
-        }, delay);
+        }, effectiveDelay);
     }
 
     function restoreActivePlannerView() {
@@ -817,6 +972,51 @@
         document.getElementById('tab-btn-leg1').style.opacity = tabId === 'leg1' ? '1' : '0.6';
         document.getElementById('tab-btn-coll2').style.opacity = tabId === 'coll2' ? '1' : '0.6';
         document.getElementById('tab-btn-del2').style.opacity = tabId === 'del2' ? '1' : '0.6';
+    }
+
+
+    function isPalletforceJobType(type) {
+        return ['PalletForce Assist', 'NPC'].includes(String(type || '').trim());
+    }
+
+    function getCurrentJobBookingMode() {
+        const field = document.getElementById('n_job_contract_type');
+        return field ? field.value : '';
+    }
+
+    function setJobBookingMode(mode) {
+        const hidden = document.getElementById('n_job_contract_type');
+        const modal = document.getElementById('add-job-modal-content');
+        const banner = document.getElementById('palletforce-mode-banner');
+        const invoiceWrap = document.getElementById('invoice-number-fields-wrapper');
+        const customerInv = document.getElementById('n_customers_own_invoice_number');
+        const ftsInv = document.getElementById('n_fts_invoice_number');
+        const isSameMode = hidden && hidden.value === mode;
+        const newMode = isSameMode ? '' : (mode || '');
+        const isPFMode = isPalletforceJobType(newMode);
+
+        if (hidden) hidden.value = newMode;
+        if (modal) modal.classList.toggle('palletforce-job-form', isPFMode);
+        if (banner) banner.innerText = isPFMode ? `${newMode.toUpperCase()} MODE ACTIVE - PALLETFORCE JOB` : '';
+        if (invoiceWrap) invoiceWrap.classList.toggle('invoice-fields-disabled', isPFMode);
+
+        document.querySelectorAll('.palletforce-mode-btn').forEach(btn => btn.classList.remove('active'));
+        if (newMode === 'PalletForce Assist') document.getElementById('btn-pf-assist')?.classList.add('active');
+        if (newMode === 'NPC') document.getElementById('btn-npc')?.classList.add('active');
+
+        if (customerInv) {
+            customerInv.disabled = isPFMode;
+            if (isPFMode) customerInv.value = '';
+        }
+        if (ftsInv) {
+            ftsInv.disabled = isPFMode;
+            ftsInv.readOnly = true;
+            if (isPFMode) {
+                ftsInv.value = '';
+            } else if (!document.getElementById('sys_job_id')?.value && !ftsInv.value) {
+                prefillNextFtsInvoiceNumber();
+            }
+        }
     }
 
     // ==========================================
@@ -946,27 +1146,16 @@
             return;
         }
 
-        try {
-            const startOfToday = new Date();
-            startOfToday.setHours(0, 0, 0, 0);
-            
-            const { data, error } = await sb
-                .from('daily_trailer_checks')
-                .select('trailer_number')
-                .ilike('driver_name', driverName)
-                .gte('created_at', startOfToday.toISOString()) 
-                .order('created_at', { ascending: false })
-                .limit(1);
-
-            if (data && data.length > 0 && data[0].trailer_number) {
-                trailerSpan.innerText = `[${data[0].trailer_number}]`;
-                trailerSpan.classList.add('visible');
-            } else {
-                trailerSpan.innerText = '';
-                trailerSpan.classList.remove('visible');
-            }
-        } catch (err) {
-            console.error("Error fetching trailer data:", err);
+        // Performance: loadAll already fetches recent trailer checks into historicalTrailers.
+        // Use that cache here instead of making one Supabase query per driver header on every refresh.
+        const todayKey = `${driverName.toLowerCase()}_${new Date().toISOString().split('T')[0]}`;
+        const cachedTrailer = historicalTrailers[todayKey];
+        if (cachedTrailer) {
+            trailerSpan.innerText = `[${cachedTrailer}]`;
+            trailerSpan.classList.add('visible');
+        } else {
+            trailerSpan.innerText = '';
+            trailerSpan.classList.remove('visible');
         }
     }
 
@@ -1271,6 +1460,15 @@
     // 6. MAIN DATA LOADING & RENDERING
     // ==========================================
     async function loadAll() {
+        if (loadAllInProgress) {
+            loadAllQueued = true;
+            return;
+        }
+        loadAllInProgress = true;
+        lastFullLoadAt = Date.now();
+
+        try {
+
         const [jobsRes, jccRes, vehRes, trailersRes] = await Promise.all([
             sb.from('quotes').select('*'),
             sb.from('jcc_bookings').select('*'),
@@ -1404,10 +1602,7 @@
             }
         });
         
-        renderInvoiceList();
-        renderHistoryList();
-        renderSubbedList();
-        renderCancelledList();
+        renderActiveDataView();
         updateCalculations();
         restoreDrivers(allJobsRaw);
         restoreActivePlannerView(); 
@@ -1415,7 +1610,15 @@
         if (document.getElementById('map-view').style.display === 'block') {
             updateMapPins();
         }
-    }
+    
+        } finally {
+            loadAllInProgress = false;
+            if (loadAllQueued) {
+                loadAllQueued = false;
+                schedulePlannerRefresh(150);
+            }
+        }
+}
 
     const getVal = (primary, fallback, defaultStr) => {
         let p = (primary || '').trim();
@@ -1480,101 +1683,7 @@
     }
 
 
-    function escapeHtml(value) {
-        return String(value ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    function escapeInlineArg(value) {
-        return String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-    }
-
-    function detailDisplayValue(value) {
-        if (value === null || value === undefined || String(value).trim() === '') return '-';
-        if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-        if (typeof value === 'object') return escapeHtml(JSON.stringify(value));
-        return escapeHtml(String(value));
-    }
-
-    function detailDateTime(value) {
-        if (!value) return '-';
-        const d = new Date(value);
-        if (isNaN(d)) return detailDisplayValue(value);
-        return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
-    }
-
-    function fullDetailRow(label, value, isDateTime = false) {
-        return `<div class="full-detail-row"><b>${escapeHtml(label)}:</b><span>${isDateTime ? detailDateTime(value) : detailDisplayValue(value)}</span></div>`;
-    }
-
-    function fullDetailSection(title, rows, sectionClass = '') {
-        return `<div class="full-detail-section ${sectionClass}"><h4>${escapeHtml(title)}</h4>${rows.join('')}</div>`;
-    }
-
-    function buildPodDetailBox(job) {
-        const podUrl = (job.pod_url || '').trim();
-        if (!podUrl) {
-            return `<div class="pod-detail-box"><b>📎 POD Image</b><span class="pod-detail-url">No POD image URL saved against this job yet.</span></div>`;
-        }
-        return `<div class="pod-detail-box"><button type="button" onclick="openPODImage(event, '${escapeInlineArg(job.id)}')">📎 Open POD Image</button><span class="pod-detail-url">${escapeHtml(podUrl)}</span></div>`;
-    }
-
-
-    function etaSafeId(value) {
-        return String(value || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
-    }
-
-    function parseGpsCoordinates(value) {
-        if (!value) return null;
-        const match = String(value).match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
-        if (!match) return null;
-
-        const lat = parseFloat(match[1]);
-        const lng = parseFloat(match[2]);
-
-        if (!isFinite(lat) || !isFinite(lng)) return null;
-        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
-
-        return { lat, lng };
-    }
-
-    function formatGpsAge(createdAt) {
-        if (!createdAt) return 'N/A';
-        const t = new Date(createdAt).getTime();
-        if (isNaN(t)) return 'N/A';
-
-        const diffMins = Math.max(0, Math.round((Date.now() - t) / 60000));
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? '' : 's'} ago`;
-
-        const hours = Math.floor(diffMins / 60);
-        const mins = diffMins % 60;
-        return `${hours}h ${mins}m ago`;
-    }
-
-    function formatEtaDuration(totalMinutes) {
-        const mins = Math.max(1, Math.round(totalMinutes || 0));
-        if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'}`;
-        const h = Math.floor(mins / 60);
-        const m = mins % 60;
-        return `${h}h ${m.toString().padStart(2, '0')}m`;
-    }
-
-    function haversineMiles(a, b) {
-        const R = 3958.7613;
-        const toRad = deg => deg * Math.PI / 180;
-        const dLat = toRad(b.lat - a.lat);
-        const dLng = toRad(b.lng - a.lng);
-        const lat1 = toRad(a.lat);
-        const lat2 = toRad(b.lat);
-
-        const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-        return 2 * R * Math.asin(Math.sqrt(h));
-    }
+    // Utility helper functions moved to js/utils.js in Stage 2.
 
     function getEtaStage(job) {
         const status = String(job.dispatch_status || '').toLowerCase();
@@ -1982,6 +2091,8 @@
         const isCompleted = q.status === 'completed';
         const isMaintenance = q.customer_name === "🔧 PLANNED MAINTENANCE";
         const isNote = q.customer_name === "📝 PLANNER NOTE";
+        const jobContractType = q.job_contract_type || q.contract_type || '';
+        const isPalletforceJob = isPalletforceJobType(jobContractType);
         
         const isLeg1 = q.customer_name && q.customer_name.endsWith('(Leg 1)');
         const isLeg2 = q.customer_name && q.customer_name.endsWith('(Leg 2)');
@@ -1998,6 +2109,7 @@
         if (q.dispatch_status === 'tipped') dispatchClass = " status-tipped";
 
         card.className = "job-card" + dispatchClass; 
+        if (isPalletforceJob) card.classList.add('palletforce-job-card');
         
         if (isCompleted || isLockedLeg1) card.classList.add('completed-grey');
         if (isLeg2 && !isCompleted && !isGhost) card.classList.add('reassigned-orange');
@@ -2240,6 +2352,7 @@
 
             let weightTag = q.total_weight ? `<span class="vehicle-tag" style="background:#666;">${q.total_weight}kg</span>` : '';
             let palletTag = q.total_pallets ? `<span class="vehicle-tag" style="background:#d68910;">${q.total_pallets} Plt</span>` : '';
+            let contractBadge = isPalletforceJob ? `<span class="palletforce-job-badge">${jobContractType}</span>` : '';
 
             let extraActions = isGhost ? '' : `
                 <div style="display:flex; gap:5px; margin-top:10px; padding-top:8px; border-top: 1px solid #eee;">
@@ -2252,7 +2365,7 @@
                 <div class="postcode-header" style="align-items: ${headerAlignment};">${pcHeader}</div>
                 <div class="card-body">
                     ${actionsHtml}
-                    <div style="font-weight:bold; color:black; font-size: 0.8rem; margin-bottom: 5px;">${q.customer_name} ${dispatchBadge}</div>
+                    <div style="font-weight:bold; color:black; font-size: 0.8rem; margin-bottom: 5px;">${q.customer_name} ${contractBadge} ${dispatchBadge}</div>
                     <div style="display:flex; gap:5px; margin:5px 0;">
                         <span class="vehicle-tag">${q.vehicle_type}</span>
                         ${palletTag}
@@ -2396,11 +2509,12 @@
             total_pallets: document.getElementById('n_total_pallets').value,
             total_weight: document.getElementById('n_total_weight').value,
             vehicle_type: document.getElementById('n_veh_type').value,
-            customers_own_invoice_number: document.getElementById('n_customers_own_invoice_number').value,
-            fts_invoice_number: document.getElementById('n_fts_invoice_number').value
+            customers_own_invoice_number: isPalletforceJobType(getCurrentJobBookingMode()) ? '' : document.getElementById('n_customers_own_invoice_number').value,
+            fts_invoice_number: isPalletforceJobType(getCurrentJobBookingMode()) ? '' : document.getElementById('n_fts_invoice_number').value,
+            job_contract_type: getCurrentJobBookingMode()
         };
 
-        if (!id) {
+        if (!id && !isPalletforceJobType(payload.job_contract_type)) {
             payload.fts_invoice_number = await getNextFtsInvoiceNumber();
             const ftsField = document.getElementById('n_fts_invoice_number');
             if (ftsField) ftsField.value = payload.fts_invoice_number;
@@ -2447,7 +2561,7 @@
                 delete p2.coll_town_2;
                 p2.status = 'pending';
                 p2.total_price = "0";
-                p2.fts_invoice_number = getNextFtsInvoiceNumberAfter(p1.fts_invoice_number);
+                p2.fts_invoice_number = isPalletforceJobType(payload.job_contract_type) ? '' : getNextFtsInvoiceNumberAfter(p1.fts_invoice_number);
 
                 const { error } = await sb.from('quotes').insert([p1, p2]);
                 errorObj = error;
@@ -2464,7 +2578,27 @@
             
             if (errorObj) {
                 if (errorObj.code === '42703' || (errorObj.message && errorObj.message.includes('not exist'))) {
-                    alert("⚠️ DATABASE UPDATE REQUIRED!\n\nTo use the extra '+ Collection' or '+ Delivery' tabs, you must go to your Supabase Dashboard and add three new 'text' columns to your 'quotes' table:\n\n1. coll_postcode_2\n2. coll_town_2\n3. del_town_2\n\nStandard jobs without extra legs will continue to save normally.");
+                    const msg = String(errorObj.message || '');
+                    if (msg.includes('job_contract_type')) {
+                        alert(`⚠️ DATABASE UPDATE REQUIRED!
+
+To use PalletForce Assist / NPC job mode, add this text column to your Supabase quotes table:
+
+job_contract_type
+
+After adding it, try saving the job again.`);
+                    } else {
+                        alert(`⚠️ DATABASE UPDATE REQUIRED!
+
+To use the extra '+ Collection' or '+ Delivery' tabs, you must go to your Supabase Dashboard and add these text columns to your 'quotes' table if they are missing:
+
+1. coll_postcode_2
+2. coll_town_2
+3. del_town_2
+4. job_contract_type
+
+Standard jobs without extra legs will continue to save normally.`);
+                    }
                     return;
                 }
                 throw errorObj;
@@ -2483,6 +2617,7 @@
         document.getElementById('sys_job_id').value = id;
         document.getElementById('n_customers_own_invoice_number').value = j.customers_own_invoice_number || '';
         document.getElementById('n_fts_invoice_number').value = j.fts_invoice_number || '';
+        setJobBookingMode(j.job_contract_type || j.contract_type || '');
         document.getElementById('n_cust_name').value = j.customer_name || '';
         document.getElementById('n_cust_phone').value = j.customer_phone || '';
         document.getElementById('n_cust_email').value = j.customer_email || '';
@@ -3647,8 +3782,17 @@
         document.getElementById('grand-total').innerText = "£" + grand.toFixed(2);
     }
 
+    function renderActiveDataView(view = activePlannerView) {
+        if (view === 'invoice') renderInvoiceList();
+        else if (view === 'history') renderHistoryList();
+        else if (view === 'subbed') renderSubbedList();
+        else if (view === 'cancelled') renderCancelledList();
+        else if (view === 'map' && document.getElementById('map-view').style.display === 'block') updateMapPins();
+    }
+
     function switchView(view) {
         activePlannerView = view;
+        renderActiveDataView(view);
         document.querySelectorAll('.week-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('planner-board').style.display = 'none';
         document.getElementById('invoicing-view').style.display = 'none';
@@ -3730,7 +3874,8 @@
 
     function resetForm() {
         document.getElementById('sys_job_id').value = '';
-        ['n_cust_name','n_cust_phone', 'n_cust_email','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2', 'n_customers_own_invoice_number', 'n_fts_invoice_number'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
+        ['n_cust_name','n_cust_phone', 'n_cust_email','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2', 'n_customers_own_invoice_number', 'n_fts_invoice_number', 'n_job_contract_type'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
+        setJobBookingMode('');
         prefillNextFtsInvoiceNumber();
         switchFormTab('leg1');
     }
@@ -3890,7 +4035,7 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, payload => {
             console.log("Planner sync update received!");
             if (!isDragging) {
-                schedulePlannerRefresh();
+                schedulePlannerRefresh(250);
             }
         })
         .subscribe();
@@ -3912,7 +4057,7 @@
                 if (payload.new.rejected) playAlert('reject');
             }
 
-            if (!isDragging) schedulePlannerRefresh(); 
+            if (!isDragging) schedulePlannerRefresh(250); 
         })
         .subscribe();
 
