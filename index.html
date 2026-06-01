@@ -2860,26 +2860,20 @@ Standard jobs without extra legs will continue to save normally.`);
         
         const driverName = dropdown.options[dropdown.selectedIndex].text.toLowerCase();
         const releaseDate = getJobDispatchReleaseDate(j);
-        const releaseNow = isReleaseDateTodayOrPast(releaseDate);
         const sequence = j.dispatch_sequence || getNextDispatchSequence(driverName, releaseDate, id);
         const nowIso = new Date().toISOString();
-        const nextStatus = releaseNow ? 'sent' : 'scheduled';
         
         try {
             await sb.from('quotes').update({ 
-                dispatch_status: nextStatus,
+                dispatch_status: 'scheduled',
                 assigned_driver: driverName,
                 dispatch_release_date: releaseDate,
                 dispatch_sequence: sequence,
                 dispatch_scheduled_at: nowIso,
-                released_at: releaseNow ? nowIso : null
+                released_at: null
             }).eq('id', id);
             
-            if (releaseNow) {
-                alert("Job sent live to the driver's app.");
-            } else {
-                alert(`Job scheduled for ${releaseDate}. It will sit in the driver's Jobs card and will not become active until that date after the driver starts shift.`);
-            }
+            alert(`Job queued for ${driverName} in the driver's Jobs card. It will only become active when it is due, the driver is on shift, and no other job is active.`);
 
             loadAll(); 
         } catch(err) {
