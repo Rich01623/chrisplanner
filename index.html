@@ -2862,9 +2862,13 @@ Standard jobs without extra legs will continue to save normally.`);
         const releaseDate = getJobDispatchReleaseDate(j);
         const sequence = j.dispatch_sequence || getNextDispatchSequence(driverName, releaseDate, id);
         const nowIso = new Date().toISOString();
-        
+
+        // IMPORTANT: planner dispatch now queues the job instead of making every job live.
+        // The driver app is responsible for releasing only ONE job at a time. If the driver
+        // is already on shift and has no active job, the driver app will release the next
+        // queued job automatically on its next sync.
         try {
-            await sb.from('quotes').update({ 
+            await sb.from('quotes').update({
                 dispatch_status: 'scheduled',
                 assigned_driver: driverName,
                 dispatch_release_date: releaseDate,
@@ -2872,12 +2876,12 @@ Standard jobs without extra legs will continue to save normally.`);
                 dispatch_scheduled_at: nowIso,
                 released_at: null
             }).eq('id', id);
-            
-            alert(`Job queued for ${driverName} in the driver's Jobs card. It will only become active when it is due, the driver is on shift, and no other job is active.`);
 
-            loadAll(); 
+            alert(`Job queued to the driver's Jobs card for ${releaseDate}. It will not become active until the driver app releases it as the next job in the queue.`);
+
+            loadAll();
         } catch(err) {
-            alert("Error dispatching/scheduling job: " + err.message + "\n\nIf this mentions dispatch_release_date, dispatch_sequence, dispatch_scheduled_at or released_at, run the SQL I provided to add the new columns to quotes.");
+            alert("Error queueing job to driver app: " + err.message + "\n\nIf this mentions dispatch_release_date, dispatch_sequence, dispatch_scheduled_at or released_at, run the SQL I provided to add the new columns to quotes.");
         }
     }
 
