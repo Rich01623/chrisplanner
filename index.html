@@ -59,8 +59,16 @@
            ========================================== */
         main { display: flex; flex-grow: 1; overflow: hidden; position: relative; }
         
-        #unassigned-sidebar { width: var(--sidebar-width); background: #eee; border-right: 2px solid var(--border-color); transition: margin-left 0.3s ease; margin-left: calc(-1 * var(--sidebar-width)); flex-shrink: 0; z-index: 80; display: flex; flex-direction: column; height: 100%; }
-        #unassigned-sidebar.open { margin-left: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+        #unassigned-sidebar, #maintenance-sidebar { width: var(--sidebar-width); background: #eee; border-right: 2px solid var(--border-color); flex-shrink: 0; z-index: 80; display: none; flex-direction: column; height: 100%; }
+        #unassigned-sidebar.open, #maintenance-sidebar.open { display: flex; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
+        body.hide-maintenance-cards #planner-board .job-card[data-is-maintenance="true"] { display: none !important; }
+        #maintenance-sidebar { background: #fff6ec; border-right-color: #f58220; }
+        #maintenance-sidebar .pool-day { border-color: #f5c186; }
+        #maintenance-sidebar .pool-day-title { background: #f58220; }
+        .maintenance-week-group .pool-day-title { background: #f58220; color: white; }
+        .maintenance-pool-zone { min-height: 90px; background: #fffaf4; border: 1px dashed #f58220; }
+        .maintenance-pool-zone:hover { background: #fff3e6; }
+        .maintenance-pool-zone:empty::after { content: 'No maintenance due in this week'; display: block; color: #b06a20; opacity: 0.65; font-size: 0.72rem; text-align: center; padding: 18px 6px; font-weight: 700; }
         
         #pool-container { flex-grow: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
         .pool-day { background: white; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; flex-shrink: 0; }
@@ -167,6 +175,11 @@
         /* Ghost Card Styling */
         .job-card.ghost-card { border: 2px dashed var(--frost-blue); background: #f4f9ff; opacity: 0.85; cursor: pointer; border-left: 4px solid var(--frost-blue); }
         .ghost-badge { background: var(--frost-blue); color: white; font-size: 0.65rem; padding: 3px 6px; border-radius: 3px; display: block; text-align: center; margin-bottom: 6px; font-weight: bold; letter-spacing: 0.5px; }
+        .maintenance-card { background: #fffaf4 !important; border-left-color: #f58220 !important; }
+        .maintenance-card.vehicle-maintenance { border-left-color: #8e44ad !important; }
+        .maintenance-card.trailer-maintenance { border-left-color: #f58220 !important; }
+        .maintenance-asset-badge { display:inline-block; background:#1a1a1a; color:white; border-radius:999px; padding:2px 7px; font-size:0.62rem; font-weight:900; letter-spacing:0.3px; margin-right:5px; }
+        .maintenance-due-badge { display:inline-block; background:#fff3e6; color:#a94f00; border:1px solid #f5c186; border-radius:4px; padding:2px 6px; font-size:0.62rem; font-weight:900; margin-top:4px; }
 
         /* Dispatch Colors */
         .job-card.status-sent { border-left-color: #f39c12; } 
@@ -317,6 +330,7 @@
     <div style="display:flex; gap:15px; align-items:center;">
         <div id="week-display-box" class="week-info-box">WK -- | MON --/--/--</div>
         <button class="week-btn" id="btn-map" onclick="switchView('map')" style="background:#27ae60; color:white;">🗺️ DROP SPOTS</button>
+        <button class="week-btn" id="btn-toggle-maintenance" onclick="toggleMaintenanceCards()" style="background:#f58220; color:white;">🔧 HIDE MAINTENANCE</button>
         <button class="week-btn" id="btn-toggle-header" onclick="toggleHeaderView()" style="background:#34495e; color:white;">🔄 TOWNS</button>
         <button class="week-btn" onclick="syncMaintenanceAndLoadAll()">SYNC</button>
         <div class="grand-total-box"><span class="grand-total-value" id="grand-total">£0.00</span></div>
@@ -329,9 +343,9 @@
 <div class="week-selector">
     <div class="menu-group">
         <button class="week-btn nav-blue" onclick="toggleUnassigned()">UNASSIGNED</button>
+        <button class="week-btn nav-blue" onclick="toggleMaintenancePool()" style="background:#f58220; color:white;">MAINTENANCE POOL</button>
         <button class="week-btn nav-blue" onclick="resetForm(); openModal('modal-add')">+ NEW JOB</button>
         <button class="week-btn nav-blue" onclick="window.open('https://rich01623.github.io/fleet-tracker/', '_blank')">TRACKER</button>
-        <button class="week-btn nav-blue" onclick="window.open('https://rich01623.github.io/standalonemaintenanceschedule/', '_blank')">MAINTENANCE SCHEDULE</button>
         <button class="week-btn nav-blue" id="btn-subbed" onclick="switchView('subbed')">SUBBED TO CONTRACTOR</button>
         <button class="week-btn nav-blue" id="btn-cancelled" onclick="switchView('cancelled')">CANCELLED JOBS</button>
         <button class="week-btn nav-blue" onclick="openPostcodeSearch()" style="background:#2c3e50;">📍 POSTCODE</button>
@@ -392,6 +406,31 @@
             <div class="pool-day" id="pool-day-sun" style="display:none;">
                 <div class="pool-day-title" style="background:#888;">SUNDAY</div>
                 <div id="pool-zone-0" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- LEFT SIDEBAR: MAINTENANCE POOL -->
+    <section id="maintenance-sidebar">
+        <div style="padding:10px; background:#f58220; color:white; font-weight:bold; display:flex; justify-content:space-between; border-bottom: 1px solid #c85f00;">
+            MAINTENANCE POOL <span onclick="toggleMaintenancePool()" style="cursor:pointer; color: white;">✕</span>
+        </div>
+        <div id="maintenance-pool-container" style="flex-grow:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:12px; min-height:0;">
+            <div class="pool-day maintenance-week-group">
+                <div class="pool-day-title" id="maintenance-pool-title-w0">CURRENT WEEK</div>
+                <div id="maintenance-pool-zone-w0" class="pool-zone maintenance-pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day maintenance-week-group">
+                <div class="pool-day-title" id="maintenance-pool-title-w1">NEXT WEEK</div>
+                <div id="maintenance-pool-zone-w1" class="pool-zone maintenance-pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day maintenance-week-group">
+                <div class="pool-day-title" id="maintenance-pool-title-w2">WEEK 3</div>
+                <div id="maintenance-pool-zone-w2" class="pool-zone maintenance-pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+            <div class="pool-day maintenance-week-group">
+                <div class="pool-day-title" id="maintenance-pool-title-w3">WEEK 4</div>
+                <div id="maintenance-pool-zone-w3" class="pool-zone maintenance-pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             </div>
         </div>
     </section>
@@ -875,6 +914,7 @@ function escapeHtml(value) {
     let activePlannerView = 0;
     let plannerRefreshTimer = null;
     let showTownsInHeader = false;
+    let showMaintenanceCards = true;
     let fleetMap = null;
     let mapMarkers = [];
     
@@ -884,6 +924,17 @@ function escapeHtml(value) {
     
     let isDragging = false;
 
+    // EGRESS SAVER: History / Invoice / Subbed / Cancelled rows are not loaded with the
+    // main planner board anymore. They are fetched only when someone opens that view.
+    const dataViewStatusMap = {
+        invoice: ['completed'],
+        history: ['billed', 'archived'],
+        subbed: ['subbed'],
+        cancelled: ['cancelled']
+    };
+    const dataViewLoaded = { invoice: false, history: false, subbed: false, cancelled: false };
+    const dataViewLoading = { invoice: false, history: false, subbed: false, cancelled: false };
+
     // Performance guardrails for multi-planner live use.
     // Keep Supabase Realtime quick, but prevent overlapping full-board reloads.
     let loadAllInProgress = false;
@@ -891,6 +942,12 @@ function escapeHtml(value) {
     let lastFullLoadAt = 0;
     const NORMAL_REFRESH_DELAY_MS = 300;
     const MODAL_REFRESH_DELAY_MS = 900;
+
+    // Realtime quota guardrails.
+    // Keep one live-sync subscription only, and pause it when the planner tab is hidden.
+    let plannerRealtimeChannel = null;
+    let plannerRealtimeStarted = false;
+    let maintenanceRealtimeTimer = null;
 
     function isPlannerModalOpen() {
         return Array.from(document.querySelectorAll('.modal-overlay')).some(modal => {
@@ -1176,6 +1233,8 @@ function escapeHtml(value) {
     }
 
     const MAINTENANCE_CUSTOMER_NAME = "🔧 PLANNED MAINTENANCE";
+    const MAINTENANCE_POOL_SLOT = "maintenance-pool-zone"; // legacy fallback id used by older cards
+    const MAINTENANCE_POOL_SLOT_PREFIX = "maintenance-pool-zone-w";
     const MAINTENANCE_FINAL_STATUSES = ['archived', 'billed', 'subbed', 'cancelled'];
     let maintenanceSyncInProgress = false;
 
@@ -1204,7 +1263,43 @@ function escapeHtml(value) {
         return Math.ceil((((utcDate - yearStart) / 86400000) + 1) / 7);
     }
 
-    function getMaintenanceDueInfo(vehicle, currentMonday, week4Sunday) {
+    function getMaintenancePoolWeekOffset(dateValue) {
+        const offset = getWeekOffsetFromNow(dateValue);
+        if (offset < 0) return 0;
+        if (offset > 3) return 3;
+        return offset;
+    }
+
+    function getMaintenancePoolSlotForDate(dateValue) {
+        return `${MAINTENANCE_POOL_SLOT_PREFIX}${getMaintenancePoolWeekOffset(dateValue)}`;
+    }
+
+    function isMaintenancePoolSlot(slotId) {
+        const slot = String(slotId || '');
+        return slot === MAINTENANCE_POOL_SLOT || slot.startsWith(MAINTENANCE_POOL_SLOT_PREFIX);
+    }
+
+    function updateMaintenancePoolHeaders() {
+        [0, 1, 2, 3].forEach(offset => {
+            const title = document.getElementById(`maintenance-pool-title-w${offset}`);
+            if (!title) return;
+            const info = getWeekInfo(offset);
+            const label = offset === 0 ? 'CURRENT WEEK' : `WEEK +${offset}`;
+            title.innerText = `${label} | ISO WK ${info.week} | MON ${info.date}`;
+        });
+    }
+
+    function normaliseMaintenanceAssetTypeFromJob(job) {
+        const raw = String((job && (job.maintenance_asset_type || job.asset_type || job.coll_town || job.vehicle_type)) || '').trim().toLowerCase();
+        if (raw.includes('trailer')) return 'TRAILER';
+        return 'VEHICLE';
+    }
+
+    function isMaintenanceJob(job) {
+        return job && job.customer_name === MAINTENANCE_CUSTOMER_NAME;
+    }
+
+    function getMaintenanceDueInfo(asset, currentMonday, week4Sunday, checks) {
         const types = [];
         let earliestDate = null;
 
@@ -1218,9 +1313,7 @@ function escapeHtml(value) {
             }
         };
 
-        checkDate(vehicle.mot_due, "MOT");
-        checkDate(vehicle.pmi_due, "PMI");
-        checkDate(vehicle.brake_test, "BRAKE TEST");
+        checks.forEach(([columnName, label]) => checkDate(asset[columnName], label));
 
         if (!types.length) return null;
 
@@ -1237,21 +1330,78 @@ function escapeHtml(value) {
         };
     }
 
-    function buildMaintenanceJobPayload(vehicle, dueInfo) {
+    function buildMaintenanceJobPayload(asset, dueInfo, assetType) {
+        const reg = asset.registration_number;
+        const assetLabel = assetType === 'TRAILER' ? 'TRAILER' : 'VEHICLE';
         return {
             customer_name: MAINTENANCE_CUSTOMER_NAME,
-            coll_postcode: vehicle.registration_number,
+            coll_postcode: reg,
             del_postcode: "BOOK INSPECTION",
             coll_ref: dueInfo.maintenanceType,
             del_ref: `Week ${dueInfo.isoWeek}`,
-            coll_town: "YARD",
-            del_town: "GARAGE",
+            coll_town: assetLabel,
+            del_town: "MAINTENANCE",
+            del_cust_name: `${assetLabel} MAINTENANCE`,
             total_price: "0",
-            vehicle_type: "Any",
+            vehicle_type: assetLabel === 'TRAILER' ? "Trailer" : "Vehicle",
             status: "pending",
             dispatch_status: "unsent",
+            assigned_slot: getMaintenancePoolSlotForDate(dueInfo.cardDate),
             coll_datetime: dueInfo.cardDate.toISOString()
         };
+    }
+
+    function maintenanceCardMatchesAsset(job, reg, assetType) {
+        if (!isMaintenanceJob(job)) return false;
+        const sameReg = normaliseMaintenanceReg(job.coll_postcode) === normaliseMaintenanceReg(reg);
+        const jobType = normaliseMaintenanceAssetTypeFromJob(job);
+        return sameReg && jobType === assetType;
+    }
+
+    async function upsertMaintenanceCard(activeMaintenance, asset, dueInfo, assetType) {
+        if (!asset || !asset.registration_number || !dueInfo) return;
+
+        const reg = normaliseMaintenanceReg(asset.registration_number);
+        const existing = activeMaintenance.find(q => maintenanceCardMatchesAsset(q, reg, assetType));
+        const payload = buildMaintenanceJobPayload(asset, dueInfo, assetType);
+
+        if (!existing) {
+            await sb.from('quotes').insert([payload]);
+            activeMaintenance.push({ ...payload, id: `new-${assetType}-${reg}-${Date.now()}` });
+            return;
+        }
+
+        const existingTime = existing.coll_datetime ? new Date(existing.coll_datetime).getTime() : null;
+        const newTime = new Date(payload.coll_datetime).getTime();
+        const shouldStayOnPlanner = existing.assigned_slot && String(existing.assigned_slot).startsWith('planner-');
+        const existingInMaintenancePool = isMaintenancePoolSlot(existing.assigned_slot);
+
+        const updatePayload = { ...payload };
+
+        // Do not pull an already planned/placed maintenance card back into the pool.
+        if (shouldStayOnPlanner) {
+            delete updatePayload.assigned_slot;
+            delete updatePayload.status;
+        }
+
+        // Do not reset JCC / dispatch state if it has already been booked or actioned.
+        if (existing.dispatch_status && String(existing.dispatch_status).toLowerCase() !== 'unsent') {
+            delete updatePayload.dispatch_status;
+        }
+
+        const needsUpdate =
+            String(existing.coll_ref || '') !== String(payload.coll_ref || '') ||
+            String(existing.del_ref || '') !== String(payload.del_ref || '') ||
+            String(existing.coll_town || '') !== String(payload.coll_town || '') ||
+            String(existing.vehicle_type || '') !== String(payload.vehicle_type || '') ||
+            (!shouldStayOnPlanner && !existingInMaintenancePool) ||
+            !existingTime ||
+            existingTime !== newTime ||
+            String(existing.dispatch_status || '') === '';
+
+        if (needsUpdate) {
+            await sb.from('quotes').update(updatePayload).eq('id', existing.id);
+        }
     }
 
     async function checkMaintenance(options = {}) {
@@ -1263,10 +1413,18 @@ function escapeHtml(value) {
 
             const { data: vehiclesData, error: vehError } = await sb.from('vehicles').select('*');
             if (vehError) throw vehError;
-            if (!vehiclesData || vehiclesData.length === 0) return;
+
+            let trailersData = [];
+            try {
+                const { data: trData, error: trError } = await sb.from('trailers').select('*');
+                if (trError) throw trError;
+                trailersData = trData || [];
+            } catch (trailerErr) {
+                console.warn("Trailer maintenance sync skipped. Check the trailers table/columns exist:", trailerErr);
+            }
 
             const { data: existingQuotes, error: qError } = await sb.from('quotes')
-                .select('id, customer_name, coll_postcode, coll_ref, del_ref, coll_datetime, status, assigned_slot, dispatch_status')
+                .select('id, customer_name, coll_postcode, coll_ref, del_ref, coll_datetime, status, assigned_slot, dispatch_status, coll_town, vehicle_type')
                 .eq('customer_name', MAINTENANCE_CUSTOMER_NAME);
             if (qError) throw qError;
 
@@ -1276,37 +1434,33 @@ function escapeHtml(value) {
 
             const vehiclesToMarkPlanned = [];
 
-            for (const vehicle of vehiclesData) {
+            for (const vehicle of (vehiclesData || [])) {
                 if (!vehicle.registration_number) continue;
 
-                const dueInfo = getMaintenanceDueInfo(vehicle, currentMonday, week4Sunday);
+                const dueInfo = getMaintenanceDueInfo(vehicle, currentMonday, week4Sunday, [
+                    ['mot_due', 'MOT'],
+                    ['pmi_due', 'PMI'],
+                    ['brake_test', 'BRAKE TEST'],
+                    ['tachograph_service_due', 'TACHOGRAPH CALIBRATION'],
+                    ['loler_due', 'LOLER']
+                ]);
                 if (!dueInfo) continue;
 
-                const reg = normaliseMaintenanceReg(vehicle.registration_number);
-                const existing = activeMaintenance.find(q => normaliseMaintenanceReg(q.coll_postcode) === reg);
-                const payload = buildMaintenanceJobPayload(vehicle, dueInfo);
-
-                if (!existing) {
-                    await sb.from('quotes').insert([payload]);
-                    activeMaintenance.push({ ...payload, id: `new-${reg}-${Date.now()}` });
-                    vehiclesToMarkPlanned.push(vehicle.registration_number);
-                    continue;
-                }
-
-                const existingTime = existing.coll_datetime ? new Date(existing.coll_datetime).getTime() : null;
-                const newTime = new Date(payload.coll_datetime).getTime();
-                const needsUpdate =
-                    String(existing.coll_ref || '') !== String(payload.coll_ref || '') ||
-                    String(existing.del_ref || '') !== String(payload.del_ref || '') ||
-                    !existingTime ||
-                    existingTime !== newTime ||
-                    String(existing.dispatch_status || '') === '';
-
-                if (needsUpdate) {
-                    await sb.from('quotes').update(payload).eq('id', existing.id);
-                }
-
+                await upsertMaintenanceCard(activeMaintenance, vehicle, dueInfo, 'VEHICLE');
                 vehiclesToMarkPlanned.push(vehicle.registration_number);
+            }
+
+            for (const trailer of (trailersData || [])) {
+                if (!trailer.registration_number) continue;
+
+                const dueInfo = getMaintenanceDueInfo(trailer, currentMonday, week4Sunday, [
+                    ['mot_due', 'MOT'],
+                    ['pmi_due', 'PMI'],
+                    ['loler_due', 'LOLER']
+                ]);
+                if (!dueInfo) continue;
+
+                await upsertMaintenanceCard(activeMaintenance, trailer, dueInfo, 'TRAILER');
             }
 
             // Keep the existing vehicles.planned flag updated for backwards compatibility,
@@ -1469,8 +1623,16 @@ function escapeHtml(value) {
 
         try {
 
+        updateMaintenancePoolHeaders();
+
+        const boardJobsQuery = sb.from('quotes')
+            .select('*')
+            // Main planner board only. Invoice/history/subbed/cancelled rows are fetched lazily
+            // when those views are opened, which cuts unnecessary Supabase egress.
+            .or('status.is.null,status.not.in.(completed,archived,billed,subbed,cancelled)');
+
         const [jobsRes, jccRes, vehRes, trailersRes] = await Promise.all([
-            sb.from('quotes').select('*'),
+            boardJobsQuery,
             sb.from('jcc_bookings').select('*'),
             sb.from('vehicles').select('registration_number, is_vor'),
             sb.from('daily_trailer_checks').select('driver_name, trailer_number, created_at').order('created_at', { ascending: false }).limit(2000)
@@ -1515,6 +1677,7 @@ function escapeHtml(value) {
         });
 
         allJobsRaw = jobsRes.data;
+        Object.keys(dataViewLoaded).forEach(k => dataViewLoaded[k] = false);
 
         allJobsRaw.sort((a, b) => {
             let valA = a.coll_datetime ? new Date(a.coll_datetime).getTime() : Infinity;
@@ -1567,12 +1730,20 @@ function escapeHtml(value) {
             const card = createCardElement(q, false, isON);
             
             let slot = null;
-            if (q.assigned_slot) {
+            const isMaintenanceCard = q.customer_name === MAINTENANCE_CUSTOMER_NAME;
+
+            if (isMaintenanceCard && (!q.assigned_slot || isMaintenancePoolSlot(q.assigned_slot) || String(q.assigned_slot).includes('pool-zone'))) {
+                slot = document.getElementById(getMaintenancePoolSlotForDate(q.coll_datetime));
+            }
+
+            if (!slot && q.assigned_slot) {
                 slot = document.getElementById(q.assigned_slot);
             }
             
             if (!slot) {
-                if (q.coll_datetime) {
+                if (isMaintenanceCard) {
+                    slot = document.getElementById(getMaintenancePoolSlotForDate(q.coll_datetime));
+                } else if (q.coll_datetime) {
                     let d = new Date(q.coll_datetime);
                     if (!isNaN(d)) {
                         let day = d.getDay(); 
@@ -2031,6 +2202,30 @@ function escapeHtml(value) {
     }
 
 
+    function buildMaintenanceDetailsHtml(job) {
+        const assetType = normaliseMaintenanceAssetTypeFromJob(job);
+        const accent = assetType === 'TRAILER' ? '#f58220' : '#8e44ad';
+        const rows = [
+            fullDetailRow('Asset type', assetType),
+            fullDetailRow('Registration / trailer number', job.coll_postcode),
+            fullDetailRow('Needs booking for', job.coll_ref),
+            fullDetailRow('Due date', job.coll_datetime, true),
+            fullDetailRow('ISO week', job.del_ref),
+            fullDetailRow('Status', job.status),
+            fullDetailRow('JCC / dispatch status', job.dispatch_status),
+            fullDetailRow('Planner slot', job.assigned_slot)
+        ];
+
+        return `
+            <div class="full-job-detail-panel" style="border-left:5px solid ${accent};">
+                <h3 style="background:${accent}; border-bottom-color:#c85f00;">Maintenance Booking Information</h3>
+                <div class="full-job-detail-grid" style="grid-template-columns:1fr;">
+                    ${fullDetailSection('Maintenance Due', rows, 'system')}
+                </div>
+            </div>`;
+    }
+
+
     function openJobDetailsModal(e, id, isGhost = false) {
         if (e) {
             e.preventDefault();
@@ -2051,6 +2246,7 @@ function escapeHtml(value) {
         title.innerText = `${ftsTitle}${job.customer_name || 'Job Details'} | ${routeTitle}`;
 
         body.innerHTML = '';
+        const isMaintenanceDetail = isMaintenanceJob(job);
         const detailCard = sourceCard.cloneNode(true);
         detailCard.id = `modal-copy-${sourceCard.id}`;
         detailCard.draggable = false;
@@ -2060,11 +2256,16 @@ function escapeHtml(value) {
         detailCard.ondragstart = null;
         detailCard.ondragend = null;
 
-        body.insertAdjacentHTML('beforeend', buildInvoiceNumberBanner(job));
-        body.insertAdjacentHTML('beforeend', buildJobEtaPanel(job));
-        body.appendChild(detailCard);
-        body.insertAdjacentHTML('beforeend', buildFullJobDetailsHtml(job, isGhost));
-        updateJobEtaPanel(job);
+        if (isMaintenanceDetail) {
+            body.appendChild(detailCard);
+            body.insertAdjacentHTML('beforeend', buildMaintenanceDetailsHtml(job));
+        } else {
+            body.insertAdjacentHTML('beforeend', buildInvoiceNumberBanner(job));
+            body.insertAdjacentHTML('beforeend', buildJobEtaPanel(job));
+            body.appendChild(detailCard);
+            body.insertAdjacentHTML('beforeend', buildFullJobDetailsHtml(job, isGhost));
+            updateJobEtaPanel(job);
+        }
 
         body.onclick = (ev) => {
             if (ev.target.closest('.action-btn, button')) {
@@ -2109,6 +2310,7 @@ function escapeHtml(value) {
         if (q.dispatch_status === 'tipped') dispatchClass = " status-tipped";
 
         card.className = "job-card" + dispatchClass; 
+        if (isMaintenance) card.classList.add('maintenance-card', normaliseMaintenanceAssetTypeFromJob(q).toLowerCase() + '-maintenance');
         if (isPalletforceJob) card.classList.add('palletforce-job-card');
         
         if (isCompleted || isLockedLeg1) card.classList.add('completed-grey');
@@ -2148,7 +2350,9 @@ function escapeHtml(value) {
 
         if (isMaintenance || isNote) {
             if (isMaintenance) {
-                pcHeader = `<span class="pc-coll">${q.coll_postcode || '??'}</span> ${arrow} <span class="pc-del" style="color:#8e44ad;">${q.del_postcode}</span>`;
+                const assetType = normaliseMaintenanceAssetTypeFromJob(q);
+                const assetColour = assetType === 'TRAILER' ? '#f58220' : '#8e44ad';
+                pcHeader = `<div style="text-align:center; flex:1;"><span class="pc-coll" style="color:${assetColour};">${q.coll_postcode || '??'}</span></div><div style="padding:0 6px; color:#1a1a1a;">➔</div><div style="text-align:center; flex:1;"><span class="pc-del" style="color:#2e7d32;">${q.del_postcode || 'BOOK INSPECTION'}</span></div>`;
             } else if (isNote) {
                 pcHeader = `<span style="color:#d68910;">📌 NOTE</span>`;
             }
@@ -2329,7 +2533,9 @@ function escapeHtml(value) {
                     </div>
                     
                     <div style="background: #ffffff; padding: 8px; border-radius: 4px; border: 1px dashed ${cardBorder}; margin-bottom: 10px;">
-                        <div class="detail-row" style="color:#c1272d;"><b>DUE:</b> <span style="font-weight:bold;">${q.coll_ref || '-'}</span></div>
+                        <div class="detail-row" style="color:#1a1a1a;"><b>ASSET:</b> <span style="font-weight:bold;">${normaliseMaintenanceAssetTypeFromJob(q)}</span></div>
+                        <div class="detail-row" style="color:#c1272d;"><b>BOOK FOR:</b> <span style="font-weight:bold;">${q.coll_ref || '-'}</span></div>
+                        <div class="detail-row" style="color:#0056b3;"><b>DUE:</b> <span style="font-weight:bold;">${q.coll_datetime ? new Date(q.coll_datetime).toLocaleDateString('en-GB') : '-'}</span></div>
                         <div class="detail-row" style="color:#0056b3;"><b>ISO WEEK:</b> <span style="font-weight:bold;">${q.del_ref || '-'}</span></div>
                     </div>
 
@@ -2927,7 +3133,7 @@ Standard jobs without extra legs will continue to save normally.`);
     async function deleteJob(id) {
         const job = getJobById(id);
         if (job && job.customer_name === MAINTENANCE_CUSTOMER_NAME) {
-            alert("Maintenance cards are protected. They are generated automatically from the vehicles table and cannot be deleted from the planner. If a maintenance card is wrong, update the maintenance dates/status in the vehicles table instead.");
+            alert("Maintenance cards are protected. They are generated automatically from the vehicles/trailers tables and cannot be deleted from the planner. If a maintenance card is wrong, update the relevant due dates/status in Supabase instead.");
             return;
         }
         if(confirm("Delete permanently?" + linkedActionLabel(id))) {
@@ -2942,10 +3148,17 @@ Standard jobs without extra legs will continue to save normally.`);
         const target = ev.currentTarget;
         let finalTarget = target.classList.contains('job-card') ? target.parentElement : target;
 
+        const isMaintenancePool = isMaintenancePoolSlot(finalTarget.id);
         const isPool = finalTarget.id === 'pool-container' || finalTarget.classList.contains('pool-zone') || finalTarget.closest('.pool-zone') !== null;
+        const draggedJob = allJobsRaw.find(x => x.id == id);
+
+        if (isMaintenancePool && draggedJob && draggedJob.customer_name !== MAINTENANCE_CUSTOMER_NAME) {
+            alert("Only maintenance cards can be placed in the Maintenance Pool.");
+            return;
+        }
 
         if (!isPool) {
-            const j = allJobsRaw.find(x => x.id == id);
+            const j = draggedJob;
             if (j && j.coll_datetime) {
                 const match = finalTarget.id.match(/w(\d+).*s(\d+)/);
                 if (match) {
@@ -2983,7 +3196,7 @@ Standard jobs without extra legs will continue to save normally.`);
 
         let updatePayload = { 
             status: isPool ? 'pending' : 'assigned', 
-            assigned_slot: isPool ? null : finalTarget.id,
+            assigned_slot: isMaintenancePool ? finalTarget.id : (isPool ? null : finalTarget.id),
             assigned_driver: assignedDriver 
         };
 
@@ -3013,6 +3226,8 @@ Standard jobs without extra legs will continue to save normally.`);
         if(confirm(`Are you sure you want to mark ${linkedIds.size} linked job record(s) as billed? They will be moved to the Historical Archive.`)) {
             const { error } = await sb.from('quotes').update({ status: 'billed' }).in('id', Array.from(linkedIds));
             if (error) return alert("Error marking invoices as billed: " + error.message);
+            dataViewLoaded.invoice = false;
+            dataViewLoaded.history = false;
             loadAll();
         }
     }
@@ -3020,6 +3235,8 @@ Standard jobs without extra legs will continue to save normally.`);
     async function markAsBilled(e, id) { 
         e.stopPropagation(); 
         await updateLinkedJobs(id, { status: 'billed' }); 
+        dataViewLoaded.invoice = false;
+        dataViewLoaded.history = false;
         loadAll(); 
     }
 
@@ -3027,6 +3244,8 @@ Standard jobs without extra legs will continue to save normally.`);
         e.stopPropagation();
         if(confirm("Move this archived job back to the Invoicing queue?" + linkedActionLabel(id))) {
             await updateLinkedJobs(id, { status: 'completed' });
+            dataViewLoaded.invoice = false;
+            dataViewLoaded.history = false;
             loadAll();
         }
     }
@@ -3173,16 +3392,63 @@ Standard jobs without extra legs will continue to save normally.`);
             if (error) throw error;
 
             closeModal('modal-invoice-edit');
-            await loadAll();
+            dataViewLoaded.invoice = false;
+            if (activePlannerView === 'invoice') await renderInvoiceList(true);
+            else await loadAll();
         } catch (err) {
             alert('Could not save invoice extras. Make sure the quotes table has columns named demurrage_amount and demurrage_notes. Error: ' + (err.message || err));
         }
     }
 
-    function renderInvoiceList() {
+    function mergeJobsIntoAllJobsRaw(rows) {
+        const merged = new Map((allJobsRaw || []).map(j => [String(j.id), j]));
+        (rows || []).forEach(row => {
+            if (row && row.id !== undefined && row.id !== null) merged.set(String(row.id), row);
+        });
+        allJobsRaw = Array.from(merged.values());
+    }
+
+    async function ensureDataViewRows(view, force = false) {
+        const statuses = dataViewStatusMap[view];
+        if (!statuses) return [];
+
+        if (!force && dataViewLoaded[view]) {
+            return allJobsRaw.filter(j => statuses.includes(String(j.status || '').toLowerCase()));
+        }
+
+        if (dataViewLoading[view]) {
+            return allJobsRaw.filter(j => statuses.includes(String(j.status || '').toLowerCase()));
+        }
+
+        dataViewLoading[view] = true;
+        try {
+            const { data, error } = await sb
+                .from('quotes')
+                .select('*')
+                .in('status', statuses)
+                .order('coll_datetime', { ascending: false });
+
+            if (error) throw error;
+            mergeJobsIntoAllJobsRaw(data || []);
+            dataViewLoaded[view] = true;
+            return data || [];
+        } catch (err) {
+            console.error(`Could not lazy-load ${view} view:`, err);
+            return allJobsRaw.filter(j => statuses.includes(String(j.status || '').toLowerCase()));
+        } finally {
+            dataViewLoading[view] = false;
+        }
+    }
+
+    function setDataViewLoadingRow(tbodyId, colSpan, label) {
+        const body = document.getElementById(tbodyId);
+        if (body) body.innerHTML = `<tr><td colspan="${colSpan}" style="padding:18px; color:#666; text-align:center;">Loading ${label}...</td></tr>`;
+    }
+
+    function renderInvoiceRows(rows) {
         const body = document.getElementById('invoice-list-body');
         if (!body) return; body.innerHTML = "";
-        allJobsRaw.filter(j => j.status === 'completed').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
+        (rows || []).filter(j => j.status === 'completed').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
             let coll = j.coll_town || j.coll_postcode || 'TBA';
             let del = j.del_town || j.del_postcode || 'TBA';
             body.innerHTML += `<tr onclick="editJob(event, '${j.id}')">
@@ -3207,10 +3473,16 @@ Standard jobs without extra legs will continue to save normally.`);
         });
     }
 
-    function renderHistoryList() {
+    async function renderInvoiceList(force = false) {
+        if (!dataViewLoaded.invoice || force) setDataViewLoadingRow('invoice-list-body', 9, 'invoice queue');
+        const rows = await ensureDataViewRows('invoice', force);
+        renderInvoiceRows(rows);
+    }
+
+    function renderHistoryRows(rows) {
         const body = document.getElementById('history-list-body');
         if (!body) return; body.innerHTML = "";
-        allJobsRaw.filter(j => j.status === 'billed' || j.status === 'archived').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
+        (rows || []).filter(j => j.status === 'billed' || j.status === 'archived').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
             let coll = j.coll_town || j.coll_postcode || 'TBA';
             let del = j.del_town || j.del_postcode || 'TBA';
             body.innerHTML += `<tr onclick="editJob(event, '${j.id}')">
@@ -3229,10 +3501,16 @@ Standard jobs without extra legs will continue to save normally.`);
         });
     }
 
-    function renderSubbedList() {
+    async function renderHistoryList(force = false) {
+        if (!dataViewLoaded.history || force) setDataViewLoadingRow('history-list-body', 8, 'history');
+        const rows = await ensureDataViewRows('history', force);
+        renderHistoryRows(rows);
+    }
+
+    function renderSubbedRows(rows) {
         const body = document.getElementById('subbed-list-body');
         if (!body) return; body.innerHTML = "";
-        allJobsRaw.filter(j => j.status === 'subbed').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
+        (rows || []).filter(j => j.status === 'subbed').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
             let coll = j.coll_town || j.coll_postcode || 'TBA';
             let del = j.del_town || j.del_postcode || 'TBA';
             body.innerHTML += `<tr onclick="editJob(event, '${j.id}')">
@@ -3248,10 +3526,16 @@ Standard jobs without extra legs will continue to save normally.`);
         });
     }
 
-    function renderCancelledList() {
+    async function renderSubbedList(force = false) {
+        if (!dataViewLoaded.subbed || force) setDataViewLoadingRow('subbed-list-body', 6, 'subbed jobs');
+        const rows = await ensureDataViewRows('subbed', force);
+        renderSubbedRows(rows);
+    }
+
+    function renderCancelledRows(rows) {
         const body = document.getElementById('cancelled-list-body');
         if (!body) return; body.innerHTML = "";
-        allJobsRaw.filter(j => j.status === 'cancelled').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
+        (rows || []).filter(j => j.status === 'cancelled').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
             let coll = j.coll_town || j.coll_postcode || 'TBA';
             let del = j.del_town || j.del_postcode || 'TBA';
             body.innerHTML += `<tr onclick="editJob(event, '${j.id}')">
@@ -3265,6 +3549,12 @@ Standard jobs without extra legs will continue to save normally.`);
                 </td>
             </tr>`;
         });
+    }
+
+    async function renderCancelledList(force = false) {
+        if (!dataViewLoaded.cancelled || force) setDataViewLoadingRow('cancelled-list-body', 6, 'cancelled jobs');
+        const rows = await ensureDataViewRows('cancelled', force);
+        renderCancelledRows(rows);
     }
 
     function generatePDF(event, id) {
@@ -3780,11 +4070,11 @@ Standard jobs without extra legs will continue to save normally.`);
         document.getElementById('grand-total').innerText = "£" + grand.toFixed(2);
     }
 
-    function renderActiveDataView(view = activePlannerView) {
-        if (view === 'invoice') renderInvoiceList();
-        else if (view === 'history') renderHistoryList();
-        else if (view === 'subbed') renderSubbedList();
-        else if (view === 'cancelled') renderCancelledList();
+    async function renderActiveDataView(view = activePlannerView, force = false) {
+        if (view === 'invoice') await renderInvoiceList(force);
+        else if (view === 'history') await renderHistoryList(force);
+        else if (view === 'subbed') await renderSubbedList(force);
+        else if (view === 'cancelled') await renderCancelledList(force);
         else if (view === 'map' && document.getElementById('map-view').style.display === 'block') updateMapPins();
     }
 
@@ -3831,6 +4121,8 @@ Standard jobs without extra legs will continue to save normally.`);
             const info = getWeekInfo(view); document.getElementById('week-display-box').innerText = `WK ${info.week} | MON ${info.date}`;
             updateDateHeaders(view); updateCalculations();
             
+            updateMaintenancePoolHeaders();
+
             // Filter Unassigned Pool by week
             document.querySelectorAll('#unassigned-sidebar .job-card').forEach(card => {
                 const targetWeek = parseInt(card.dataset.targetWeek) || 0;
@@ -3885,7 +4177,31 @@ Standard jobs without extra legs will continue to save normally.`);
         document.getElementById('pool-day-sat').style.display = isWeekend ? 'block' : 'none';
         document.getElementById('pool-day-sun').style.display = isWeekend ? 'block' : 'none';
     }
-    function toggleUnassigned() { document.getElementById('unassigned-sidebar').classList.toggle('open'); }
+    function toggleUnassigned() {
+        const sidebar = document.getElementById('unassigned-sidebar');
+        const maintenanceSidebar = document.getElementById('maintenance-sidebar');
+        if (!sidebar) return;
+        if (maintenanceSidebar) maintenanceSidebar.classList.remove('open');
+        sidebar.classList.toggle('open');
+    }
+
+    function toggleMaintenancePool() {
+        const sidebar = document.getElementById('maintenance-sidebar');
+        const unassignedSidebar = document.getElementById('unassigned-sidebar');
+        if (!sidebar) return;
+        if (unassignedSidebar) unassignedSidebar.classList.remove('open');
+        sidebar.classList.toggle('open');
+    }
+
+    function toggleMaintenanceCards() {
+        showMaintenanceCards = !showMaintenanceCards;
+        document.body.classList.toggle('hide-maintenance-cards', !showMaintenanceCards);
+        const btn = document.getElementById('btn-toggle-maintenance');
+        if (btn) {
+            btn.innerText = showMaintenanceCards ? '🔧 HIDE MAINTENANCE' : '🔧 SHOW MAINTENANCE';
+            btn.style.background = showMaintenanceCards ? '#f58220' : '#555';
+        }
+    }
     function allowDrop(ev) { ev.preventDefault(); }
     
     function openModal(id) { 
@@ -4028,50 +4344,89 @@ Standard jobs without extra legs will continue to save normally.`);
         }
     });
 
-    // Listen for ALL quote changes to sync boards instantly across the office
-    sb.channel('quotes-tracker')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, payload => {
-            console.log("Planner sync update received!");
-            if (!isDragging) {
-                schedulePlannerRefresh(250);
-            }
-        })
-        .subscribe();
+    function scheduleMaintenanceRefresh(delay = 2500) {
+        if (maintenanceRealtimeTimer) clearTimeout(maintenanceRealtimeTimer);
+        maintenanceRealtimeTimer = setTimeout(() => {
+            maintenanceRealtimeTimer = null;
+            if (!isDragging) syncMaintenanceAndLoadAll();
+        }, delay);
+    }
 
-    sb.channel('jcc-tracker')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jcc_bookings' }, payload => {
-            console.log("JCC Booking Status Updated by Garage!", payload);
-            
-            let existingBooking = allJccBookings.find(b => b.id === payload.new.id);
-            
-            if (existingBooking) {
-                if (payload.new.accepted && !existingBooking.accepted) {
-                    playAlert('accept');
-                } else if (payload.new.rejected && !existingBooking.rejected) {
-                    playAlert('reject');
+    async function stopPlannerRealtime() {
+        if (!plannerRealtimeChannel) return;
+        try {
+            await sb.removeChannel(plannerRealtimeChannel);
+        } catch (err) {
+            console.warn('Realtime cleanup warning:', err);
+        }
+        plannerRealtimeChannel = null;
+        plannerRealtimeStarted = false;
+    }
+
+    function setupPlannerRealtimeOnce() {
+        if (plannerRealtimeStarted || plannerRealtimeChannel) return;
+        plannerRealtimeStarted = true;
+
+        plannerRealtimeChannel = sb.channel('frost-planner-live-sync-v3')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, payload => {
+                // This is the important one for two office planners working together.
+                // Debounced so a drag/drop or status update burst becomes one board refresh.
+                console.log('Planner quote sync update received.');
+                schedulePlannerRefresh(450);
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jcc_bookings' }, payload => {
+                console.log('JCC booking status updated by garage.', payload);
+
+                let existingBooking = allJccBookings.find(b => b.id === payload.new.id);
+
+                if (existingBooking) {
+                    if (payload.new.accepted && !existingBooking.accepted) {
+                        playAlert('accept');
+                    } else if (payload.new.rejected && !existingBooking.rejected) {
+                        playAlert('reject');
+                    }
+                } else {
+                    if (payload.new.accepted) playAlert('accept');
+                    if (payload.new.rejected) playAlert('reject');
                 }
-            } else {
-                if (payload.new.accepted) playAlert('accept');
-                if (payload.new.rejected) playAlert('reject');
-            }
 
-            if (!isDragging) schedulePlannerRefresh(250); 
-        })
-        .subscribe();
+                schedulePlannerRefresh(450);
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vehicles' }, payload => {
+                // Vehicle/VOR/maintenance changes are not as urgent as job movement.
+                console.log('Vehicle status / maintenance data updated.');
+                scheduleMaintenanceRefresh(2500);
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'trailers' }, payload => {
+                // Only UPDATE is watched here to avoid unnecessary messages from every trailer insert/delete/import.
+                console.log('Trailer maintenance data updated.');
+                scheduleMaintenanceRefresh(2500);
+            })
+            .subscribe(status => {
+                console.log('Frost Planner Realtime status:', status);
+            });
+    }
 
-    // Listen for changes to the Vehicles table for VOR status
-    sb.channel('vehicles-tracker')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vehicles' }, payload => {
-            console.log("Vehicle Status Updated!");
-            if (!isDragging) {
-                if (plannerRefreshTimer) clearTimeout(plannerRefreshTimer);
-                plannerRefreshTimer = setTimeout(() => syncMaintenanceAndLoadAll(), 1000);
-            }
-        })
-        .subscribe();
+    document.addEventListener('visibilitychange', async () => {
+        if (document.hidden) {
+            // Hidden tabs do not need live messages. This helps stop Supabase Realtime quota being burned by idle office tabs.
+            await stopPlannerRealtime();
+            return;
+        }
+
+        setupPlannerRealtimeOnce();
+        schedulePlannerRefresh(250);
+    });
+
+    window.addEventListener('beforeunload', () => {
+        if (plannerRealtimeChannel) {
+            try { sb.removeChannel(plannerRealtimeChannel); } catch (err) {}
+        }
+    });
 
     window.onload = async () => { 
-        setupAutoScroll(); 
+        setupAutoScroll();
+        setupPlannerRealtimeOnce();
         await syncMaintenanceAndLoadAll(); 
     };
 
