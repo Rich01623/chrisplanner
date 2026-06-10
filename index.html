@@ -318,6 +318,18 @@
         .ac-name { font-weight: bold; color: var(--frost-black); }
         .ac-details { font-size: 0.7rem; color: #888; }
 
+
+        /* Quick Card fast-entry workflow */
+        .quick-card-btn { background: #c1272d !important; color: #fff !important; border: 2px solid #7f1d1d !important; box-shadow: 0 2px 8px rgba(193,39,45,0.25); }
+        .quick-card-btn:hover { background: #a02025 !important; }
+        .quick-card-modal-content { width: 620px; max-width: 95vw; border-top: 5px solid var(--frost-red); }
+        .quick-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .quick-card-warning { background: #fff1f2; border: 1px solid #fecdd3; color: #991b1b; border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; font-weight: 700; margin: 12px 0; }
+        .job-card.quick-card-incomplete { background: #fff1f2 !important; border-left-color: #dc2626 !important; box-shadow: 0 0 0 2px rgba(220,38,38,0.12), 0 2px 4px rgba(0,0,0,0.12) !important; }
+        .job-card.quick-card-incomplete:hover { background: #ffe4e6 !important; }
+        .quick-card-badge { display:inline-block; font-size:0.58rem; color:#991b1b; border:1px solid #dc2626; padding:1px 5px; border-radius:999px; background:#fff; margin-left:5px; font-weight:900; letter-spacing:0.3px; }
+        @media (max-width: 700px) { .quick-card-grid { grid-template-columns: 1fr; } }
+
 </style>
 </head>
 <body>
@@ -328,6 +340,7 @@
 <header>
     <div class="logo-container"><img src="logo.png" alt="FROST"></div>
     <div style="display:flex; gap:15px; align-items:center;">
+        <button class="week-btn quick-card-btn" onclick="openQuickCardModal()">⚡ QUICK CARD</button>
         <div id="week-display-box" class="week-info-box">WK -- | MON --/--/--</div>
         <button class="week-btn" id="btn-map" onclick="switchView('map')" style="background:#27ae60; color:white;">🗺️ DROP SPOTS</button>
         <button class="week-btn" id="btn-toggle-maintenance" onclick="toggleMaintenanceCards()" style="background:#f58220; color:white;">🔧 HIDE MAINTENANCE</button>
@@ -554,6 +567,31 @@
 <!-- ==========================================
      MODALS
      ========================================== -->
+
+
+<!-- Quick Card Modal -->
+<div id="modal-quick-card" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-quick-card')">
+    <div class="modal-content quick-card-modal-content" onclick="event.stopPropagation();">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid var(--frost-red); padding-bottom:10px; margin-bottom:14px;">
+            <h2 style="margin:0; color:var(--frost-red);">⚡ Quick Card</h2>
+            <button type="button" class="week-btn" onclick="closeModal('modal-quick-card')" style="background:#ddd; color:#333;">Close</button>
+        </div>
+        <div class="quick-card-warning">
+            Fast entry for busy periods. This creates a red incomplete card in the Unassigned pool. Use the normal edit button later to finish the full job details.
+        </div>
+        <div class="quick-card-grid">
+            <div class="form-group"><label>Booking Customer Name</label><input type="text" id="q_customer_name" placeholder="Customer name"></div>
+            <div class="form-group"><label>Booking Customer Number</label><input type="text" id="q_customer_number" placeholder="Telephone / booking number"></div>
+            <div class="form-group"><label>Collection Post Code</label><input type="text" id="q_coll_postcode" placeholder="e.g. NG18 4XX" style="text-transform:uppercase;"></div>
+            <div class="form-group"><label>Delivery Postcode</label><input type="text" id="q_del_postcode" placeholder="e.g. KT1 3XX" style="text-transform:uppercase;"></div>
+            <div class="form-group"><label>Price (£)</label><input type="text" id="q_price" placeholder="0.00"></div>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px; border-top:1px solid #eee; padding-top:14px;">
+            <button type="button" class="week-btn" onclick="closeModal('modal-quick-card')" style="background:#ddd; color:#333;">Cancel</button>
+            <button type="button" class="week-btn quick-card-btn" onclick="saveQuickCard()">Create Quick Card</button>
+        </div>
+    </div>
+</div>
 
 <!-- TABBED Add Job Modal -->
 <div id="modal-add" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-add')">
@@ -1075,6 +1113,82 @@ function escapeHtml(value) {
             }
         }
     }
+
+    function isQuickCardJobType(type) {
+        return String(type || '').trim().toLowerCase() === 'quick card';
+    }
+
+    function isQuickCardJob(job) {
+        const contractType = String((job && (job.job_contract_type || job.contract_type)) || '').trim().toLowerCase();
+        const collRef = String((job && job.coll_ref) || '').trim().toUpperCase();
+        return contractType === 'quick card' || collRef.startsWith('QUICK CARD');
+    }
+
+    function openQuickCardModal() {
+        ['q_customer_name', 'q_customer_number', 'q_coll_postcode', 'q_del_postcode', 'q_price'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        openModal('modal-quick-card');
+        setTimeout(() => document.getElementById('q_customer_name')?.focus(), 50);
+    }
+
+    async function saveQuickCard() {
+        const customerName = (document.getElementById('q_customer_name')?.value || '').trim();
+        const customerNumber = (document.getElementById('q_customer_number')?.value || '').trim();
+        const collPostcode = (document.getElementById('q_coll_postcode')?.value || '').trim().toUpperCase();
+        const delPostcode = (document.getElementById('q_del_postcode')?.value || '').trim().toUpperCase();
+        const price = (document.getElementById('q_price')?.value || '').trim();
+
+        if (!customerName && !collPostcode && !delPostcode) {
+            alert('Please enter at least the customer name, collection postcode, or delivery postcode.');
+            return;
+        }
+
+        const payload = {
+            customer_name: customerName || 'QUICK CARD - CUSTOMER TBA',
+            customer_phone: customerNumber,
+            coll_postcode: collPostcode,
+            del_postcode: delPostcode,
+            coll_ref: 'QUICK CARD - COMPLETE DETAILS',
+            del_ref: '',
+            total_price: price || '0',
+            total_pallets: '',
+            total_weight: '',
+            vehicle_type: 'Artic',
+            status: 'pending',
+            dispatch_status: 'unsent',
+            assigned_slot: null,
+            job_contract_type: 'Quick Card'
+        };
+
+        try {
+            try {
+                payload.fts_invoice_number = await getNextFtsInvoiceNumber();
+            } catch (err) {
+                console.warn('Could not prefill FTS invoice number for quick card:', err);
+            }
+
+            let { error } = await sb.from('quotes').insert([payload]);
+
+            // If older database copies do not have job_contract_type yet, retry safely without it.
+            if (error && (error.code === '42703' || String(error.message || '').includes('job_contract_type'))) {
+                const fallbackPayload = { ...payload };
+                delete fallbackPayload.job_contract_type;
+                const retry = await sb.from('quotes').insert([fallbackPayload]);
+                error = retry.error;
+            }
+
+            if (error) throw error;
+
+            closeModal('modal-quick-card');
+            await loadAll();
+        } catch (e) {
+            console.error(e);
+            alert('Error creating quick card: ' + (e.message || e));
+        }
+    }
+
 
     // ==========================================
     // NEW: WHATSAPP DISPATCH FALLBACK
@@ -2294,6 +2408,7 @@ function escapeHtml(value) {
         const isNote = q.customer_name === "📝 PLANNER NOTE";
         const jobContractType = q.job_contract_type || q.contract_type || '';
         const isPalletforceJob = isPalletforceJobType(jobContractType);
+        const isQuickCard = isQuickCardJob(q);
         
         const isLeg1 = q.customer_name && q.customer_name.endsWith('(Leg 1)');
         const isLeg2 = q.customer_name && q.customer_name.endsWith('(Leg 2)');
@@ -2312,6 +2427,7 @@ function escapeHtml(value) {
         card.className = "job-card" + dispatchClass; 
         if (isMaintenance) card.classList.add('maintenance-card', normaliseMaintenanceAssetTypeFromJob(q).toLowerCase() + '-maintenance');
         if (isPalletforceJob) card.classList.add('palletforce-job-card');
+        if (isQuickCard) card.classList.add('quick-card-incomplete');
         
         if (isCompleted || isLockedLeg1) card.classList.add('completed-grey');
         if (isLeg2 && !isCompleted && !isGhost) card.classList.add('reassigned-orange');
@@ -2559,6 +2675,7 @@ function escapeHtml(value) {
             let weightTag = q.total_weight ? `<span class="vehicle-tag" style="background:#666;">${q.total_weight}kg</span>` : '';
             let palletTag = q.total_pallets ? `<span class="vehicle-tag" style="background:#d68910;">${q.total_pallets} Plt</span>` : '';
             let contractBadge = isPalletforceJob ? `<span class="palletforce-job-badge">${jobContractType}</span>` : '';
+            if (isQuickCard) contractBadge += `<span class="quick-card-badge">QUICK CARD - COMPLETE</span>`;
 
             let extraActions = isGhost ? '' : `
                 <div style="display:flex; gap:5px; margin-top:10px; padding-top:8px; border-top: 1px solid #eee;">
@@ -2717,8 +2834,12 @@ function escapeHtml(value) {
             vehicle_type: document.getElementById('n_veh_type').value,
             customers_own_invoice_number: isPalletforceJobType(getCurrentJobBookingMode()) ? '' : document.getElementById('n_customers_own_invoice_number').value,
             fts_invoice_number: isPalletforceJobType(getCurrentJobBookingMode()) ? '' : document.getElementById('n_fts_invoice_number').value,
-            job_contract_type: getCurrentJobBookingMode()
+            job_contract_type: isQuickCardJobType(getCurrentJobBookingMode()) ? '' : getCurrentJobBookingMode()
         };
+
+        if (isQuickCardJobType(getCurrentJobBookingMode()) && String(payload.coll_ref || '').toUpperCase().startsWith('QUICK CARD')) {
+            payload.coll_ref = '';
+        }
 
         if (!id && !isPalletforceJobType(payload.job_contract_type)) {
             payload.fts_invoice_number = await getNextFtsInvoiceNumber();
@@ -3142,47 +3263,89 @@ Standard jobs without extra legs will continue to save normally.`);
         }
     }
 
+    function getCurrentPlannerMondayDate() {
+        const now = new Date();
+        const dayNum = now.getDay() || 7;
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayNum + 1, 12, 0, 0, 0);
+        return monday;
+    }
+
+    function getDropTargetDate(finalTarget) {
+        if (!finalTarget || !finalTarget.id) return null;
+        const targetId = String(finalTarget.id);
+
+        // Main planner grid cells, e.g. planner-w1-dr3-s2
+        const plannerMatch = targetId.match(/planner-w(\d+)-dr\d+-s(\d+)/);
+        if (plannerMatch) {
+            const weekOffset = parseInt(plannerMatch[1], 10);
+            const dayIndex = parseInt(plannerMatch[2], 10);
+            const targetDate = getCurrentPlannerMondayDate();
+            targetDate.setDate(targetDate.getDate() + (weekOffset * 7) + dayIndex);
+            return { date: targetDate, label: 'planner date' };
+        }
+
+        // Normal unassigned day pools, e.g. pool-zone-1 to pool-zone-0.
+        // Do not date-check the TBA pool or the maintenance pool week buckets.
+        const poolMatch = targetId.match(/^pool-zone-(\d)$/);
+        if (poolMatch) {
+            const jsDay = parseInt(poolMatch[1], 10); // 1 = Monday ... 6 = Saturday, 0 = Sunday
+            const dayIndex = jsDay === 0 ? 6 : jsDay - 1;
+            const targetDate = getCurrentPlannerMondayDate();
+            targetDate.setDate(targetDate.getDate() + dayIndex);
+            return { date: targetDate, label: 'unassigned pool date' };
+        }
+
+        return null;
+    }
+
+    function normaliseLocalDateKey(dateValue) {
+        const d = new Date(dateValue);
+        if (isNaN(d)) return '';
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function confirmWrongDateMoveIfNeeded(job, finalTarget) {
+        if (!job || !job.coll_datetime) return true;
+
+        const targetInfo = getDropTargetDate(finalTarget);
+        if (!targetInfo || !targetInfo.date) return true;
+
+        const jobDateKey = normaliseLocalDateKey(job.coll_datetime);
+        const targetDateKey = normaliseLocalDateKey(targetInfo.date);
+        if (!jobDateKey || !targetDateKey || jobDateKey === targetDateKey) return true;
+
+        const jobDateStr = new Date(job.coll_datetime).toLocaleDateString('en-GB');
+        const targetDateStr = targetInfo.date.toLocaleDateString('en-GB');
+
+        return confirm(`⚠️ WARNING: Date Mismatch!
+
+The collection date for this job is ${jobDateStr}, but you are placing it on ${targetDateStr}.
+
+Are you sure you want to place it here?`);
+    }
+
     async function drop(ev) {
         ev.preventDefault();
-        const id = ev.dataTransfer.getData("text");
+        const rawId = ev.dataTransfer.getData("text");
+        const id = String(rawId || '').replace(/^ghost-/, '');
         const target = ev.currentTarget;
         let finalTarget = target.classList.contains('job-card') ? target.parentElement : target;
 
         const isMaintenancePool = isMaintenancePoolSlot(finalTarget.id);
         const isPool = finalTarget.id === 'pool-container' || finalTarget.classList.contains('pool-zone') || finalTarget.closest('.pool-zone') !== null;
-        const draggedJob = allJobsRaw.find(x => x.id == id);
+        const draggedJob = allJobsRaw.find(x => String(x.id) === String(id));
 
         if (isMaintenancePool && draggedJob && draggedJob.customer_name !== MAINTENANCE_CUSTOMER_NAME) {
             alert("Only maintenance cards can be placed in the Maintenance Pool.");
             return;
         }
 
-        if (!isPool) {
-            const j = draggedJob;
-            if (j && j.coll_datetime) {
-                const match = finalTarget.id.match(/w(\d+).*s(\d+)/);
-                if (match) {
-                    const weekOffset = parseInt(match[1]);
-                    const dayIndex = parseInt(match[2]);
-
-                    let now = new Date();
-                    let dayNum = now.getDay() || 7;
-                    let first = now.getDate() - dayNum + 1 + (weekOffset * 7);
-                    let cellDate = new Date(now.getTime());
-                    cellDate.setDate(first + dayIndex);
-
-                    const jobDate = new Date(j.coll_datetime);
-                    
-                    const cellDateStr = cellDate.toLocaleDateString('en-GB');
-                    const jobDateStr = jobDate.toLocaleDateString('en-GB');
-
-                    if (cellDateStr !== jobDateStr) {
-                        const confirmMove = confirm(`⚠️ WARNING: Date Mismatch!\n\nThe collection date for this job is ${jobDateStr}, but you are placing it on ${cellDateStr}.\n\nAre you sure you want to place it here?`);
-                        if (!confirmMove) return; 
-                    }
-                }
-            }
-        }
+        // Safety check restored and strengthened: warn before saving when a card is moved
+        // to a planner day or normal unassigned day pool that does not match its collection date.
+        if (!confirmWrongDateMoveIfNeeded(draggedJob, finalTarget)) return;
 
         let assignedDriver = null;
         if (!isPool) {
