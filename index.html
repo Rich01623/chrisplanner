@@ -3220,14 +3220,12 @@ Standard jobs without extra legs will continue to save normally.`);
         }
     }
 
-    async function duplicateJob(e, id) {
-        e.stopPropagation();
-        const source = allJobsRaw.find(x => x.id == id);
-        if (!source) return;
-        const linkedGroup = await ensureLinkedGroupForJob(id);
+    function buildCopiedJobPayload(source) {
         const j = { ...source };
         delete j.id;
         delete j.created_at;
+        delete j.updated_at;
+        delete j[LINKED_JOB_GROUP_COLUMN];
         j.status = 'pending';
         j.assigned_slot = null;
         j.dispatch_status = 'unsent';
@@ -3236,11 +3234,38 @@ Standard jobs without extra legs will continue to save normally.`);
         j.dispatch_sequence = null;
         j.dispatch_scheduled_at = null;
         j.released_at = null;
+        return j;
+    }
+
+    async function duplicateJob(e, id) {
+        e.stopPropagation();
+        const source = allJobsRaw.find(x => x.id == id);
+        if (!source) return;
+
+        // Normal duplicate cards must be independent. They should NOT inherit linked_job_group,
+        // otherwise deleting one duplicate can delete the original and every copy.
+        const j = buildCopiedJobPayload(source);
+        j.fts_invoice_number = await getNextFtsInvoiceNumber();
+
+        const { error } = await sb.from('quotes').insert([j]);
+        if (error) throw error;
+        loadAll();
+    }
+
+    async function splitJob(e, id) {
+        e.stopPropagation();
+        if (!confirm("Split this job?")) return;
+        const source = allJobsRaw.find(x => x.id == id);
+        if (!source) return;
+
+        // Split/leg cards are still intentionally linked so actions like cancel/subbed can
+        // mirror across the split job. This is separate from the normal Duplicate button.
+        const linkedGroup = await ensureLinkedGroupForJob(id);
+        const j = buildCopiedJobPayload(source);
         j.fts_invoice_number = await getNextFtsInvoiceNumber();
         await insertQuoteWithOptionalLinkedGroup(j, linkedGroup);
         loadAll();
     }
-    async function splitJob(e, id) { e.stopPropagation(); if(confirm("Split this job?")) await duplicateJob(e, id); }
     function queryRoute(e, pc1, pc2) { e.stopPropagation(); window.open(`https://www.google.com/maps/dir/${pc1}/${pc2}`, '_blank'); }
     function openPODImage(e, id) {
         if (e) e.stopPropagation();
@@ -3265,8 +3290,15 @@ Standard jobs without extra legs will continue to save normally.`);
             alert("Maintenance cards are protected. They are generated automatically from the vehicles/trailers tables and cannot be deleted from the planner. If a maintenance card is wrong, update the relevant due dates/status in Supabase instead.");
             return;
         }
-        if(confirm("Delete permanently?" + linkedActionLabel(id))) {
-            await deleteLinkedJobs(id);
+
+        // Delete must only remove the selected card. Older duplicated cards may still have
+        // linked_job_group from the previous Duplicate bug, so do not use deleteLinkedJobs here.
+        if(confirm("Delete this card permanently? Only this selected card will be deleted.")) {
+            const { error } = await sb.from('quotes').delete().eq('id', id);
+            if (error) {
+                alert("Error deleting card: " + error.message);
+                return;
+            }
             loadAll();
         }
     }
