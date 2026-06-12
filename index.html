@@ -325,6 +325,9 @@
         .quick-card-btn { background: #c1272d !important; color: #fff !important; border: 2px solid #7f1d1d !important; box-shadow: 0 2px 8px rgba(193,39,45,0.25); }
         .quick-card-btn:hover { background: #a02025 !important; }
         .quick-card-modal-content { width: 620px; max-width: 95vw; border-top: 5px solid var(--frost-red); }
+        .google-address-helper input { border: 2px solid #4285f4; background: #f8fbff; }
+        .google-address-helper small { display:block; margin-top:4px; color:#555; font-size:0.72rem; line-height:1.25; }
+        .pac-container { z-index: 5000 !important; font-family: Arial, sans-serif; }
         .quick-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
         .quick-card-warning { background: #fff1f2; border: 1px solid #fecdd3; color: #991b1b; border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; font-weight: 700; margin: 12px 0; }
         .job-card.quick-card-incomplete { background: #fff1f2 !important; border-left-color: #dc2626 !important; box-shadow: 0 0 0 2px rgba(220,38,38,0.12), 0 2px 4px rgba(0,0,0,0.12) !important; }
@@ -638,6 +641,11 @@
                     <hr class="section-divider">
                     
                     <h4 style="margin:5px 0; color:#c1272d;">COLLECTION ADDRESS (LEG 1)</h4>
+                    <div class="form-group google-address-helper">
+                        <label>Find Collection Address</label>
+                        <input type="text" id="n_coll_address_search" placeholder="Start typing collection address..." autocomplete="off">
+                        <small>Select a Google result to fill collection name, postcode, street, town and county.</small>
+                    </div>
                     <div class="form-group"><label>Collection Name</label><input type="text" id="n_coll_name" placeholder="Collection customer / site name"></div>
                     <div class="form-group"><label>Post Code</label><input type="text" id="n_coll_pc"></div>
                     <div class="form-group"><label>Street</label><input type="text" id="n_coll_street"></div>
@@ -651,6 +659,11 @@
                 
                 <div style="flex: 1;">
                     <h4 style="margin:0 0 10px 0; color:#2e7d32;">DELIVERY INFO (LEG 1)</h4>
+                    <div class="form-group google-address-helper">
+                        <label>Find Delivery Address</label>
+                        <input type="text" id="n_del_address_search" placeholder="Start typing delivery address..." autocomplete="off">
+                        <small>Select a Google result to fill delivery name, postcode, street, town and county.</small>
+                    </div>
                     <div class="form-group"><label>Delivery Name</label><input type="text" id="n_del_name"></div>
                     <div style="display:flex; gap:5px;">
                         <div class="form-group" style="flex:1;"><label>Telephone</label><input type="text" id="n_del_phone"></div>
@@ -4367,7 +4380,7 @@ Are you sure you want to place it here?`);
 
     function resetForm() {
         document.getElementById('sys_job_id').value = '';
-        ['n_cust_name','n_coll_name','n_cust_phone', 'n_cust_email','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2', 'n_customers_own_invoice_number', 'n_fts_invoice_number', 'n_job_contract_type'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
+        ['n_cust_name','n_coll_address_search','n_del_address_search','n_coll_name','n_cust_phone', 'n_cust_email','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2', 'n_customers_own_invoice_number', 'n_fts_invoice_number', 'n_job_contract_type'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
         setJobBookingMode('');
         prefillNextFtsInvoiceNumber();
         switchFormTab('leg1');
@@ -4636,6 +4649,105 @@ Are you sure you want to place it here?`);
         await syncMaintenanceAndLoadAll(); 
     };
 
+
+    // ==========================================
+    // GOOGLE PLACES ADDRESS AUTOCOMPLETE
+    // ==========================================
+    function getGoogleAddressPart(place, type) {
+        const components = place && Array.isArray(place.address_components) ? place.address_components : [];
+        const match = components.find(component => Array.isArray(component.types) && component.types.includes(type));
+        return match ? (match.long_name || '') : '';
+    }
+
+    function buildGoogleStreetLine(place) {
+        const streetNumber = getGoogleAddressPart(place, 'street_number');
+        const route = getGoogleAddressPart(place, 'route');
+        const premise = getGoogleAddressPart(place, 'premise');
+        const subpremise = getGoogleAddressPart(place, 'subpremise');
+        const line = [subpremise, premise, streetNumber, route].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+        if (line) return line;
+
+        const formatted = String((place && place.formatted_address) || '').trim();
+        if (!formatted) return '';
+        return formatted.split(',')[0].trim();
+    }
+
+    function fillPlannerAddressFromGoogle(kind, place) {
+        if (!place) return;
+
+        const postcode = [
+            getGoogleAddressPart(place, 'postal_code'),
+            getGoogleAddressPart(place, 'postal_code_suffix')
+        ].filter(Boolean).join(' ').trim().toUpperCase();
+
+        const town = (
+            getGoogleAddressPart(place, 'postal_town') ||
+            getGoogleAddressPart(place, 'locality') ||
+            getGoogleAddressPart(place, 'administrative_area_level_3') ||
+            getGoogleAddressPart(place, 'administrative_area_level_2') ||
+            ''
+        ).trim();
+
+        const county = (
+            getGoogleAddressPart(place, 'administrative_area_level_2') ||
+            getGoogleAddressPart(place, 'administrative_area_level_1') ||
+            ''
+        ).trim();
+
+        const street = buildGoogleStreetLine(place);
+        const placeName = String(place.name || '').trim();
+
+        const setField = (id, value) => {
+            const el = document.getElementById(id);
+            if (el && value !== undefined && value !== null) el.value = value;
+        };
+
+        if (kind === 'collection') {
+            setField('n_coll_name', placeName);
+            setField('n_coll_pc', postcode);
+            setField('n_coll_street', street);
+            setField('n_coll_town', town);
+            setField('n_coll_county', county);
+        } else if (kind === 'delivery') {
+            setField('n_del_name', placeName);
+            setField('n_del_pc', postcode);
+            setField('n_del_street', street);
+            setField('n_8', town);
+            setField('n_9', county);
+        }
+    }
+
+    function attachGoogleAddressAutocomplete(inputId, kind) {
+        const input = document.getElementById(inputId);
+        if (!input || input.dataset.googlePlacesAttached === 'true') return;
+        if (!window.google || !google.maps || !google.maps.places) return;
+
+        const autocomplete = new google.maps.places.Autocomplete(input, {
+            componentRestrictions: { country: 'gb' },
+            fields: ['address_components', 'formatted_address', 'name']
+        });
+
+        autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            fillPlannerAddressFromGoogle(kind, place);
+        });
+
+        input.dataset.googlePlacesAttached = 'true';
+    }
+
+    window.initGooglePlacesAutocomplete = function() {
+        attachGoogleAddressAutocomplete('n_coll_address_search', 'collection');
+        attachGoogleAddressAutocomplete('n_del_address_search', 'delivery');
+    };
+
+    window.gm_authFailure = function() {
+        console.warn('Google Maps/Places API authentication failed. Check the API key restrictions, billing and enabled APIs.');
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.google && google.maps && google.maps.places) window.initGooglePlacesAutocomplete();
+    });
+
     // ==========================================
     // 13. AUTO-SCROLL DURING DRAG
     // ==========================================
@@ -4686,5 +4798,6 @@ Are you sure you want to place it here?`);
         document.addEventListener('drop', stopScroll);
     }
 </script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDOPkYduNBvti4HWX2izIhCrrQ02uk5SL0&libraries=places&callback=initGooglePlacesAutocomplete"></script>
 </body>
 </html>
