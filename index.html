@@ -322,27 +322,32 @@
 
 
         /* Quick Card fast-entry workflow */
-        .search-btn { background: #1d4ed8 !important; color: #fff !important; border: 2px solid #1e40af !important; box-shadow: 0 2px 8px rgba(29,78,216,0.22); }
-        .search-btn:hover { background: #1e40af !important; }
-        .planner-search-modal-content { width: 900px; max-width: 96vw; max-height: 88vh; border-top: 5px solid #1d4ed8; display:flex; flex-direction:column; }
-        .planner-search-box { width:100%; box-sizing:border-box; padding:12px 14px; border:2px solid #1d4ed8; border-radius:8px; font-size:1rem; font-weight:700; outline:none; }
-        .planner-search-tools { display:flex; gap:10px; align-items:center; margin:12px 0; flex-wrap:wrap; }
-        .planner-search-count { font-size:0.82rem; color:#555; font-weight:800; text-transform:uppercase; }
-        .planner-search-results { overflow-y:auto; border:1px solid #e5e7eb; border-radius:8px; background:#fafafa; min-height:180px; max-height:55vh; }
-        .planner-search-empty { padding:24px; color:#666; text-align:center; font-weight:700; }
-        .planner-search-result { padding:12px; border-bottom:1px solid #e5e7eb; background:#fff; cursor:pointer; transition:background 0.15s ease; }
-        .planner-search-result:hover { background:#eff6ff; }
-        .planner-search-title { display:flex; gap:8px; align-items:center; justify-content:space-between; font-weight:900; color:#111827; margin-bottom:5px; }
-        .planner-search-title span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .planner-search-badge { flex-shrink:0; font-size:0.62rem; border-radius:999px; background:#dbeafe; color:#1e40af; border:1px solid #93c5fd; padding:2px 7px; font-weight:900; text-transform:uppercase; }
-        .planner-search-meta { font-size:0.76rem; color:#4b5563; display:flex; flex-wrap:wrap; gap:8px; line-height:1.35; }
-        .planner-search-snippet { margin-top:6px; font-size:0.76rem; color:#374151; line-height:1.35; }
-        .planner-search-highlight { animation: plannerSearchPulse 2.2s ease-in-out 0s 2; outline: 4px solid #1d4ed8 !important; outline-offset: 2px; }
-        @keyframes plannerSearchPulse { 0% { box-shadow: 0 0 0 0 rgba(29,78,216,0.55); } 70% { box-shadow: 0 0 0 14px rgba(29,78,216,0); } 100% { box-shadow: 0 0 0 0 rgba(29,78,216,0); } }
         .quick-card-btn { background: #c1272d !important; color: #fff !important; border: 2px solid #7f1d1d !important; box-shadow: 0 2px 8px rgba(193,39,45,0.25); }
         .quick-card-btn:hover { background: #a02025 !important; }
         .instruction-btn { background: #0f766e !important; color: #fff !important; border: 2px solid #115e59 !important; box-shadow: 0 2px 8px rgba(15,118,110,0.22); }
         .instruction-btn:hover { background: #115e59 !important; }
+        .planner-search-btn { background: #1d4ed8 !important; color: #fff !important; border: 2px solid #1e40af !important; box-shadow: 0 2px 8px rgba(29,78,216,0.22); }
+        .planner-search-btn:hover { background: #1e40af !important; }
+        .planner-search-results { max-height: 55vh; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; }
+        .planner-search-result { padding: 10px 12px; border-bottom: 1px solid #eef2f7; cursor: pointer; color: #1a1a1a; }
+        .planner-search-result:hover { background: #eef6ff; }
+        .planner-search-result:last-child { border-bottom: none; }
+        .planner-search-result-title { font-weight: 800; font-size: 0.86rem; margin-bottom: 3px; color: #111827; }
+        .planner-search-result-meta { font-size: 0.72rem; color: #4b5563; line-height: 1.35; }
+        .planner-search-result-type { display:inline-block; font-size:0.62rem; font-weight:900; color:#fff; background:#34495e; border-radius:999px; padding:2px 7px; margin-right:6px; }
+        .planner-search-result-type.maintenance { background:#8e44ad; }
+        .planner-search-result-type.note { background:#d68910; }
+        .planner-search-result-type.instruction { background:#0f766e; }
+        .planner-search-highlight { outline: 4px solid #2563eb !important; box-shadow: 0 0 0 6px rgba(37,99,235,0.20), 0 10px 20px rgba(0,0,0,0.22) !important; position: relative; z-index: 100 !important; }
+        .header-mode-client .postcode-header .pc-coll,
+        .header-mode-client .postcode-header .pc-del,
+        .header-mode-client .postcode-header .pc-del-2 { font-size: 0.78rem; letter-spacing: -0.01em; }
+        .header-mode-all .postcode-header { gap: 4px; align-items: flex-start !important; }
+        .header-mode-all .header-all-side { display: flex; flex-direction: column; gap: 1px; line-height: 1.05; max-width: 74px; margin: 0 auto; }
+        .header-mode-all .header-all-client { font-size: 0.66rem; font-weight: 900; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .header-mode-all .header-all-postcode { font-size: 0.76rem; font-weight: 900; white-space: nowrap; }
+        .header-mode-all .header-all-town { font-size: 0.62rem; font-weight: 800; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
         .quick-card-modal-content { width: 620px; max-width: 95vw; border-top: 5px solid var(--frost-red); }
         .instruction-modal-content { width: 520px; max-width: 95vw; border-top: 5px solid #0f766e; }
         .instruction-card { background: #ecfdf5 !important; border-left-color: #0f766e !important; box-shadow: 0 0 0 2px rgba(15,118,110,0.09), 0 2px 4px rgba(0,0,0,0.12) !important; }
@@ -368,7 +373,7 @@
 <header>
     <div class="logo-container"><img src="logo.png" alt="FROST"></div>
     <div style="display:flex; gap:15px; align-items:center;">
-        <button class="week-btn search-btn" onclick="openPlannerSearchModal()">🔎 SEARCH</button>
+        <button class="week-btn planner-search-btn" onclick="openPlannerSearch()">🔎 SEARCH</button>
         <button class="week-btn instruction-btn" onclick="openInstructionModal()">➡️ INSTRUCTION</button>
         <button class="week-btn quick-card-btn" onclick="openQuickCardModal()">⚡ QUICK CARD</button>
         <div id="week-display-box" class="week-info-box">WK -- | MON --/--/--</div>
@@ -423,31 +428,31 @@
                 <div id="pool-zone-tba" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             </div>
             <div class="pool-day">
-                <div class="pool-day-title">MONDAY</div>
+                <div class="pool-day-title" data-pool-day-index="0">MONDAY</div>
                 <div id="pool-zone-1" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             </div>
             <div class="pool-day">
-                <div class="pool-day-title">TUESDAY</div>
+                <div class="pool-day-title" data-pool-day-index="1">TUESDAY</div>
                 <div id="pool-zone-2" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             </div>
             <div class="pool-day">
-                <div class="pool-day-title">WEDNESDAY</div>
+                <div class="pool-day-title" data-pool-day-index="2">WEDNESDAY</div>
                 <div id="pool-zone-3" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             </div>
             <div class="pool-day">
-                <div class="pool-day-title">THURSDAY</div>
+                <div class="pool-day-title" data-pool-day-index="3">THURSDAY</div>
                 <div id="pool-zone-4" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             </div>
             <div class="pool-day">
-                <div class="pool-day-title">FRIDAY</div>
+                <div class="pool-day-title" data-pool-day-index="4">FRIDAY</div>
                 <div id="pool-zone-5" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             </div>
             <div class="pool-day" id="pool-day-sat" style="display:none;">
-                <div class="pool-day-title" style="background:#888;">SATURDAY</div>
+                <div class="pool-day-title" data-pool-day-index="5" style="background:#888;">SATURDAY</div>
                 <div id="pool-zone-6" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             </div>
             <div class="pool-day" id="pool-day-sun" style="display:none;">
-                <div class="pool-day-title" style="background:#888;">SUNDAY</div>
+                <div class="pool-day-title" data-pool-day-index="6" style="background:#888;">SUNDAY</div>
                 <div id="pool-zone-0" class="pool-zone" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
             </div>
         </div>
@@ -599,29 +604,24 @@
      ========================================== -->
 
 
-<!-- Planner Search Modal -->
+<!-- Instruction Modal -->
 <div id="modal-planner-search" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-planner-search')">
-    <div class="modal-content planner-search-modal-content" onclick="event.stopPropagation();">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #1d4ed8; padding-bottom:10px; margin-bottom:14px; gap:12px;">
+    <div class="modal-content" style="max-width:760px; max-height:86vh; overflow:hidden; display:flex; flex-direction:column;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;">
             <div>
-                <h2 style="margin:0; color:#1d4ed8;">🔎 Planner Search</h2>
-                <div style="font-size:0.78rem; color:#666; font-weight:700; margin-top:4px;">Searches job cards, maintenance cards, notes, instructions and unassigned cards across the current four-week planner.</div>
+                <h2 style="margin:0; color:#1a1a1a;">Search Planner</h2>
+                <p style="font-size:0.78rem; color:#666; margin:4px 0 0;">Search all loaded job cards, maintenance cards, note cards, instruction cards and unassigned cards across the four-week planner.</p>
             </div>
-            <button type="button" class="week-btn" onclick="closeModal('modal-planner-search')" style="background:#ddd; color:#333;">Close</button>
+            <button type="button" onclick="closePlannerSearch()" style="border:none; background:#f1f5f9; color:#111827; font-size:1.2rem; font-weight:bold; width:34px; height:34px; border-radius:999px; cursor:pointer;">×</button>
         </div>
-        <input type="text" id="planner-search-input" class="planner-search-box" placeholder="Search customer, postcode, driver, ref, price, defect, note, instruction, invoice number..." oninput="runPlannerSearch()">
-        <div class="planner-search-tools">
-            <button type="button" class="week-btn search-btn" onclick="runPlannerSearch()">Search</button>
-            <button type="button" class="week-btn" onclick="clearPlannerSearch()" style="background:#64748b; color:white;">Clear</button>
-            <span id="planner-search-count" class="planner-search-count">Enter at least 2 characters to search</span>
-        </div>
+        <input type="text" id="planner-search-input" placeholder="Search customer, client, postcode, vehicle, trailer, ref, note, price, driver..." oninput="renderPlannerSearchResults()" style="width:100%; padding:12px; border:2px solid #d1d5db; border-radius:8px; font-size:0.95rem; margin-bottom:10px;">
+        <div id="planner-search-count" style="font-size:0.72rem; color:#666; font-weight:bold; text-transform:uppercase; margin-bottom:8px;">Type to search the planner</div>
         <div id="planner-search-results" class="planner-search-results">
-            <div class="planner-search-empty">Type at least 2 characters to search the planner.</div>
+            <div style="padding:18px; color:#666; font-size:0.86rem;">Enter a search term above.</div>
         </div>
     </div>
 </div>
 
-<!-- Instruction Modal -->
 <div id="modal-instruction" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-instruction')">
     <div class="modal-content instruction-modal-content" onclick="event.stopPropagation();">
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f766e; padding-bottom:10px; margin-bottom:14px;">
@@ -1036,7 +1036,8 @@ function escapeHtml(value) {
     let currentWeekOffset = 0;
     let activePlannerView = 0;
     let plannerRefreshTimer = null;
-    let showTownsInHeader = false;
+    let showTownsInHeader = false; // legacy flag kept for older planner logic
+    let headerDisplayMode = 'postcodes'; // postcodes -> towns -> client -> all
     let showMaintenanceCards = true;
     let fleetMap = null;
     let mapMarkers = [];
@@ -1057,6 +1058,21 @@ function escapeHtml(value) {
     };
     const dataViewLoaded = { invoice: false, history: false, subbed: false, cancelled: false };
     const dataViewLoading = { invoice: false, history: false, subbed: false, cancelled: false };
+    const LAZY_DATA_VIEW_KEYS = ['invoice', 'history', 'subbed', 'cancelled'];
+    let boardRefreshNeededAfterDataView = false;
+
+    function isLazyDataView(view = activePlannerView) {
+        return LAZY_DATA_VIEW_KEYS.includes(String(view));
+    }
+
+    function getDataViewRowsFromCache(view) {
+        const statuses = dataViewStatusMap[view] || [];
+        return (allJobsRaw || []).filter(j => statuses.includes(String(j.status || '').toLowerCase()));
+    }
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 
     // Performance guardrails for multi-planner live use.
     // Keep Supabase Realtime quick, but prevent overlapping full-board reloads.
@@ -1137,11 +1153,35 @@ function escapeHtml(value) {
     // ==========================================
     // 3. UI TOGGLES
     // ==========================================
-    function toggleHeaderView() {
-        showTownsInHeader = !showTownsInHeader;
+    function getHeaderDisplayMode() {
+        return headerDisplayMode || (showTownsInHeader ? 'towns' : 'postcodes');
+    }
+
+    function updateHeaderToggleButton() {
         const btn = document.getElementById('btn-toggle-header');
-        btn.innerText = showTownsInHeader ? "🔄 POSTCODES" : "🔄 TOWNS";
-        btn.style.background = showTownsInHeader ? "#0056b3" : "#34495e";
+        if (!btn) return;
+        const mode = getHeaderDisplayMode();
+        if (mode === 'postcodes') {
+            btn.innerText = "🔄 TOWNS";
+            btn.style.background = "#34495e";
+        } else if (mode === 'towns') {
+            btn.innerText = "🔄 CLIENT";
+            btn.style.background = "#0056b3";
+        } else if (mode === 'client') {
+            btn.innerText = "🔄 ALL";
+            btn.style.background = "#7c3aed";
+        } else {
+            btn.innerText = "🔄 POSTCODES";
+            btn.style.background = "#15803d";
+        }
+    }
+
+    function toggleHeaderView() {
+        const modes = ['postcodes', 'towns', 'client', 'all'];
+        const currentIndex = modes.indexOf(getHeaderDisplayMode());
+        headerDisplayMode = modes[(currentIndex + 1) % modes.length];
+        showTownsInHeader = headerDisplayMode === 'towns';
+        updateHeaderToggleButton();
         loadAll(); 
     }
 
@@ -1218,212 +1258,6 @@ function escapeHtml(value) {
         const collRef = String((job && job.coll_ref) || '').trim().toUpperCase();
         const customerName = String((job && job.customer_name) || '').trim().toUpperCase();
         return contractType === 'instruction' || collRef.startsWith('INSTRUCTION - EMPTY') || customerName.includes('EMPTY MOVEMENT INSTRUCTION');
-    }
-
-    function openPlannerSearchModal() {
-        const input = document.getElementById('planner-search-input');
-        const count = document.getElementById('planner-search-count');
-        const results = document.getElementById('planner-search-results');
-        if (input) input.value = '';
-        if (count) count.innerText = 'Enter at least 2 characters to search';
-        if (results) results.innerHTML = '<div class="planner-search-empty">Type at least 2 characters to search the planner.</div>';
-        openModal('modal-planner-search');
-        setTimeout(() => input && input.focus(), 80);
-    }
-
-    function clearPlannerSearch() {
-        const input = document.getElementById('planner-search-input');
-        const results = document.getElementById('planner-search-results');
-        const count = document.getElementById('planner-search-count');
-        if (input) input.value = '';
-        if (count) count.innerText = 'Enter at least 2 characters to search';
-        if (results) results.innerHTML = '<div class="planner-search-empty">Type at least 2 characters to search the planner.</div>';
-        if (input) input.focus();
-    }
-
-    function normaliseSearchText(value) {
-        return String(value ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
-    }
-
-    function getPlannerSearchType(job) {
-        if (isInstructionJob(job)) return 'Instruction';
-        if (isQuickCardJob(job)) return 'Quick Card';
-        if (job.customer_name === '📝 PLANNER NOTE') return 'Note';
-        if (job.customer_name === MAINTENANCE_CUSTOMER_NAME || isMaintenanceJob(job)) return 'Maintenance';
-        return 'Job';
-    }
-
-    function getPlannerSearchWeekOffset(job) {
-        const slot = String(job.assigned_slot || '');
-        const slotMatch = slot.match(/(?:planner-|maintenance-pool-zone-)w(\d)/);
-        if (slotMatch) return parseInt(slotMatch[1], 10);
-        const week = getWeekOffsetFromNow(job.coll_datetime || job.del_datetime);
-        if (Number.isFinite(week)) return Math.max(0, Math.min(3, week));
-        return currentWeekOffset || 0;
-    }
-
-    function getPlannerSearchLocation(job) {
-        const slot = String(job.assigned_slot || '');
-        if (slot.includes('maintenance-pool-zone')) return 'Maintenance Pool';
-        if (slot.includes('pool-zone') || !slot) return 'Unassigned Pool';
-        const match = slot.match(/planner-w(\d+)-dr(\d+)-s(\d+)/);
-        if (match) {
-            const vehicle = vehicles[parseInt(match[2], 10)] || 'Planner Grid';
-            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            return `${vehicle} / ${dayNames[parseInt(match[3], 10)] || 'Day'}`;
-        }
-        return slot;
-    }
-
-    function getPlannerSearchRoute(job) {
-        const from = job.coll_postcode || job.coll_town || job.coll_cust_name || job.customer_name || 'From TBA';
-        const to = job.del_postcode || job.del_town || job.del_cust_name || 'To TBA';
-        return `${from} ➔ ${to}`;
-    }
-
-    function getPlannerSearchableText(job) {
-        const values = [];
-        const pushValue = (value) => {
-            if (value === null || value === undefined) return;
-            if (typeof value === 'object') {
-                try { values.push(JSON.stringify(value)); } catch (_) {}
-            } else {
-                values.push(String(value));
-            }
-        };
-        Object.keys(job || {}).forEach(key => {
-            values.push(key);
-            pushValue(job[key]);
-        });
-        values.push(getPlannerSearchType(job));
-        values.push(getPlannerSearchRoute(job));
-        values.push(getPlannerSearchLocation(job));
-        return normaliseSearchText(values.join(' '));
-    }
-
-    function getPlannerSearchSnippet(job, term) {
-        const source = [
-            job.customer_name,
-            job.coll_cust_name,
-            job.del_cust_name,
-            job.customer_phone,
-            job.coll_postcode,
-            job.del_postcode,
-            job.coll_ref,
-            job.del_ref,
-            job.assigned_driver,
-            job.vehicle_type,
-            job.total_price,
-            job.fts_invoice_number,
-            job.customers_own_invoice_number
-        ].filter(Boolean).join(' | ');
-        const clean = String(source || getPlannerSearchRoute(job)).replace(/\s+/g, ' ').trim();
-        const lower = clean.toLowerCase();
-        const idx = term ? lower.indexOf(term.toLowerCase()) : -1;
-        if (idx > -1) {
-            const start = Math.max(0, idx - 60);
-            const end = Math.min(clean.length, idx + term.length + 90);
-            return `${start > 0 ? '…' : ''}${escapeHtml(clean.slice(start, end))}${end < clean.length ? '…' : ''}`;
-        }
-        return escapeHtml(clean.slice(0, 180)) + (clean.length > 180 ? '…' : '');
-    }
-
-    function getPlannerSearchScopeJobs() {
-        return (allJobsRaw || []).filter(job => {
-            if (!job || !job.id) return false;
-            const status = String(job.status || '').toLowerCase();
-            if (['driver_config', 'completed', 'archived', 'billed', 'subbed', 'cancelled'].includes(status)) return false;
-            const week = getPlannerSearchWeekOffset(job);
-            return week >= 0 && week <= 3;
-        });
-    }
-
-    function runPlannerSearch() {
-        const input = document.getElementById('planner-search-input');
-        const resultsEl = document.getElementById('planner-search-results');
-        const countEl = document.getElementById('planner-search-count');
-        if (!input || !resultsEl) return;
-
-        const rawTerm = input.value.trim();
-        const term = normaliseSearchText(rawTerm);
-        if (term.length < 2) {
-            if (countEl) countEl.innerText = 'Enter at least 2 characters to search';
-            resultsEl.innerHTML = '<div class="planner-search-empty">Type at least 2 characters to search the planner.</div>';
-            return;
-        }
-
-        const matches = getPlannerSearchScopeJobs()
-            .map(job => ({ job, searchText: getPlannerSearchableText(job) }))
-            .filter(item => item.searchText.includes(term))
-            .slice(0, 150);
-
-        if (countEl) countEl.innerText = `${matches.length} match${matches.length === 1 ? '' : 'es'} found`;
-        if (matches.length === 0) {
-            resultsEl.innerHTML = '<div class="planner-search-empty">No matches found in the current four-week planner.</div>';
-            return;
-        }
-
-        resultsEl.innerHTML = matches.map(({ job }) => {
-            const type = getPlannerSearchType(job);
-            const week = getPlannerSearchWeekOffset(job);
-            const info = getWeekInfo(week);
-            const title = job.customer_name === '📝 PLANNER NOTE'
-                ? 'Planner Note'
-                : (job.customer_name || job.coll_cust_name || job.del_cust_name || 'Untitled card');
-            const route = getPlannerSearchRoute(job);
-            const location = getPlannerSearchLocation(job);
-            const dateText = job.coll_datetime ? new Date(job.coll_datetime).toLocaleString('en-GB', { weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : 'Date TBA';
-            return `
-                <div class="planner-search-result" onclick="openPlannerSearchResult('${escapeInlineArg(job.id)}')">
-                    <div class="planner-search-title">
-                        <span>${escapeHtml(title)}</span>
-                        <span class="planner-search-badge">${escapeHtml(type)}</span>
-                    </div>
-                    <div class="planner-search-meta">
-                        <span><b>Route:</b> ${escapeHtml(route)}</span>
-                        <span><b>Week:</b> ${escapeHtml(String(info.week))}</span>
-                        <span><b>Date:</b> ${escapeHtml(dateText)}</span>
-                        <span><b>Where:</b> ${escapeHtml(location)}</span>
-                    </div>
-                    <div class="planner-search-snippet">${getPlannerSearchSnippet(job, rawTerm)}</div>
-                </div>`;
-        }).join('');
-    }
-
-    function openPlannerSearchResult(id) {
-        const job = allJobsRaw.find(x => String(x.id) === String(id));
-        if (!job) return alert('Could not find that planner card. Try refreshing the planner.');
-
-        const week = getPlannerSearchWeekOffset(job);
-        if (typeof week === 'number' && week >= 0 && week <= 3) switchView(week);
-
-        const isMaintenance = job.customer_name === MAINTENANCE_CUSTOMER_NAME || isMaintenanceJob(job);
-        if (isMaintenance && !showMaintenanceCards) toggleMaintenanceCards();
-
-        const assignedSlot = String(job.assigned_slot || '');
-        if (isMaintenance && (assignedSlot.includes('maintenance-pool-zone') || !assignedSlot || assignedSlot.includes('pool-zone'))) {
-            const sidebar = document.getElementById('maintenance-sidebar');
-            const unassigned = document.getElementById('unassigned-sidebar');
-            if (unassigned) unassigned.classList.remove('open');
-            if (sidebar) sidebar.classList.add('open');
-        } else if (!assignedSlot || assignedSlot.includes('pool-zone')) {
-            const sidebar = document.getElementById('unassigned-sidebar');
-            const maintenance = document.getElementById('maintenance-sidebar');
-            if (maintenance) maintenance.classList.remove('open');
-            if (sidebar) sidebar.classList.add('open');
-        }
-
-        closeModal('modal-planner-search');
-        setTimeout(() => {
-            const card = document.getElementById(String(id));
-            if (!card) {
-                alert('Found the record, but its card is not currently visible. Try pressing SYNC and searching again.');
-                return;
-            }
-            card.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-            card.classList.add('planner-search-highlight');
-            setTimeout(() => card.classList.remove('planner-search-highlight'), 5000);
-        }, 160);
     }
 
     function openInstructionModal() {
@@ -2098,6 +1932,7 @@ function escapeHtml(value) {
         try {
 
         updateMaintenancePoolHeaders();
+        updateUnassignedPoolDateHeaders(getActivePlannerWeekOffset());
 
         const boardJobsQuery = sb.from('quotes')
             .select('*')
@@ -2150,8 +1985,24 @@ function escapeHtml(value) {
             }
         });
 
-        allJobsRaw = jobsRes.data;
-        Object.keys(dataViewLoaded).forEach(k => dataViewLoaded[k] = false);
+        const boardJobs = jobsRes.data || [];
+
+        // Keep lazy-loaded invoice/history/subbed/cancelled rows in memory while the
+        // live planner board refreshes. Previously every board refresh wiped these
+        // cached rows and forced the open History/Invoice view to reload repeatedly,
+        // causing the flashing/disappearing table issue.
+        const cachedLazyRows = (allJobsRaw || []).filter(j => {
+            const status = String(j.status || '').toLowerCase();
+            return LAZY_DATA_VIEW_KEYS.some(viewKey => (dataViewStatusMap[viewKey] || []).includes(status));
+        });
+        const mergedJobs = new Map();
+        cachedLazyRows.forEach(row => {
+            if (row && row.id !== undefined && row.id !== null) mergedJobs.set(String(row.id), row);
+        });
+        boardJobs.forEach(row => {
+            if (row && row.id !== undefined && row.id !== null) mergedJobs.set(String(row.id), row);
+        });
+        allJobsRaw = Array.from(mergedJobs.values());
 
         allJobsRaw.sort((a, b) => {
             let valA = a.coll_datetime ? new Date(a.coll_datetime).getTime() : Infinity;
@@ -2161,7 +2012,7 @@ function escapeHtml(value) {
 
         allJccBookings = jccRes.data || [];
 
-        allJobsRaw.forEach(q => {
+        boardJobs.forEach(q => {
             if (['driver_config', 'archived', 'billed', 'subbed', 'cancelled'].includes(q.status)) return;
             
             let isON = false;
@@ -2247,10 +2098,15 @@ function escapeHtml(value) {
             }
         });
         
-        renderActiveDataView();
         updateCalculations();
         restoreDrivers(allJobsRaw);
-        restoreActivePlannerView(); 
+
+        // Do not call switchView/renderActiveDataView while History/Invoice/Subbed/Cancelled
+        // is open. Those views lazy-load their own rows and must stay stable while live board
+        // sync happens in the background.
+        if (!isLazyDataView(activePlannerView)) {
+            restoreActivePlannerView();
+        }
 
         if (document.getElementById('map-view').style.display === 'block') {
             updateMapPins();
@@ -2271,6 +2127,20 @@ function escapeHtml(value) {
         if (p) return p;
         if (f) return f;
         return defaultStr;
+    }
+
+
+    function buildAllHeaderSide(clientValue, postcodeValue, townValue, fallbackLabel = '') {
+        const client = getVal(clientValue, fallbackLabel, 'CLIENT');
+        const postcode = getVal(postcodeValue, '', 'POSTCODE');
+        const town = getVal(townValue, '', 'TOWN');
+        return `
+            <span class="header-all-side">
+                <span class="header-all-client" title="${escapeHtml(client)}">${escapeHtml(client)}</span>
+                <span class="header-all-postcode">${escapeHtml(postcode)}</span>
+                <span class="header-all-town" title="${escapeHtml(town)}">${escapeHtml(town)}</span>
+            </span>
+        `;
     }
 
     const FTS_INVOICE_PREFIX = 'FTS-';
@@ -2843,20 +2713,51 @@ function escapeHtml(value) {
             let hasColl2 = (q.coll_postcode_2 && q.coll_postcode_2.trim() !== '') || (q.coll_town_2 && q.coll_town_2.trim() !== '');
             let hasDel2 = (q.del_postcode_2 && q.del_postcode_2.trim() !== '') || (q.del_town_2 && q.del_town_2.trim() !== '');
 
-            let txtColl1 = showTownsInHeader ? getVal(q.coll_town, q.coll_postcode, 'N/A') : getVal(q.coll_postcode, q.coll_town, '??');
-            let txtColl2 = hasColl2 ? (showTownsInHeader ? getVal(q.coll_town_2, q.coll_postcode_2, 'Coll 2') : getVal(q.coll_postcode_2, q.coll_town_2, '??')) : null;
-            let txtDel1 = showTownsInHeader ? getVal(q.del_town, q.del_postcode, 'N/A') : getVal(q.del_postcode, q.del_town, '??');
-            let txtDel2 = hasDel2 ? (showTownsInHeader ? getVal(q.del_town_2, q.del_postcode_2, 'Drop 2') : getVal(q.del_postcode_2, q.del_town_2, '??')) : null;
+            const headerMode = getHeaderDisplayMode();
+            const headerShowsTowns = headerMode === 'towns';
+            const headerShowsClients = headerMode === 'client';
+            const headerShowsAll = headerMode === 'all';
+            card.classList.toggle('header-mode-client', headerShowsClients);
+            card.classList.toggle('header-mode-all', headerShowsAll);
+
+            let txtColl1;
+            let txtColl2;
+            let txtDel1;
+            let txtDel2;
+
+            if (headerShowsAll) {
+                txtColl1 = buildAllHeaderSide(getVal(q.coll_cust_name, q.customer_name, ''), q.coll_postcode, q.coll_town, 'COLLECTION');
+                txtColl2 = hasColl2 ? buildAllHeaderSide('COLLECTION 2', q.coll_postcode_2, q.coll_town_2, 'COLLECTION 2') : null;
+                txtDel1 = buildAllHeaderSide(q.del_cust_name, q.del_postcode, q.del_town, 'DELIVERY');
+                txtDel2 = hasDel2 ? buildAllHeaderSide('DROP 2', q.del_postcode_2, q.del_town_2, 'DROP 2') : null;
+            } else if (headerShowsClients) {
+                txtColl1 = getVal(q.coll_cust_name, q.customer_name, getVal(q.coll_town, q.coll_postcode, 'COLLECTION'));
+                txtColl2 = hasColl2 ? getVal(q.coll_town_2, q.coll_postcode_2, 'COLL 2') : null;
+                txtDel1 = getVal(q.del_cust_name, getVal(q.del_town, q.del_postcode, ''), 'DELIVERY');
+                txtDel2 = hasDel2 ? getVal(q.del_town_2, q.del_postcode_2, 'DROP 2') : null;
+            } else if (headerShowsTowns) {
+                txtColl1 = getVal(q.coll_town, q.coll_postcode, 'N/A');
+                txtColl2 = hasColl2 ? getVal(q.coll_town_2, q.coll_postcode_2, 'Coll 2') : null;
+                txtDel1 = getVal(q.del_town, q.del_postcode, 'N/A');
+                txtDel2 = hasDel2 ? getVal(q.del_town_2, q.del_postcode_2, 'Drop 2') : null;
+            } else {
+                txtColl1 = getVal(q.coll_postcode, q.coll_town, '??');
+                txtColl2 = hasColl2 ? getVal(q.coll_postcode_2, q.coll_town_2, '??') : null;
+                txtDel1 = getVal(q.del_postcode, q.del_town, '??');
+                txtDel2 = hasDel2 ? getVal(q.del_postcode_2, q.del_town_2, '??') : null;
+            }
             
-            if (showTownsInHeader) {
-                if(txtColl1.length > 10) txtColl1 = txtColl1.substring(0, 8) + '..';
-                if(txtColl2 && txtColl2.length > 10) txtColl2 = txtColl2.substring(0, 8) + '..';
-                if(txtDel1.length > 10) txtDel1 = txtDel1.substring(0, 8) + '..';
-                if(txtDel2 && txtDel2.length > 10) txtDel2 = txtDel2.substring(0, 8) + '..';
+            if (headerShowsTowns || headerShowsClients) {
+                const maxHeaderChars = headerShowsClients ? 12 : 10;
+                const trimHeaderText = (value) => value && value.length > maxHeaderChars ? value.substring(0, maxHeaderChars - 2) + '..' : value;
+                txtColl1 = trimHeaderText(txtColl1);
+                txtColl2 = trimHeaderText(txtColl2);
+                txtDel1 = trimHeaderText(txtDel1);
+                txtDel2 = trimHeaderText(txtDel2);
             }
 
             let trailerStr = "TBA";
-            let isYardInvolved = (txtColl1.toUpperCase() === 'YARD' || (txtColl2 && txtColl2.toUpperCase() === 'YARD') || txtDel1.toUpperCase() === 'YARD' || (txtDel2 && txtDel2.toUpperCase() === 'YARD'));
+            let isYardInvolved = !(headerShowsClients || headerShowsAll) && (txtColl1.toUpperCase() === 'YARD' || (txtColl2 && txtColl2.toUpperCase() === 'YARD') || txtDel1.toUpperCase() === 'YARD' || (txtDel2 && txtDel2.toUpperCase() === 'YARD'));
 
             if (isYardInvolved) {
                 let leg1Driver = null;
@@ -2889,36 +2790,36 @@ function escapeHtml(value) {
             let yardTrailerHtml = `<span style="display:block; font-size:0.65rem; color:#0056b3; font-weight:bold; margin-top:1px;">Trl: ${trailerStr}</span>`;
 
             let col1Html = txtColl1;
-            if (txtColl1.toUpperCase() === 'YARD') col1Html += yardTrailerHtml;
+            if (!headerShowsAll && txtColl1.toUpperCase() === 'YARD') col1Html += yardTrailerHtml;
             
             let col2Html = txtColl2;
-            if (txtColl2 && txtColl2.toUpperCase() === 'YARD') col2Html += yardTrailerHtml;
+            if (!headerShowsAll && txtColl2 && txtColl2.toUpperCase() === 'YARD') col2Html += yardTrailerHtml;
 
             let del1Html = txtDel1;
-            if (txtDel1.toUpperCase() === 'YARD') del1Html += yardTrailerHtml;
+            if (!headerShowsAll && txtDel1.toUpperCase() === 'YARD') del1Html += yardTrailerHtml;
 
             let del2Html = txtDel2;
-            if (txtDel2 && txtDel2.toUpperCase() === 'YARD') del2Html += yardTrailerHtml;
+            if (!headerShowsAll && txtDel2 && txtDel2.toUpperCase() === 'YARD') del2Html += yardTrailerHtml;
 
             let routeArr = [];
             
-            let titleColl1 = showTownsInHeader ? q.customer_name : getVal(q.coll_town, q.coll_postcode, '');
-            routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-coll" title="${titleColl1}">${col1Html}</span>${collTime}</div>`);
+            let titleColl1 = headerShowsAll ? `${getVal(q.coll_cust_name, q.customer_name, 'Collection')} | ${getVal(q.coll_postcode, '', '')} | ${getVal(q.coll_town, '', '')}` : (headerShowsClients ? getVal(q.coll_street, getVal(q.coll_town, q.coll_postcode, ''), '') : (headerShowsTowns ? getVal(q.coll_cust_name, q.customer_name, '') : getVal(q.coll_town, q.coll_postcode, '')));
+            routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-coll" title="${escapeHtml(titleColl1)}">${col1Html}</span>${collTime}</div>`);
             
             if(hasColl2) {
-                let titleColl2 = showTownsInHeader ? 'Collection 2' : getVal(q.coll_town_2, q.coll_postcode_2, '');
+                let titleColl2 = headerShowsAll ? `Collection 2 | ${getVal(q.coll_postcode_2, '', '')} | ${getVal(q.coll_town_2, '', '')}` : (headerShowsClients ? getVal(q.coll_postcode_2, q.coll_town_2, '') : (headerShowsTowns ? 'Collection 2' : getVal(q.coll_town_2, q.coll_postcode_2, '')));
                 routeArr.push(`<div style="margin-top:1px; padding:0 2px;">${arrow}</div>`);
-                routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-coll" title="${titleColl2}">${col2Html}</span></div>`);
+                routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-coll" title="${escapeHtml(titleColl2)}">${col2Html}</span></div>`);
             }
             
-            let titleDel1 = showTownsInHeader ? q.del_cust_name : getVal(q.del_town, q.del_postcode, '');
+            let titleDel1 = headerShowsAll ? `${getVal(q.del_cust_name, '', 'Delivery')} | ${getVal(q.del_postcode, '', '')} | ${getVal(q.del_town, '', '')}` : (headerShowsClients ? getVal(q.del_street, getVal(q.del_town, q.del_postcode, ''), '') : (headerShowsTowns ? q.del_cust_name : getVal(q.del_town, q.del_postcode, '')));
             routeArr.push(`<div style="margin-top:1px; padding:0 2px;">${arrow}</div>`);
-            routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-del" title="${titleDel1}">${del1Html}</span>${delTime}</div>`);
+            routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-del" title="${escapeHtml(titleDel1)}">${del1Html}</span>${delTime}</div>`);
             
             if(hasDel2) {
-                let titleDel2 = showTownsInHeader ? 'Drop 2' : getVal(q.del_town_2, q.del_postcode_2, '');
+                let titleDel2 = headerShowsAll ? `Drop 2 | ${getVal(q.del_postcode_2, '', '')} | ${getVal(q.del_town_2, '', '')}` : (headerShowsClients ? getVal(q.del_postcode_2, q.del_town_2, '') : (headerShowsTowns ? 'Drop 2' : getVal(q.del_town_2, q.del_postcode_2, '')));
                 routeArr.push(`<div style="margin-top:1px; padding:0 2px;">${arrow}</div>`);
-                routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-del-2" title="${titleDel2}">${del2Html}</span></div>`);
+                routeArr.push(`<div style="text-align:center; flex:1;"><span class="pc-del-2" title="${escapeHtml(titleDel2)}">${del2Html}</span></div>`);
             }
 
             pcHeader = routeArr.join('');
@@ -4018,11 +3919,17 @@ Are you sure you want to place it here?`);
         if (!statuses) return [];
 
         if (!force && dataViewLoaded[view]) {
-            return allJobsRaw.filter(j => statuses.includes(String(j.status || '').toLowerCase()));
+            return getDataViewRowsFromCache(view);
         }
 
+        // If another render has already started loading this view, wait for it instead of
+        // rendering the smaller cached set. This prevents the table flashing all rows, then
+        // only a few rows, then all rows again.
         if (dataViewLoading[view]) {
-            return allJobsRaw.filter(j => statuses.includes(String(j.status || '').toLowerCase()));
+            for (let i = 0; i < 60 && dataViewLoading[view]; i++) {
+                await sleep(100);
+            }
+            return getDataViewRowsFromCache(view);
         }
 
         dataViewLoading[view] = true;
@@ -4036,10 +3943,10 @@ Are you sure you want to place it here?`);
             if (error) throw error;
             mergeJobsIntoAllJobsRaw(data || []);
             dataViewLoaded[view] = true;
-            return data || [];
+            return getDataViewRowsFromCache(view);
         } catch (err) {
             console.error(`Could not lazy-load ${view} view:`, err);
-            return allJobsRaw.filter(j => statuses.includes(String(j.status || '').toLowerCase()));
+            return getDataViewRowsFromCache(view);
         } finally {
             dataViewLoading[view] = false;
         }
@@ -4684,8 +4591,8 @@ Are you sure you want to place it here?`);
     }
 
     function switchView(view) {
+        const previousPlannerView = activePlannerView;
         activePlannerView = view;
-        renderActiveDataView(view);
         document.querySelectorAll('.week-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('planner-board').style.display = 'none';
         document.getElementById('invoicing-view').style.display = 'none';
@@ -4694,10 +4601,22 @@ Are you sure you want to place it here?`);
         document.getElementById('cancelled-view').style.display = 'none';
         document.getElementById('map-view').style.display = 'none';
 
-        if (view === 'invoice') { document.getElementById('invoicing-view').style.display = 'block'; document.getElementById('btn-invoice').classList.add('active'); }
-        else if (view === 'history') { document.getElementById('history-view').style.display = 'block'; document.getElementById('btn-hist').classList.add('active'); }
-        else if (view === 'subbed') { document.getElementById('subbed-view').style.display = 'block'; document.getElementById('btn-subbed').classList.add('active'); }
-        else if (view === 'cancelled') { document.getElementById('cancelled-view').style.display = 'block'; document.getElementById('btn-cancelled').classList.add('active'); }
+        if (view === 'invoice') {
+            document.getElementById('invoicing-view').style.display = 'block';
+            document.getElementById('btn-invoice').classList.add('active');
+        }
+        else if (view === 'history') {
+            document.getElementById('history-view').style.display = 'block';
+            document.getElementById('btn-hist').classList.add('active');
+        }
+        else if (view === 'subbed') {
+            document.getElementById('subbed-view').style.display = 'block';
+            document.getElementById('btn-subbed').classList.add('active');
+        }
+        else if (view === 'cancelled') {
+            document.getElementById('cancelled-view').style.display = 'block';
+            document.getElementById('btn-cancelled').classList.add('active');
+        }
         else if (view === 'map') { 
             document.getElementById('map-view').style.display = 'flex'; document.getElementById('map-view').style.flexDirection = 'column';
             document.getElementById('btn-map').classList.add('active'); 
@@ -4715,7 +4634,8 @@ Are you sure you want to place it here?`);
             }, 100);
             
         } else {
-            currentWeekOffset = view; document.getElementById('planner-board').style.display = 'block';
+            currentWeekOffset = view;
+            document.getElementById('planner-board').style.display = 'block';
             document.getElementById(`btn-w${view}`).classList.add('active');
             
             [0,1,2,3].forEach(i => {
@@ -4724,9 +4644,15 @@ Are you sure you want to place it here?`);
             });
 
             const info = getWeekInfo(view); document.getElementById('week-display-box').innerText = `WK ${info.week} | MON ${info.date}`;
-            updateDateHeaders(view); updateCalculations();
-            
+            updateDateHeaders(view);
+            updateUnassignedPoolDateHeaders(view);
+            updateCalculations();
             updateMaintenancePoolHeaders();
+
+            if (boardRefreshNeededAfterDataView || isLazyDataView(previousPlannerView)) {
+                boardRefreshNeededAfterDataView = false;
+                schedulePlannerRefresh(80);
+            }
 
             // Filter Unassigned Pool by week
             document.querySelectorAll('#unassigned-sidebar .job-card').forEach(card => {
@@ -4737,6 +4663,14 @@ Are you sure you want to place it here?`);
                 } else {
                     card.style.display = 'none';
                 }
+            });
+        }
+
+        const renderPromise = renderActiveDataView(view);
+        if (renderPromise && typeof renderPromise.catch === 'function') {
+            renderPromise.catch(err => {
+                console.error('Could not open planner view:', view, err);
+                alert('Could not open this planner view. Please refresh and try again. Error: ' + (err.message || err));
             });
         }
     }
@@ -4767,6 +4701,23 @@ Are you sure you want to place it here?`);
         });
     }
 
+    function updateUnassignedPoolDateHeaders(offset = getActivePlannerWeekOffset()) {
+        const weekOffset = Number.isInteger(Number(offset)) ? Number(offset) : getActivePlannerWeekOffset();
+        const monday = getCurrentPlannerMondayDate();
+        monday.setDate(monday.getDate() + (weekOffset * 7));
+
+        const labels = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+        document.querySelectorAll('#unassigned-sidebar .pool-day-title[data-pool-day-index]').forEach(title => {
+            const dayIndex = parseInt(title.dataset.poolDayIndex, 10);
+            if (Number.isNaN(dayIndex)) return;
+
+            const d = new Date(monday);
+            d.setDate(monday.getDate() + dayIndex);
+            const dateText = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+            title.innerHTML = `<span>${labels[dayIndex]}</span> <span style="font-size:0.78em; opacity:0.9; font-weight:800; margin-left:4px;">${dateText}</span>`;
+        });
+    }
+
     function resetForm() {
         document.getElementById('sys_job_id').value = '';
         ['n_cust_name','n_coll_address_search','n_del_address_search','n_coll_name','n_cust_phone', 'n_cust_email','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2', 'n_customers_own_invoice_number', 'n_fts_invoice_number', 'n_job_contract_type'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
@@ -4786,6 +4737,7 @@ Are you sure you want to place it here?`);
         const sidebar = document.getElementById('unassigned-sidebar');
         const maintenanceSidebar = document.getElementById('maintenance-sidebar');
         if (!sidebar) return;
+        updateUnassignedPoolDateHeaders(getActivePlannerWeekOffset());
         if (maintenanceSidebar) maintenanceSidebar.classList.remove('open');
         sidebar.classList.toggle('open');
     }
@@ -4809,6 +4761,150 @@ Are you sure you want to place it here?`);
     }
     function allowDrop(ev) { ev.preventDefault(); }
     
+
+    function openPlannerSearch() {
+        openModal('modal-planner-search');
+        const input = document.getElementById('planner-search-input');
+        if (input) {
+            input.value = '';
+            setTimeout(() => input.focus(), 50);
+        }
+        renderPlannerSearchResults();
+    }
+
+    function closePlannerSearch() {
+        closeModal('modal-planner-search');
+    }
+
+    function getPlannerSearchType(job) {
+        if (isMaintenanceJob(job)) return 'maintenance';
+        if (isNoteJob(job)) return 'note';
+        if (isInstructionJob(job)) return 'instruction';
+        return 'job';
+    }
+
+    function getPlannerSearchTypeLabel(type) {
+        if (type === 'maintenance') return 'MAINTENANCE';
+        if (type === 'note') return 'NOTE';
+        if (type === 'instruction') return 'INSTRUCTION';
+        return 'JOB';
+    }
+
+    function getSearchablePlannerText(job) {
+        if (!job) return '';
+        const values = [];
+        Object.keys(job).forEach(key => {
+            const value = job[key];
+            if (value === null || value === undefined) return;
+            if (typeof value === 'object') values.push(JSON.stringify(value));
+            else values.push(String(value));
+        });
+        values.push(getPlannerSearchTypeLabel(getPlannerSearchType(job)));
+        return values.join(' ').toLowerCase();
+    }
+
+    function getPlannerSearchWeek(job) {
+        const slot = String(job?.assigned_slot || '');
+        const plannerMatch = slot.match(/planner-w(\d+)/);
+        if (plannerMatch) return Math.max(0, Math.min(3, parseInt(plannerMatch[1], 10)));
+        const maintMatch = slot.match(/maintenance-pool-zone-w(\d+)/);
+        if (maintMatch) return Math.max(0, Math.min(3, parseInt(maintMatch[1], 10)));
+        const offset = getWeekOffsetFromNow(job?.coll_datetime);
+        if (offset < 0) return 0;
+        if (offset > 3) return 3;
+        return offset;
+    }
+
+    function getPlannerSearchRoute(job) {
+        if (!job) return 'No route';
+        if (isNoteJob(job)) return String(job.coll_ref || 'Note card').slice(0, 90);
+        if (isInstructionJob(job)) return `${job.coll_postcode || 'FROM'} ➔ ${job.del_postcode || 'TO'}`;
+        if (isMaintenanceJob(job)) return `${job.coll_postcode || 'Unit'} ➔ ${job.del_postcode || 'BOOK INSPECTION'} | ${job.coll_ref || ''}`;
+        const from = getVal(job.coll_cust_name, job.customer_name, getVal(job.coll_postcode, job.coll_town, 'Collection'));
+        const to = getVal(job.del_cust_name, getVal(job.del_postcode, job.del_town, ''), 'Delivery');
+        return `${from} ➔ ${to}`;
+    }
+
+    function renderPlannerSearchResults() {
+        const input = document.getElementById('planner-search-input');
+        const resultBox = document.getElementById('planner-search-results');
+        const countBox = document.getElementById('planner-search-count');
+        if (!resultBox || !countBox) return;
+
+        const query = String(input?.value || '').trim().toLowerCase();
+        const jobs = (allJobsRaw || []).filter(job => !['driver_config', 'archived', 'billed', 'subbed', 'cancelled'].includes(String(job.status || '').toLowerCase()));
+
+        if (!query) {
+            countBox.innerText = `${jobs.length} cards loaded across the four-week planner`;
+            resultBox.innerHTML = `<div style="padding:18px; color:#666; font-size:0.86rem;">Enter a search term above.</div>`;
+            return;
+        }
+
+        const terms = query.split(/\s+/).filter(Boolean);
+        const results = jobs.filter(job => {
+            const haystack = getSearchablePlannerText(job);
+            return terms.every(term => haystack.includes(term));
+        }).slice(0, 100);
+
+        countBox.innerText = `${results.length} matching card${results.length === 1 ? '' : 's'}${results.length >= 100 ? ' - showing first 100' : ''}`;
+
+        if (results.length === 0) {
+            resultBox.innerHTML = `<div style="padding:18px; color:#666; font-size:0.86rem;">No matching planner cards found.</div>`;
+            return;
+        }
+
+        resultBox.innerHTML = results.map(job => {
+            const type = getPlannerSearchType(job);
+            const weekOffset = getPlannerSearchWeek(job);
+            const info = getWeekInfo(weekOffset);
+            const route = escapeHtml(getPlannerSearchRoute(job));
+            const customer = escapeHtml(job.customer_name || job.coll_cust_name || job.del_cust_name || getPlannerSearchTypeLabel(type));
+            const slot = escapeHtml(job.assigned_slot || 'Unassigned');
+            const date = job.coll_datetime ? new Date(job.coll_datetime).toLocaleDateString('en-GB') : 'No date';
+            const status = escapeHtml(job.status || 'pending');
+            const ref = escapeHtml([job.coll_ref, job.del_ref, job.customers_own_invoice_number, job.fts_invoice_number].filter(Boolean).join(' | '));
+            return `
+                <div class="planner-search-result" onclick="focusPlannerSearchResult('${job.id}')">
+                    <div class="planner-search-result-title"><span class="planner-search-result-type ${type}">${getPlannerSearchTypeLabel(type)}</span>${customer}</div>
+                    <div class="planner-search-result-meta"><b>Route:</b> ${route}</div>
+                    <div class="planner-search-result-meta"><b>Week:</b> WK ${info.week} | MON ${info.date} &nbsp; <b>Date:</b> ${date} &nbsp; <b>Status:</b> ${status}</div>
+                    <div class="planner-search-result-meta"><b>Location:</b> ${slot}${ref ? ` &nbsp; <b>Ref:</b> ${ref}` : ''}</div>
+                </div>`;
+        }).join('');
+    }
+
+    function focusPlannerSearchResult(id) {
+        const job = (allJobsRaw || []).find(j => String(j.id) === String(id));
+        if (!job) return;
+
+        const type = getPlannerSearchType(job);
+        if (type === 'maintenance' && !showMaintenanceCards) toggleMaintenanceCards();
+
+        const week = getPlannerSearchWeek(job);
+        closePlannerSearch();
+        switchView(week);
+
+        const slot = String(job.assigned_slot || '');
+        const isPool = slot.startsWith('pool-zone') && !isMaintenancePoolSlot(slot);
+        const isMaintPool = isMaintenancePoolSlot(slot);
+        if (isPool) {
+            const sidebar = document.getElementById('unassigned-sidebar');
+            if (sidebar && !sidebar.classList.contains('open')) toggleUnassigned();
+        }
+        if (isMaintPool) {
+            const sidebar = document.getElementById('maintenance-sidebar');
+            if (sidebar && !sidebar.classList.contains('open')) toggleMaintenancePool();
+        }
+
+        setTimeout(() => {
+            const card = document.getElementById(String(id)) || document.getElementById(`ghost-${id}`);
+            if (!card) return;
+            card.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+            card.classList.add('planner-search-highlight');
+            setTimeout(() => card.classList.remove('planner-search-highlight'), 3500);
+        }, 250);
+    }
+
     function openModal(id) { 
         document.getElementById(id).style.display = 'flex'; 
         if(id === 'modal-add') switchFormTab('leg1');
@@ -4978,8 +5074,14 @@ Are you sure you want to place it here?`);
         plannerRealtimeChannel = sb.channel('frost-planner-live-sync-v3')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, payload => {
                 // This is the important one for two office planners working together.
-                // Debounced so a drag/drop or status update burst becomes one board refresh.
+                // If a lazy data view is open, do not force a board reload over the top of
+                // the Invoice/History table. Mark the board as needing a refresh and do it
+                // when the user goes back to a week view.
                 console.log('Planner quote sync update received.');
+                if (isLazyDataView(activePlannerView)) {
+                    boardRefreshNeededAfterDataView = true;
+                    return;
+                }
                 schedulePlannerRefresh(450);
             })
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jcc_bookings' }, payload => {
@@ -5142,6 +5244,48 @@ Are you sure you want to place it here?`);
     // ==========================================
     let scrollInterval = null;
     let dragMousePos = { x: 0, y: 0 };
+
+
+
+    // ==========================================
+    // 14. KEYBOARD SHORTCUTS
+    // ==========================================
+    function isPlannerTypingTarget(target) {
+        if (!target) return false;
+        const tag = String(target.tagName || '').toLowerCase();
+        if (['input', 'textarea', 'select', 'button'].includes(tag)) return true;
+        if (target.isContentEditable) return true;
+        return !!target.closest('input, textarea, select, [contenteditable="true"]');
+    }
+
+    function runPlannerShortcut(event) {
+        if (!event.altKey || event.ctrlKey || event.metaKey || event.repeat) return;
+        if (isPlannerTypingTarget(event.target)) return;
+
+        const key = String(event.key || '').toLowerCase();
+        const shortcuts = {
+            '1': () => switchView(0),
+            '2': () => switchView(1),
+            '3': () => switchView(2),
+            '4': () => switchView(3),
+            'q': () => openQuickCardModal(),
+            'i': () => openInstructionModal(),
+            's': () => openPlannerSearch(),
+            'n': () => { resetForm(); openModal('modal-add'); },
+            'u': () => toggleUnassigned(),
+            'm': () => toggleMaintenanceCards(),
+            'p': () => toggleMaintenancePool()
+        };
+
+        const action = shortcuts[key];
+        if (!action) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        action();
+    }
+
+    document.addEventListener('keydown', runPlannerShortcut);
 
     function setupAutoScroll() {
         document.addEventListener('dragover', (e) => {
