@@ -322,9 +322,32 @@
 
 
         /* Quick Card fast-entry workflow */
+        .search-btn { background: #1d4ed8 !important; color: #fff !important; border: 2px solid #1e40af !important; box-shadow: 0 2px 8px rgba(29,78,216,0.22); }
+        .search-btn:hover { background: #1e40af !important; }
+        .planner-search-modal-content { width: 900px; max-width: 96vw; max-height: 88vh; border-top: 5px solid #1d4ed8; display:flex; flex-direction:column; }
+        .planner-search-box { width:100%; box-sizing:border-box; padding:12px 14px; border:2px solid #1d4ed8; border-radius:8px; font-size:1rem; font-weight:700; outline:none; }
+        .planner-search-tools { display:flex; gap:10px; align-items:center; margin:12px 0; flex-wrap:wrap; }
+        .planner-search-count { font-size:0.82rem; color:#555; font-weight:800; text-transform:uppercase; }
+        .planner-search-results { overflow-y:auto; border:1px solid #e5e7eb; border-radius:8px; background:#fafafa; min-height:180px; max-height:55vh; }
+        .planner-search-empty { padding:24px; color:#666; text-align:center; font-weight:700; }
+        .planner-search-result { padding:12px; border-bottom:1px solid #e5e7eb; background:#fff; cursor:pointer; transition:background 0.15s ease; }
+        .planner-search-result:hover { background:#eff6ff; }
+        .planner-search-title { display:flex; gap:8px; align-items:center; justify-content:space-between; font-weight:900; color:#111827; margin-bottom:5px; }
+        .planner-search-title span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .planner-search-badge { flex-shrink:0; font-size:0.62rem; border-radius:999px; background:#dbeafe; color:#1e40af; border:1px solid #93c5fd; padding:2px 7px; font-weight:900; text-transform:uppercase; }
+        .planner-search-meta { font-size:0.76rem; color:#4b5563; display:flex; flex-wrap:wrap; gap:8px; line-height:1.35; }
+        .planner-search-snippet { margin-top:6px; font-size:0.76rem; color:#374151; line-height:1.35; }
+        .planner-search-highlight { animation: plannerSearchPulse 2.2s ease-in-out 0s 2; outline: 4px solid #1d4ed8 !important; outline-offset: 2px; }
+        @keyframes plannerSearchPulse { 0% { box-shadow: 0 0 0 0 rgba(29,78,216,0.55); } 70% { box-shadow: 0 0 0 14px rgba(29,78,216,0); } 100% { box-shadow: 0 0 0 0 rgba(29,78,216,0); } }
         .quick-card-btn { background: #c1272d !important; color: #fff !important; border: 2px solid #7f1d1d !important; box-shadow: 0 2px 8px rgba(193,39,45,0.25); }
         .quick-card-btn:hover { background: #a02025 !important; }
+        .instruction-btn { background: #0f766e !important; color: #fff !important; border: 2px solid #115e59 !important; box-shadow: 0 2px 8px rgba(15,118,110,0.22); }
+        .instruction-btn:hover { background: #115e59 !important; }
         .quick-card-modal-content { width: 620px; max-width: 95vw; border-top: 5px solid var(--frost-red); }
+        .instruction-modal-content { width: 520px; max-width: 95vw; border-top: 5px solid #0f766e; }
+        .instruction-card { background: #ecfdf5 !important; border-left-color: #0f766e !important; box-shadow: 0 0 0 2px rgba(15,118,110,0.09), 0 2px 4px rgba(0,0,0,0.12) !important; }
+        .instruction-card:hover { background: #d1fae5 !important; }
+        .instruction-badge { display:inline-block; font-size:0.58rem; color:#115e59; border:1px solid #0f766e; padding:1px 5px; border-radius:999px; background:#fff; margin-left:5px; font-weight:900; letter-spacing:0.3px; }
         .google-address-helper input { border: 2px solid #4285f4; background: #f8fbff; }
         .google-address-helper small { display:block; margin-top:4px; color:#555; font-size:0.72rem; line-height:1.25; }
         .pac-container { z-index: 5000 !important; font-family: Arial, sans-serif; }
@@ -345,6 +368,8 @@
 <header>
     <div class="logo-container"><img src="logo.png" alt="FROST"></div>
     <div style="display:flex; gap:15px; align-items:center;">
+        <button class="week-btn search-btn" onclick="openPlannerSearchModal()">🔎 SEARCH</button>
+        <button class="week-btn instruction-btn" onclick="openInstructionModal()">➡️ INSTRUCTION</button>
         <button class="week-btn quick-card-btn" onclick="openQuickCardModal()">⚡ QUICK CARD</button>
         <div id="week-display-box" class="week-info-box">WK -- | MON --/--/--</div>
         <button class="week-btn" id="btn-map" onclick="switchView('map')" style="background:#27ae60; color:white;">🗺️ DROP SPOTS</button>
@@ -574,6 +599,49 @@
      ========================================== -->
 
 
+<!-- Planner Search Modal -->
+<div id="modal-planner-search" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-planner-search')">
+    <div class="modal-content planner-search-modal-content" onclick="event.stopPropagation();">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #1d4ed8; padding-bottom:10px; margin-bottom:14px; gap:12px;">
+            <div>
+                <h2 style="margin:0; color:#1d4ed8;">🔎 Planner Search</h2>
+                <div style="font-size:0.78rem; color:#666; font-weight:700; margin-top:4px;">Searches job cards, maintenance cards, notes, instructions and unassigned cards across the current four-week planner.</div>
+            </div>
+            <button type="button" class="week-btn" onclick="closeModal('modal-planner-search')" style="background:#ddd; color:#333;">Close</button>
+        </div>
+        <input type="text" id="planner-search-input" class="planner-search-box" placeholder="Search customer, postcode, driver, ref, price, defect, note, instruction, invoice number..." oninput="runPlannerSearch()">
+        <div class="planner-search-tools">
+            <button type="button" class="week-btn search-btn" onclick="runPlannerSearch()">Search</button>
+            <button type="button" class="week-btn" onclick="clearPlannerSearch()" style="background:#64748b; color:white;">Clear</button>
+            <span id="planner-search-count" class="planner-search-count">Enter at least 2 characters to search</span>
+        </div>
+        <div id="planner-search-results" class="planner-search-results">
+            <div class="planner-search-empty">Type at least 2 characters to search the planner.</div>
+        </div>
+    </div>
+</div>
+
+<!-- Instruction Modal -->
+<div id="modal-instruction" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-instruction')">
+    <div class="modal-content instruction-modal-content" onclick="event.stopPropagation();">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f766e; padding-bottom:10px; margin-bottom:14px;">
+            <h2 style="margin:0; color:#0f766e;">➡️ Instruction</h2>
+            <button type="button" class="week-btn" onclick="closeModal('modal-instruction')" style="background:#ddd; color:#333;">Close</button>
+        </div>
+        <div class="quick-card-warning" style="background:#ecfdf5; border-color:#99f6e4; color:#115e59;">
+            Use this for empty vehicle movements between jobs. It creates a draggable instruction card in the Unassigned pool for the week you currently have open.
+        </div>
+        <div class="quick-card-grid">
+            <div class="form-group"><label>From</label><input type="text" id="i_from" placeholder="e.g. Yard, NG18, customer site"></div>
+            <div class="form-group"><label>To</label><input type="text" id="i_to" placeholder="e.g. MK42, delivery area, next job"></div>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px; border-top:1px solid #eee; padding-top:14px;">
+            <button type="button" class="week-btn" onclick="closeModal('modal-instruction')" style="background:#ddd; color:#333;">Cancel</button>
+            <button type="button" class="week-btn instruction-btn" onclick="saveInstructionCard()">Create Instruction</button>
+        </div>
+    </div>
+</div>
+
 <!-- Quick Card Modal -->
 <div id="modal-quick-card" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-quick-card')">
     <div class="modal-content quick-card-modal-content" onclick="event.stopPropagation();">
@@ -582,7 +650,7 @@
             <button type="button" class="week-btn" onclick="closeModal('modal-quick-card')" style="background:#ddd; color:#333;">Close</button>
         </div>
         <div class="quick-card-warning">
-            Fast entry for busy periods. This creates a red incomplete card in the Unassigned pool. Use the normal edit button later to finish the full job details.
+            Fast entry for busy periods. This creates a red incomplete card in the Unassigned pool for the week you currently have open. Use the normal edit button later to finish the full job details.
         </div>
         <div class="quick-card-grid">
             <div class="form-group"><label>Booking Customer Name</label><input type="text" id="q_customer_name" placeholder="Customer name"></div>
@@ -750,7 +818,7 @@
 <div id="modal-note" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-note')">
     <div class="modal-content" style="width: 350px;">
         <h3 style="margin-top:0; color:#d68910;">📝 Create Planner Note</h3>
-        <p style="font-size: 0.8rem; color: #666; margin-bottom:15px;">This will drop a sticky note into the Unassigned Pool.</p>
+        <p style="font-size: 0.8rem; color: #666; margin-bottom:15px;">This will drop a sticky note into the Unassigned Pool for the week you currently have open.</p>
         <div class="form-group">
             <textarea id="n_note_text" rows="5" placeholder="e.g., Mark dentist 12/05 needs to finish at 3" style="resize:vertical;"></textarea>
         </div>
@@ -1141,6 +1209,280 @@ function escapeHtml(value) {
         return contractType === 'quick card' || collRef.startsWith('QUICK CARD');
     }
 
+    function isInstructionJobType(type) {
+        return String(type || '').trim().toLowerCase() === 'instruction';
+    }
+
+    function isInstructionJob(job) {
+        const contractType = String((job && (job.job_contract_type || job.contract_type)) || '').trim().toLowerCase();
+        const collRef = String((job && job.coll_ref) || '').trim().toUpperCase();
+        const customerName = String((job && job.customer_name) || '').trim().toUpperCase();
+        return contractType === 'instruction' || collRef.startsWith('INSTRUCTION - EMPTY') || customerName.includes('EMPTY MOVEMENT INSTRUCTION');
+    }
+
+    function openPlannerSearchModal() {
+        const input = document.getElementById('planner-search-input');
+        const count = document.getElementById('planner-search-count');
+        const results = document.getElementById('planner-search-results');
+        if (input) input.value = '';
+        if (count) count.innerText = 'Enter at least 2 characters to search';
+        if (results) results.innerHTML = '<div class="planner-search-empty">Type at least 2 characters to search the planner.</div>';
+        openModal('modal-planner-search');
+        setTimeout(() => input && input.focus(), 80);
+    }
+
+    function clearPlannerSearch() {
+        const input = document.getElementById('planner-search-input');
+        const results = document.getElementById('planner-search-results');
+        const count = document.getElementById('planner-search-count');
+        if (input) input.value = '';
+        if (count) count.innerText = 'Enter at least 2 characters to search';
+        if (results) results.innerHTML = '<div class="planner-search-empty">Type at least 2 characters to search the planner.</div>';
+        if (input) input.focus();
+    }
+
+    function normaliseSearchText(value) {
+        return String(value ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+    }
+
+    function getPlannerSearchType(job) {
+        if (isInstructionJob(job)) return 'Instruction';
+        if (isQuickCardJob(job)) return 'Quick Card';
+        if (job.customer_name === '📝 PLANNER NOTE') return 'Note';
+        if (job.customer_name === MAINTENANCE_CUSTOMER_NAME || isMaintenanceJob(job)) return 'Maintenance';
+        return 'Job';
+    }
+
+    function getPlannerSearchWeekOffset(job) {
+        const slot = String(job.assigned_slot || '');
+        const slotMatch = slot.match(/(?:planner-|maintenance-pool-zone-)w(\d)/);
+        if (slotMatch) return parseInt(slotMatch[1], 10);
+        const week = getWeekOffsetFromNow(job.coll_datetime || job.del_datetime);
+        if (Number.isFinite(week)) return Math.max(0, Math.min(3, week));
+        return currentWeekOffset || 0;
+    }
+
+    function getPlannerSearchLocation(job) {
+        const slot = String(job.assigned_slot || '');
+        if (slot.includes('maintenance-pool-zone')) return 'Maintenance Pool';
+        if (slot.includes('pool-zone') || !slot) return 'Unassigned Pool';
+        const match = slot.match(/planner-w(\d+)-dr(\d+)-s(\d+)/);
+        if (match) {
+            const vehicle = vehicles[parseInt(match[2], 10)] || 'Planner Grid';
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            return `${vehicle} / ${dayNames[parseInt(match[3], 10)] || 'Day'}`;
+        }
+        return slot;
+    }
+
+    function getPlannerSearchRoute(job) {
+        const from = job.coll_postcode || job.coll_town || job.coll_cust_name || job.customer_name || 'From TBA';
+        const to = job.del_postcode || job.del_town || job.del_cust_name || 'To TBA';
+        return `${from} ➔ ${to}`;
+    }
+
+    function getPlannerSearchableText(job) {
+        const values = [];
+        const pushValue = (value) => {
+            if (value === null || value === undefined) return;
+            if (typeof value === 'object') {
+                try { values.push(JSON.stringify(value)); } catch (_) {}
+            } else {
+                values.push(String(value));
+            }
+        };
+        Object.keys(job || {}).forEach(key => {
+            values.push(key);
+            pushValue(job[key]);
+        });
+        values.push(getPlannerSearchType(job));
+        values.push(getPlannerSearchRoute(job));
+        values.push(getPlannerSearchLocation(job));
+        return normaliseSearchText(values.join(' '));
+    }
+
+    function getPlannerSearchSnippet(job, term) {
+        const source = [
+            job.customer_name,
+            job.coll_cust_name,
+            job.del_cust_name,
+            job.customer_phone,
+            job.coll_postcode,
+            job.del_postcode,
+            job.coll_ref,
+            job.del_ref,
+            job.assigned_driver,
+            job.vehicle_type,
+            job.total_price,
+            job.fts_invoice_number,
+            job.customers_own_invoice_number
+        ].filter(Boolean).join(' | ');
+        const clean = String(source || getPlannerSearchRoute(job)).replace(/\s+/g, ' ').trim();
+        const lower = clean.toLowerCase();
+        const idx = term ? lower.indexOf(term.toLowerCase()) : -1;
+        if (idx > -1) {
+            const start = Math.max(0, idx - 60);
+            const end = Math.min(clean.length, idx + term.length + 90);
+            return `${start > 0 ? '…' : ''}${escapeHtml(clean.slice(start, end))}${end < clean.length ? '…' : ''}`;
+        }
+        return escapeHtml(clean.slice(0, 180)) + (clean.length > 180 ? '…' : '');
+    }
+
+    function getPlannerSearchScopeJobs() {
+        return (allJobsRaw || []).filter(job => {
+            if (!job || !job.id) return false;
+            const status = String(job.status || '').toLowerCase();
+            if (['driver_config', 'completed', 'archived', 'billed', 'subbed', 'cancelled'].includes(status)) return false;
+            const week = getPlannerSearchWeekOffset(job);
+            return week >= 0 && week <= 3;
+        });
+    }
+
+    function runPlannerSearch() {
+        const input = document.getElementById('planner-search-input');
+        const resultsEl = document.getElementById('planner-search-results');
+        const countEl = document.getElementById('planner-search-count');
+        if (!input || !resultsEl) return;
+
+        const rawTerm = input.value.trim();
+        const term = normaliseSearchText(rawTerm);
+        if (term.length < 2) {
+            if (countEl) countEl.innerText = 'Enter at least 2 characters to search';
+            resultsEl.innerHTML = '<div class="planner-search-empty">Type at least 2 characters to search the planner.</div>';
+            return;
+        }
+
+        const matches = getPlannerSearchScopeJobs()
+            .map(job => ({ job, searchText: getPlannerSearchableText(job) }))
+            .filter(item => item.searchText.includes(term))
+            .slice(0, 150);
+
+        if (countEl) countEl.innerText = `${matches.length} match${matches.length === 1 ? '' : 'es'} found`;
+        if (matches.length === 0) {
+            resultsEl.innerHTML = '<div class="planner-search-empty">No matches found in the current four-week planner.</div>';
+            return;
+        }
+
+        resultsEl.innerHTML = matches.map(({ job }) => {
+            const type = getPlannerSearchType(job);
+            const week = getPlannerSearchWeekOffset(job);
+            const info = getWeekInfo(week);
+            const title = job.customer_name === '📝 PLANNER NOTE'
+                ? 'Planner Note'
+                : (job.customer_name || job.coll_cust_name || job.del_cust_name || 'Untitled card');
+            const route = getPlannerSearchRoute(job);
+            const location = getPlannerSearchLocation(job);
+            const dateText = job.coll_datetime ? new Date(job.coll_datetime).toLocaleString('en-GB', { weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : 'Date TBA';
+            return `
+                <div class="planner-search-result" onclick="openPlannerSearchResult('${escapeInlineArg(job.id)}')">
+                    <div class="planner-search-title">
+                        <span>${escapeHtml(title)}</span>
+                        <span class="planner-search-badge">${escapeHtml(type)}</span>
+                    </div>
+                    <div class="planner-search-meta">
+                        <span><b>Route:</b> ${escapeHtml(route)}</span>
+                        <span><b>Week:</b> ${escapeHtml(String(info.week))}</span>
+                        <span><b>Date:</b> ${escapeHtml(dateText)}</span>
+                        <span><b>Where:</b> ${escapeHtml(location)}</span>
+                    </div>
+                    <div class="planner-search-snippet">${getPlannerSearchSnippet(job, rawTerm)}</div>
+                </div>`;
+        }).join('');
+    }
+
+    function openPlannerSearchResult(id) {
+        const job = allJobsRaw.find(x => String(x.id) === String(id));
+        if (!job) return alert('Could not find that planner card. Try refreshing the planner.');
+
+        const week = getPlannerSearchWeekOffset(job);
+        if (typeof week === 'number' && week >= 0 && week <= 3) switchView(week);
+
+        const isMaintenance = job.customer_name === MAINTENANCE_CUSTOMER_NAME || isMaintenanceJob(job);
+        if (isMaintenance && !showMaintenanceCards) toggleMaintenanceCards();
+
+        const assignedSlot = String(job.assigned_slot || '');
+        if (isMaintenance && (assignedSlot.includes('maintenance-pool-zone') || !assignedSlot || assignedSlot.includes('pool-zone'))) {
+            const sidebar = document.getElementById('maintenance-sidebar');
+            const unassigned = document.getElementById('unassigned-sidebar');
+            if (unassigned) unassigned.classList.remove('open');
+            if (sidebar) sidebar.classList.add('open');
+        } else if (!assignedSlot || assignedSlot.includes('pool-zone')) {
+            const sidebar = document.getElementById('unassigned-sidebar');
+            const maintenance = document.getElementById('maintenance-sidebar');
+            if (maintenance) maintenance.classList.remove('open');
+            if (sidebar) sidebar.classList.add('open');
+        }
+
+        closeModal('modal-planner-search');
+        setTimeout(() => {
+            const card = document.getElementById(String(id));
+            if (!card) {
+                alert('Found the record, but its card is not currently visible. Try pressing SYNC and searching again.');
+                return;
+            }
+            card.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+            card.classList.add('planner-search-highlight');
+            setTimeout(() => card.classList.remove('planner-search-highlight'), 5000);
+        }, 160);
+    }
+
+    function openInstructionModal() {
+        ['i_from', 'i_to'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        openModal('modal-instruction');
+        setTimeout(() => document.getElementById('i_from')?.focus(), 50);
+    }
+
+    async function saveInstructionCard() {
+        const fromText = (document.getElementById('i_from')?.value || '').trim().toUpperCase();
+        const toText = (document.getElementById('i_to')?.value || '').trim().toUpperCase();
+
+        if (!fromText || !toText) {
+            alert('Please enter both From and To.');
+            return;
+        }
+
+        const payload = {
+            customer_name: '➡️ EMPTY MOVEMENT INSTRUCTION',
+            customer_phone: '',
+            coll_postcode: fromText,
+            del_postcode: toText,
+            coll_ref: 'INSTRUCTION - EMPTY VEHICLE MOVEMENT',
+            del_ref: '',
+            total_price: '0',
+            total_pallets: '',
+            total_weight: '',
+            vehicle_type: 'Instruction',
+            status: 'pending',
+            dispatch_status: 'unsent',
+            assigned_slot: null,
+            coll_datetime: getActiveWeekPoolAnchorISO(),
+            job_contract_type: 'Instruction'
+        };
+
+        try {
+            let { error } = await sb.from('quotes').insert([payload]);
+
+            // Safe retry for older database copies where job_contract_type has not been added yet.
+            if (error && (error.code === '42703' || String(error.message || '').includes('job_contract_type'))) {
+                const fallbackPayload = { ...payload };
+                delete fallbackPayload.job_contract_type;
+                const retry = await sb.from('quotes').insert([fallbackPayload]);
+                error = retry.error;
+            }
+
+            if (error) throw error;
+
+            closeModal('modal-instruction');
+            await loadAll();
+        } catch (e) {
+            console.error(e);
+            alert('Error creating instruction card: ' + (e.message || e));
+        }
+    }
+
     function openQuickCardModal() {
         ['q_customer_name', 'q_customer_number', 'q_coll_postcode', 'q_del_postcode', 'q_price'].forEach(id => {
             const el = document.getElementById(id);
@@ -1176,6 +1518,7 @@ function escapeHtml(value) {
             status: 'pending',
             dispatch_status: 'unsent',
             assigned_slot: null,
+            coll_datetime: getActiveWeekPoolAnchorISO(),
             job_contract_type: 'Quick Card'
         };
 
@@ -2426,6 +2769,7 @@ function escapeHtml(value) {
         const jobContractType = q.job_contract_type || q.contract_type || '';
         const isPalletforceJob = isPalletforceJobType(jobContractType);
         const isQuickCard = isQuickCardJob(q);
+        const isInstruction = isInstructionJob(q);
         
         const isLeg1 = q.customer_name && q.customer_name.endsWith('(Leg 1)');
         const isLeg2 = q.customer_name && q.customer_name.endsWith('(Leg 2)');
@@ -2445,6 +2789,7 @@ function escapeHtml(value) {
         if (isMaintenance) card.classList.add('maintenance-card', normaliseMaintenanceAssetTypeFromJob(q).toLowerCase() + '-maintenance');
         if (isPalletforceJob) card.classList.add('palletforce-job-card');
         if (isQuickCard) card.classList.add('quick-card-incomplete');
+        if (isInstruction) card.classList.add('instruction-card');
         
         if (isCompleted || isLockedLeg1) card.classList.add('completed-grey');
         if (isLeg2 && !isCompleted && !isGhost) card.classList.add('reassigned-orange');
@@ -2481,11 +2826,13 @@ function escapeHtml(value) {
         let headerAlignment = "center"; 
         let arrow = isON ? '<span style="font-size:0.7rem; font-weight:bold; color:#1a1a1a; padding:0 2px;">O/N</span>' : '<span style="padding:0 2px;">➔</span>';
 
-        if (isMaintenance || isNote) {
+        if (isMaintenance || isNote || isInstruction) {
             if (isMaintenance) {
                 const assetType = normaliseMaintenanceAssetTypeFromJob(q);
                 const assetColour = assetType === 'TRAILER' ? '#f58220' : '#8e44ad';
                 pcHeader = `<div style="text-align:center; flex:1;"><span class="pc-coll" style="color:${assetColour};">${q.coll_postcode || '??'}</span></div><div style="padding:0 6px; color:#1a1a1a;">➔</div><div style="text-align:center; flex:1;"><span class="pc-del" style="color:#2e7d32;">${q.del_postcode || 'BOOK INSPECTION'}</span></div>`;
+            } else if (isInstruction) {
+                pcHeader = `<div style="text-align:center; flex:1;"><span class="pc-coll" style="color:#0f766e;">${q.coll_postcode || 'FROM'}</span></div><div style="padding:0 6px; color:#1a1a1a;">➔</div><div style="text-align:center; flex:1;"><span class="pc-del" style="color:#0f766e;">${q.del_postcode || 'TO'}</span></div>`;
             } else if (isNote) {
                 pcHeader = `<span style="color:#d68910;">📌 NOTE</span>`;
             }
@@ -2604,7 +2951,28 @@ function escapeHtml(value) {
             `;
         }
 
-        if (isNote) {
+        if (isInstruction) {
+            card.style.borderLeftColor = "#0f766e";
+            card.style.backgroundColor = "#ecfdf5";
+            const instructionDate = q.coll_datetime ? new Date(q.coll_datetime).toLocaleDateString('en-GB') : '-';
+            const safeFrom = q.coll_postcode || 'FROM';
+            const safeTo = q.del_postcode || 'TO';
+            card.innerHTML = `
+                ${ghostBanner}
+                <div class="postcode-header" style="align-items: ${headerAlignment};">${pcHeader}</div>
+                <div class="card-body">
+                    <div class="card-actions" style="justify-content: flex-end; padding-bottom:0; border:none; margin-bottom:5px;">
+                        <span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;" title="Delete Instruction">🗑️</span>
+                    </div>
+                    <div style="font-weight:bold; color:#0f766e; font-size: 0.8rem; margin-bottom: 5px;">EMPTY MOVEMENT <span class="instruction-badge">INSTRUCTION</span></div>
+                    <div style="background: #ffffff; padding: 10px; border-radius: 4px; border: 1px dashed #0f766e; margin-bottom: 5px; font-size: 0.75rem; color: #333; font-weight: 700;">
+                        <div class="detail-row" style="color:#1a1a1a;"><b>FROM:</b> <span>${safeFrom}</span></div>
+                        <div class="detail-row" style="color:#1a1a1a;"><b>TO:</b> <span>${safeTo}</span></div>
+                        <div class="detail-row" style="color:#0f766e;"><b>WEEK:</b> <span>${instructionDate}</span></div>
+                    </div>
+                </div>`;
+
+        } else if (isNote) {
             card.style.borderLeftColor = "#f39c12"; 
             card.style.backgroundColor = "#fef9e7"; 
             
@@ -2801,7 +3169,7 @@ function escapeHtml(value) {
             vehicle_type: "Any",
             status: "pending", 
             dispatch_status: "unsent",
-            coll_datetime: null 
+            coll_datetime: getActiveWeekPoolAnchorISO() 
         };
         try {
             await sb.from('quotes').insert([payload]);
@@ -3323,6 +3691,26 @@ Standard jobs without extra legs will continue to save normally.`);
         return monday;
     }
 
+    function getActivePlannerWeekOffset() {
+        const candidates = [currentWeekOffset, activePlannerView];
+        for (const value of candidates) {
+            const n = Number(value);
+            if (Number.isInteger(n) && n >= 0 && n <= 3) return n;
+        }
+        return 0;
+    }
+
+    function getActiveWeekPoolAnchorDate() {
+        const monday = getCurrentPlannerMondayDate();
+        monday.setDate(monday.getDate() + (getActivePlannerWeekOffset() * 7));
+        monday.setHours(9, 0, 0, 0);
+        return monday;
+    }
+
+    function getActiveWeekPoolAnchorISO() {
+        return getActiveWeekPoolAnchorDate().toISOString();
+    }
+
     function getDropTargetDate(finalTarget) {
         if (!finalTarget || !finalTarget.id) return null;
         const targetId = String(finalTarget.id);
@@ -3338,13 +3726,14 @@ Standard jobs without extra legs will continue to save normally.`);
         }
 
         // Normal unassigned day pools, e.g. pool-zone-1 to pool-zone-0.
+        // These pool zones are shared by Week 1-4, so use the week currently open.
         // Do not date-check the TBA pool or the maintenance pool week buckets.
         const poolMatch = targetId.match(/^pool-zone-(\d)$/);
         if (poolMatch) {
             const jsDay = parseInt(poolMatch[1], 10); // 1 = Monday ... 6 = Saturday, 0 = Sunday
             const dayIndex = jsDay === 0 ? 6 : jsDay - 1;
             const targetDate = getCurrentPlannerMondayDate();
-            targetDate.setDate(targetDate.getDate() + dayIndex);
+            targetDate.setDate(targetDate.getDate() + (getActivePlannerWeekOffset() * 7) + dayIndex);
             return { date: targetDate, label: 'unassigned pool date' };
         }
 
