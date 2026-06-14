@@ -165,6 +165,10 @@
            ========================================== */
         .job-card { background: white; color: black; border: 1px solid var(--border-color); border-left: 4px solid var(--frost-red); padding: 8px; margin-bottom: 6px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: grab; font-size: 0.72rem; position: relative; transition: all 0.2s; z-index: 2; }
         .job-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .card-reorder-handle { position: absolute; top: 4px; right: 5px; width: 18px; height: 18px; border: 1px solid rgba(15, 23, 42, 0.18); border-radius: 4px; background: rgba(255,255,255,0.92); color: #64748b; font-size: 13px; font-weight: 900; line-height: 16px; display: inline-flex; align-items: center; justify-content: center; cursor: ns-resize; user-select: none; z-index: 8; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+        .card-reorder-handle:hover { color: #c1272d; border-color: #c1272d; background: #fff5f5; }
+        .job-card.card-reorder-dragging { opacity: 0.55; outline: 2px dashed #c1272d; }
+        .modal-job-card-copy .card-reorder-handle { display: none !important; }
         
         /* Grey Lockout styling for Leg 1 */
         .job-card.completed-grey { background: #f0f0f0 !important; border-left-color: #bbb !important; color: #888 !important; opacity: 0.8; }
@@ -1087,6 +1091,8 @@ function escapeHtml(value) {
     let plannerRealtimeChannel = null;
     let plannerRealtimeStarted = false;
     let maintenanceRealtimeTimer = null;
+    let cardOrderSaveInProgress = false;
+    let cardOrderSaveRefreshPending = false;
 
     function isPlannerModalOpen() {
         return Array.from(document.querySelectorAll('.modal-overlay')).some(modal => {
@@ -1096,8 +1102,9 @@ function escapeHtml(value) {
     }
 
     function schedulePlannerRefresh(delay = null) {
-        if (isDragging) {
+        if (isDragging || cardOrderSaveInProgress) {
             loadAllQueued = true;
+            if (cardOrderSaveInProgress) cardOrderSaveRefreshPending = true;
             return;
         }
 
@@ -1986,6 +1993,7 @@ function escapeHtml(value) {
         });
 
         const boardJobs = jobsRes.data || [];
+        boardJobs.sort(comparePlannerCardsForDisplay);
 
         // Keep lazy-loaded invoice/history/subbed/cancelled rows in memory while the
         // live planner board refreshes. Previously every board refresh wiped these
@@ -2631,6 +2639,158 @@ function escapeHtml(value) {
         if (e.target.id === 'modal-job-detail') closeJobDetailsModal();
     }
 
+    function cleanCardDomId(id) {
+        return String(id || '').replace(/^ghost-/, '');
+    }
+
+    function hasPlannerSortOverride(job) {
+        if (!job) return false;
+        const manualFlag = job.planner_sort_manual === true || String(job.planner_sort_manual).toLowerCase() === 'true';
+        if (!manualFlag) return false;
+        const raw = job.planner_sort_order;
+        if (raw === null || raw === undefined || raw === '') return false;
+        return Number.isFinite(Number(raw));
+    }
+
+    function getPlannerSortOrder(job) {
+        return hasPlannerSortOverride(job) ? Number(job.planner_sort_order) : null;
+    }
+
+    function getPlannerDefaultTime(job) {
+        if (!job || !job.coll_datetime) return Infinity;
+        const time = new Date(job.coll_datetime).getTime();
+        return Number.isFinite(time) ? time : Infinity;
+    }
+
+    function comparePlannerCardsForDisplay(a, b) {
+        const slotA = getJobRenderSlotKey(a);
+        const slotB = getJobRenderSlotKey(b);
+        if (slotA !== slotB) return slotA.localeCompare(slotB);
+
+        const manualA = hasPlannerSortOverride(a);
+        const manualB = hasPlannerSortOverride(b);
+
+        // Default behaviour: collection-time order.
+        // Manual override behaviour: once cards have been reordered in a container,
+        // planner_sort_order takes priority for those cards and survives refresh/live sync.
+        if (manualA && manualB) {
+            const orderDiff = getPlannerSortOrder(a) - getPlannerSortOrder(b);
+            if (orderDiff !== 0) return orderDiff;
+        } else if (manualA !== manualB) {
+            // A mixed container can happen while older cards have no saved manual order.
+            // Keep the manually positioned card after default-time cards until the operator
+            // uses the handle again, at which point the whole container gets saved manual order.
+            return manualA ? 1 : -1;
+        }
+
+        const dateDiff = getPlannerDefaultTime(a) - getPlannerDefaultTime(b);
+        if (dateDiff !== 0) return dateDiff;
+        return String(a.id || '').localeCompare(String(b.id || ''));
+    }
+
+    function getJobRenderSlotKey(job) {
+        if (!job) return 'pool-zone-tba';
+        if (job.customer_name === MAINTENANCE_CUSTOMER_NAME && (!job.assigned_slot || isMaintenancePoolSlot(job.assigned_slot) || String(job.assigned_slot).includes('pool-zone'))) {
+            return getMaintenancePoolSlotForDate(job.coll_datetime);
+        }
+        if (job.assigned_slot) return String(job.assigned_slot);
+        if (job.coll_datetime) {
+            const d = new Date(job.coll_datetime);
+            if (!isNaN(d)) return `pool-zone-${d.getDay()}`;
+        }
+        return 'pool-zone-tba';
+    }
+
+    window.startCardReorderDrag = (event, id) => {
+        if (!event || !event.dataTransfer) return;
+        const card = document.getElementById(String(id));
+        if (card && !card.draggable) {
+            event.preventDefault();
+            return;
+        }
+        isDragging = true;
+        event.stopPropagation();
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text', String(id));
+        event.dataTransfer.setData('planner-reorder', 'true');
+        if (card) card.classList.add('card-reorder-dragging');
+    };
+
+    window.endCardReorderDrag = (event) => {
+        if (event) event.stopPropagation();
+        isDragging = false;
+        document.querySelectorAll('.card-reorder-dragging').forEach(card => card.classList.remove('card-reorder-dragging'));
+    };
+
+    async function saveCardOrderForContainer(container) {
+        if (!container) return;
+        const cards = Array.from(container.querySelectorAll(':scope > .job-card:not(.ghost-card):not(.modal-job-card-copy)'));
+        const updates = [];
+
+        cards.forEach((card, index) => {
+            const id = cleanCardDomId(card.id);
+            if (!id) return;
+            const sortValue = (index + 1) * 100;
+            updates.push({ id, sortValue });
+            const cached = allJobsRaw.find(job => String(job.id) === String(id));
+            if (cached) {
+                cached.planner_sort_order = sortValue;
+                cached.planner_sort_manual = true;
+            }
+        });
+
+        if (updates.length === 0) return;
+
+        cardOrderSaveInProgress = true;
+        cardOrderSaveRefreshPending = false;
+        if (plannerRefreshTimer) {
+            clearTimeout(plannerRefreshTimer);
+            plannerRefreshTimer = null;
+        }
+
+        try {
+            const results = await Promise.all(updates.map(update =>
+                sb.from('quotes')
+                    .update({ planner_sort_order: update.sortValue, planner_sort_manual: true })
+                    .eq('id', update.id)
+            ));
+
+            const failed = results.find(result => result && result.error);
+            if (failed && failed.error) {
+                console.error('Could not save planner card order:', failed.error);
+                alert('The card moved on screen, but Supabase could not save the new order. Please run the planner_sort_order SQL once, then try again.');
+                return;
+            }
+        } finally {
+            cardOrderSaveInProgress = false;
+        }
+
+        // Realtime receives one UPDATE per card order save. Without this small lock it can
+        // redraw the board while only part of the order is saved, making the card appear to
+        // jump back. Refresh once after the save has settled so the saved order is respected.
+        if (cardOrderSaveRefreshPending || loadAllQueued) {
+            cardOrderSaveRefreshPending = false;
+            loadAllQueued = false;
+            schedulePlannerRefresh(900);
+        }
+    }
+
+    async function reorderCardInsideContainer(id, container, dropTargetCard, clientY) {
+        const draggedCard = document.getElementById(String(id));
+        if (!draggedCard || !container || draggedCard.parentElement !== container) return false;
+
+        if (dropTargetCard && dropTargetCard !== draggedCard && dropTargetCard.parentElement === container) {
+            const rect = dropTargetCard.getBoundingClientRect();
+            const placeBefore = clientY < (rect.top + rect.height / 2);
+            container.insertBefore(draggedCard, placeBefore ? dropTargetCard : dropTargetCard.nextSibling);
+        } else {
+            container.appendChild(draggedCard);
+        }
+
+        await saveCardOrderForContainer(container);
+        return true;
+    }
+
     function createCardElement(q, isGhost = false, isON = false) {
         const card = document.createElement('div');
         const isCompleted = q.status === 'completed';
@@ -2670,9 +2830,10 @@ function escapeHtml(value) {
         card.draggable = (!isCompleted && !isGhost && !isLockedLeg1); 
         
         card.ondragstart = (e) => { 
+            if (e.target && e.target.closest && e.target.closest('.card-reorder-handle')) return;
             if(card.draggable) {
                 isDragging = true;
-                e.dataTransfer.setData("text", e.target.id); 
+                e.dataTransfer.setData("text", card.id); 
             }
         };
         card.ondragend = () => { 
@@ -2680,7 +2841,7 @@ function escapeHtml(value) {
         };
 
         card.onclick = (e) => {
-            if (e.target.closest('.action-btn, button, input, select, textarea, a')) return;
+            if (e.target.closest('.action-btn, .card-reorder-handle, button, input, select, textarea, a')) return;
             openJobDetailsModal(e, q.id, isGhost);
         };
         const dtFormat = (str) => str ? str.replace('T', ' ') : '-';
@@ -2827,6 +2988,9 @@ function escapeHtml(value) {
 
         let ghostBanner = isGhost ? `<div class="ghost-badge">🚚 O/N DELIVERY</div>` : '';
         let actionsHtml = '';
+        const reorderHandleHtml = (!isGhost && !isCompleted && !isLockedLeg1)
+            ? `<div class="card-reorder-handle" draggable="true" title="Rearrange this card within this grid space" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()" ondragstart="startCardReorderDrag(event, '${q.id}')" ondragend="endCardReorderDrag(event)">☰</div>`
+            : '';
         
         if (isGhost) {
             actionsHtml = `
@@ -2860,6 +3024,7 @@ function escapeHtml(value) {
             const safeTo = q.del_postcode || 'TO';
             card.innerHTML = `
                 ${ghostBanner}
+                ${reorderHandleHtml}
                 <div class="postcode-header" style="align-items: ${headerAlignment};">${pcHeader}</div>
                 <div class="card-body">
                     <div class="card-actions" style="justify-content: flex-end; padding-bottom:0; border:none; margin-bottom:5px;">
@@ -2878,6 +3043,7 @@ function escapeHtml(value) {
             card.style.backgroundColor = "#fef9e7"; 
             
             card.innerHTML = `
+                ${reorderHandleHtml}
                 <div class="postcode-header" style="color:#d68910; align-items: ${headerAlignment};">${pcHeader}</div>
                 <div class="card-body">
                     <div class="card-actions" style="justify-content: flex-end; padding-bottom:0; border:none; margin-bottom:5px;">
@@ -2924,6 +3090,7 @@ function escapeHtml(value) {
 
             card.innerHTML = `
                 ${ghostBanner}
+                ${reorderHandleHtml}
                 <div class="postcode-header" style="color:${titleColor}; align-items: ${headerAlignment};">${pcHeader}</div>
                 <div class="card-body">
                     <div class="card-actions" style="justify-content: flex-end; padding-bottom:0; border:none; margin-bottom:5px;">
@@ -2971,6 +3138,7 @@ function escapeHtml(value) {
 
             card.innerHTML = `
                 ${ghostBanner}
+                ${reorderHandleHtml}
                 <div class="postcode-header" style="align-items: ${headerAlignment};">${pcHeader}</div>
                 <div class="card-body">
                     ${actionsHtml}
@@ -3676,6 +3844,14 @@ Are you sure you want to place it here?`);
         const id = String(rawId || '').replace(/^ghost-/, '');
         const target = ev.currentTarget;
         let finalTarget = target.classList.contains('job-card') ? target.parentElement : target;
+        const dropTargetCard = ev.target && ev.target.closest ? ev.target.closest('.job-card:not(.modal-job-card-copy)') : null;
+        const isReorderDrag = ev.dataTransfer.getData('planner-reorder') === 'true';
+        const sourceCard = document.getElementById(String(id));
+
+        if (isReorderDrag && sourceCard && sourceCard.parentElement === finalTarget) {
+            await reorderCardInsideContainer(id, finalTarget, dropTargetCard, ev.clientY);
+            return;
+        }
 
         const isMaintenancePool = isMaintenancePoolSlot(finalTarget.id);
         const isPool = finalTarget.id === 'pool-container' || finalTarget.classList.contains('pool-zone') || finalTarget.closest('.pool-zone') !== null;
@@ -3703,7 +3879,11 @@ Are you sure you want to place it here?`);
         let updatePayload = { 
             status: isPool ? 'pending' : 'assigned', 
             assigned_slot: isMaintenancePool ? finalTarget.id : (isPool ? null : finalTarget.id),
-            assigned_driver: assignedDriver 
+            assigned_driver: assignedDriver,
+            // Normal drag/drop should use the default collection-time order.
+            // Only the three-line reorder handle writes planner_sort_order as a manual override.
+            planner_sort_order: null,
+            planner_sort_manual: false
         };
 
         if (isPool) updatePayload.dispatch_status = 'unsent'; 
@@ -3811,7 +3991,64 @@ Are you sure you want to place it here?`);
         return invoiceTextValue(job.customer_email || job.cust_email || job.email || job.del_email, '').trim();
     }
 
-    function sendInvoiceEmail(event, id) {
+    const INVOICE_PDF_BUCKET = 'invoice_pdfs';
+
+    function safeInvoiceFilePart(value) {
+        return invoiceTextValue(value, 'FROST-INVOICE')
+            .replace(/[^a-z0-9_-]+/gi, '_')
+            .replace(/^_+|_+$/g, '') || 'FROST-INVOICE';
+    }
+
+    function invoicePdfViewButton(job) {
+        const url = invoiceTextValue(job && job.invoice_pdf_url, '');
+        if (!url) return '';
+        return `<a class="action-btn-small btn-send-invoice" href="${escapeHtml(url)}" target="_blank" onclick="event.stopPropagation();" style="text-decoration:none; display:inline-block;">🔗 VIEW PDF</a>`;
+    }
+
+    async function saveInvoicePdfBlobToSupabase(job, pdfBlob, fileName) {
+        if (!job || !job.id || !pdfBlob) return '';
+
+        const invoiceNo = safeInvoiceFilePart(job.fts_invoice_number || `JOB-${String(job.id).slice(0, 8).toUpperCase()}`);
+        const customer = safeInvoiceFilePart(job.customer_name || 'Customer');
+        const jobId = safeInvoiceFilePart(String(job.id));
+        const year = new Date().getFullYear();
+        const storagePath = `${year}/${invoiceNo}_${customer}_${jobId}.pdf`;
+
+        const { error: uploadError } = await sb.storage
+            .from(INVOICE_PDF_BUCKET)
+            .upload(storagePath, pdfBlob, {
+                contentType: 'application/pdf',
+                cacheControl: '3600',
+                upsert: true
+            });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = sb.storage.from(INVOICE_PDF_BUCKET).getPublicUrl(storagePath);
+        const publicUrl = urlData && urlData.publicUrl ? urlData.publicUrl : '';
+        if (!publicUrl) throw new Error('PDF uploaded but no public URL was returned.');
+
+        const generatedAt = new Date().toISOString();
+        const { error: updateError } = await sb
+            .from('quotes')
+            .update({
+                invoice_pdf_url: publicUrl,
+                invoice_pdf_path: storagePath,
+                invoice_pdf_generated_at: generatedAt
+            })
+            .eq('id', job.id);
+
+        if (updateError) throw updateError;
+
+        job.invoice_pdf_url = publicUrl;
+        job.invoice_pdf_path = storagePath;
+        job.invoice_pdf_generated_at = generatedAt;
+        mergeJobsIntoAllJobsRaw([job]);
+
+        return publicUrl;
+    }
+
+    async function sendInvoiceEmail(event, id) {
         event.stopPropagation();
         const j = allJobsRaw.find(x => x.id == id);
         if (!j) return alert('Could not find this job to send the invoice.');
@@ -3862,7 +4099,7 @@ Are you sure you want to place it here?`);
         const proceed = confirm('This will download the invoice PDF and then open your email app with the client email, subject and invoice details filled in.\n\nPlease attach the downloaded PDF before sending.');
         if (!proceed) return;
 
-        generatePDF({ stopPropagation: function(){} }, id);
+        await generatePDF({ stopPropagation: function(){} }, id);
 
         const mailtoUrl = `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines)}`;
         window.location.href = mailtoUrl;
@@ -3977,6 +4214,7 @@ Are you sure you want to place it here?`);
                 </td>
                 <td class="action-col">
                     <button class="action-btn-small btn-pdf" onclick="generatePDF(event, '${j.id}')">📄 PDF</button>
+                    ${invoicePdfViewButton(j)}
                     <button class="action-btn-small btn-edit-invoice" onclick="openInvoiceEdit(event, '${j.id}')">✏️ EDIT</button>
                     <button class="action-btn-small btn-send-invoice" onclick="sendInvoiceEmail(event, '${j.id}')">✉️ SEND</button>
                     <button class="action-btn-small btn-success" onclick="markAsBilled(event, '${j.id}')">MARK BILLED</button>
@@ -4007,6 +4245,7 @@ Are you sure you want to place it here?`);
                 <td class="col-price">£${j.total_price || '0.00'}</td>
                 <td class="action-col">
                     <button class="action-btn-small btn-pdf" onclick="generatePDF(event, '${j.id}')">📄 PDF</button>
+                    ${invoicePdfViewButton(j)}
                     <button class="action-btn-small btn-invoice-move" onclick="moveToInvoicing(event, '${j.id}')">TO INVOICING</button>
                 </td>
             </tr>`;
@@ -4033,6 +4272,7 @@ Are you sure you want to place it here?`);
                 <td class="col-price">£${j.total_price || '0.00'}</td>
                 <td class="action-col">
                     <button class="action-btn-small btn-pdf" onclick="generatePDF(event, '${j.id}')">📄 PDF</button>
+                    ${invoicePdfViewButton(j)}
                 </td>
             </tr>`;
         });
@@ -4058,6 +4298,7 @@ Are you sure you want to place it here?`);
                 <td class="col-price">£${j.total_price || '0.00'}</td>
                 <td class="action-col">
                     <button class="action-btn-small btn-pdf" onclick="generatePDF(event, '${j.id}')">📄 PDF</button>
+                    ${invoicePdfViewButton(j)}
                 </td>
             </tr>`;
         });
@@ -4069,8 +4310,8 @@ Are you sure you want to place it here?`);
         renderCancelledRows(rows);
     }
 
-    function generatePDF(event, id) {
-        event.stopPropagation();
+    async function generatePDF(event, id) {
+        if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
         const j = allJobsRaw.find(x => x.id == id);
         if (!j) return alert("Could not find this job to generate the invoice PDF.");
 
@@ -4367,7 +4608,18 @@ Are you sure you want to place it here?`);
         doc.text('Thank you for choosing Frost Transport Solutions.', margin, y);
 
         addFooter();
-        doc.save(`${safeFile(ftsInvoice)}_${safeFile(j.customer_name)}.pdf`);
+        const invoiceFileName = `${safeFile(ftsInvoice)}_${safeFile(j.customer_name)}.pdf`;
+        const invoicePdfBlob = doc.output('blob');
+        doc.save(invoiceFileName);
+
+        try {
+            await saveInvoicePdfBlobToSupabase(j, invoicePdfBlob, invoiceFileName);
+            if (activePlannerView === 'invoice') renderInvoiceRows(getDataViewRowsFromCache('invoice'));
+            if (activePlannerView === 'history') renderHistoryRows(getDataViewRowsFromCache('history'));
+        } catch (err) {
+            console.error('Invoice PDF downloaded but could not be saved to Supabase:', err);
+            alert('The invoice PDF downloaded, but it could not be saved to Supabase Storage. Please run the invoice PDF SQL setup file, then try again. Supabase error: ' + (err.message || err));
+        }
     }
 
     function filterHistory() {
@@ -5078,6 +5330,11 @@ Are you sure you want to place it here?`);
                 // the Invoice/History table. Mark the board as needing a refresh and do it
                 // when the user goes back to a week view.
                 console.log('Planner quote sync update received.');
+                if (cardOrderSaveInProgress) {
+                    cardOrderSaveRefreshPending = true;
+                    loadAllQueued = true;
+                    return;
+                }
                 if (isLazyDataView(activePlannerView)) {
                     boardRefreshNeededAfterDataView = true;
                     return;
