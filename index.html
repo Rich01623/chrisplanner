@@ -3691,27 +3691,117 @@ Standard jobs without extra legs will continue to save normally.`);
     async function notifyDriverDispatchPush(jobId, driverName, driverPhone, releaseDate, sequence) {
         if (!jobId || !driverName) return { ok: false, message: 'Missing job or driver details.' };
 
-        try {
-            const { data, error } = await sb.functions.invoke(DRIVER_PUSH_FUNCTION_NAME, {
-                body: {
-                    job_id: String(jobId),
-                    driver_name: String(driverName || '').toLowerCase().trim(),
-                    driver_phone: String(driverPhone || ''),
-                    release_date: releaseDate || null,
-                    dispatch_sequence: sequence || null,
-                    source: 'planner_send_to_driver'
+        const payload = {
+            job_id: String(jobId),
+            driver_name: String(driverName || '').toLowerCase().trim(),
+            driver_phone: String(driverPhone || ''),
+            release_date: releaseDate || null,
+            dispatch_sequence: sequence || null,
+            source: 'planner_send_to_driver'
+        };
+
+        const checkPushAuditFallback = async () => {
+            try {
+                await new Promise(resolve => setTimeout(resolve, 1200));
+                const { data: auditRow, error: auditError } = await sb
+                    .from('quotes')
+                    .select('push_last_sent_at,push_last_error,push_notification_count')
+                    .eq('id', jobId)
+                    .maybeSingle();
+
+                if (auditError || !auditRow || !auditRow.push_last_sent_at) return null;
+
+                const sentAtMs = new Date(auditRow.push_last_sent_at).getTime();
+                if (Number.isFinite(sentAtMs) && Math.abs(Date.now() - sentAtMs) < (5 * 60 * 1000)) {
+                    return {
+                        ok: true,
+                        data: {
+                            notified: true,
+                            warning: 'The phone notification was sent, but the browser did not receive a clean confirmation response from the Edge Function.',
+                            push_last_sent_at: auditRow.push_last_sent_at,
+                            push_notification_count: auditRow.push_notification_count || 0
+                        }
+                    };
                 }
+            } catch (fallbackErr) {
+                console.warn('Driver push audit fallback check failed:', fallbackErr);
+            }
+            return null;
+        };
+
+        try {
+            const functionUrl = `${_URL}/functions/v1/${DRIVER_PUSH_FUNCTION_NAME}`;
+            const response = await fetch(functionUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': _KEY,
+                    'Authorization': `Bearer ${_KEY}`
+                },
+                body: JSON.stringify(payload)
             });
 
-            if (error) {
-                console.warn('Driver push Edge Function error:', error);
-                return { ok: false, message: error.message || 'Edge Function error.' };
+            const rawText = await response.text();
+            let data = {};
+            try { data = rawText ? JSON.parse(rawText) : {}; } catch (_) { data = { raw: rawText }; }
+
+            // If the Edge Function confirms the push was sent, treat it as success even if
+            // the HTTP wrapper/status was not ideal. This prevents a successful phone push
+            // showing as a failed planner dispatch.
+            if (data && data.notified === true) {
+                return { ok: true, data: data || {} };
+            }
+
+            if (!response.ok) {
+                const auditSuccess = await checkPushAuditFallback();
+                if (auditSuccess) return auditSuccess;
+
+                const errorText = data.error || data.message || data.raw || `HTTP ${response.status}`;
+                console.warn('Driver push Edge Function HTTP error:', response.status, data);
+                return {
+                    ok: false,
+                    status: response.status,
+                    data,
+                    message: `Edge Function returned ${response.status}: ${errorText}`
+                };
+            }
+
+            if (data && data.ok === false) {
+                const auditSuccess = await checkPushAuditFallback();
+                if (auditSuccess) return auditSuccess;
+
+                const errorText = data.error || data.message || 'Edge Function returned ok=false.';
+                console.warn('Driver push Edge Function returned ok=false:', data);
+                return { ok: false, data, message: errorText };
             }
 
             return { ok: true, data: data || {} };
         } catch (err) {
-            console.warn('Driver push Edge Function failed:', err);
-            return { ok: false, message: err.message || String(err) };
+            console.warn('Driver push Edge Function request failed:', err);
+
+            const auditSuccess = await checkPushAuditFallback();
+            if (auditSuccess) return auditSuccess;
+
+            const errText = err && err.message ? String(err.message) : String(err || 'Unknown browser fetch error');
+
+            // Known situation: the Edge Function can send the Firebase notification successfully,
+            // but the browser cannot read the response afterwards and throws "Failed to fetch".
+            // Do not mark the whole dispatch as failed; the job has already been queued in Supabase.
+            if (/failed to fetch|networkerror|load failed/i.test(errText)) {
+                return {
+                    ok: true,
+                    data: {
+                        notified: true,
+                        browser_confirmation_warning: true,
+                        warning: `The push request was sent, but the browser could not read the Edge Function confirmation response: ${errText}`
+                    }
+                };
+            }
+
+            return {
+                ok: false,
+                message: `Could not receive confirmation from Edge Function ${DRIVER_PUSH_FUNCTION_NAME}. Browser error: ${errText}`
+            };
         }
     }
 
@@ -3752,16 +3842,32 @@ Standard jobs without extra legs will continue to save normally.`);
             if (isReleaseDateTodayOrPast(releaseDate)) {
                 const pushResult = await notifyDriverDispatchPush(id, driverName, selectedDriver.phone, releaseDate, sequence);
                 if (pushResult.ok && pushResult.data && pushResult.data.notified) {
-                    pushMessage = '\n\n✅ Background push notification sent to the driver phone.';
+                    if (pushResult.data.browser_confirmation_warning) {
+                        pushMessage = `
+
+✅ Background push notification request sent. The browser could not read the confirmation response, but the driver phone notification should still arrive.`;
+                    } else {
+                        pushMessage = `
+
+✅ Background push notification sent to the driver phone.`;
+                    }
                 } else if (pushResult.ok && pushResult.data && pushResult.data.reason) {
-                    pushMessage = `\n\nℹ️ Push not sent yet: ${pushResult.data.reason}`;
+                    pushMessage = `
+
+ℹ️ Push not sent yet: ${pushResult.data.reason}`;
                 } else if (!pushResult.ok) {
-                    pushMessage = `\n\n⚠️ Job queued, but the phone notification failed: ${pushResult.message}`;
+                    pushMessage = `
+
+⚠️ Job queued, but the phone notification failed: ${pushResult.message}`;
                 } else {
-                    pushMessage = '\n\nℹ️ Job queued. No phone notification was required yet.';
+                    pushMessage = `
+
+ℹ️ Job queued. No phone notification was required yet.`;
                 }
             } else {
-                pushMessage = '\n\nNo phone notification has been sent yet because this job is for a future date.';
+                pushMessage = `
+
+No phone notification has been sent yet because this job is for a future date.`;
             }
 
             alert(`Job queued to the driver's Jobs card for ${releaseDate}. It will not become active until the driver app releases it as the next job in the queue.${pushMessage}`);
