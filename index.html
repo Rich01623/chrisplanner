@@ -672,7 +672,7 @@
 
 <!-- TABBED Add Job Modal -->
 <div id="modal-add" class="modal-overlay">
-    <div class="modal-content" id="add-job-modal-content" style="width: 1100px; max-width: 95vw;" onclick="event.stopPropagation();">
+    <div class="modal-content" id="add-job-modal-content" style="width: 1360px; max-width: 98vw; max-height: 92vh;" onclick="event.stopPropagation();">
         <button type="button" class="modal-x-close" onclick="closeModal('modal-add')" title="Close form">×</button>
         
         <!-- MODAL TAB HEADER -->
@@ -725,31 +725,39 @@
                         <div class="form-group" style="flex:1;"><label>Town</label><input type="text" id="n_coll_town"></div>
                         <div class="form-group" style="flex:1;"><label>County</label><input type="text" id="n_coll_county"></div>
                     </div>
+                    <div style="display:flex; gap:5px;">
+                        <div class="form-group" style="flex:1;"><label>Telephone</label><input type="text" id="n_coll_phone"></div>
+                        <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_coll_email"></div>
+                    </div>
                     <div class="form-group"><label>Ref</label><input type="text" id="n_coll_ref"></div>
                     <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_coll_dt"></div>
                 </div>
                 
                 <div style="flex: 1;">
-                    <h4 style="margin:0 0 10px 0; color:#2e7d32;">DELIVERY INFO (LEG 1)</h4>
+                    <h4 style="margin:0 0 10px 0; color:#7c3aed;">NOTES</h4>
+                    <div class="form-group">
+                        <label>Job Notes</label>
+                        <textarea id="n_job_notes" rows="4" placeholder="Internal notes, customer instructions, booking reminders, access details, etc." style="min-height:92px; max-height:120px; resize:vertical;"></textarea>
+                    </div>
+                    
+                    <hr class="section-divider">
+                    
+                    <h4 style="margin:5px 0; color:#2e7d32;">DELIVERY INFO (LEG 1)</h4>
                     <div class="form-group google-address-helper">
                         <label>Find Delivery Address</label>
                         <input type="text" id="n_del_address_search" placeholder="Start typing delivery address..." autocomplete="off">
                         <small>Select a Google result to fill delivery name, postcode, street, town and county.</small>
                     </div>
                     <div class="form-group"><label>Delivery Name</label><input type="text" id="n_del_name"></div>
-                    <div style="display:flex; gap:5px;">
-                        <div class="form-group" style="flex:1;"><label>Telephone</label><input type="text" id="n_del_phone"></div>
-                        <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_del_email"></div>
-                    </div>
-                    
-                    <hr class="section-divider">
-                    
-                    <h4 style="margin:5px 0; color:#2e7d32;">DELIVERY ADDRESS (LEG 1)</h4>
                     <div class="form-group"><label>Post Code</label><input type="text" id="n_del_pc"></div>
                     <div class="form-group"><label>Street</label><input type="text" id="n_del_street"></div>
                     <div style="display:flex; gap:5px;">
                         <div class="form-group" style="flex:1;"><label>Town</label><input type="text" id="n_8"></div>
                         <div class="form-group" style="flex:1;"><label>County</label><input type="text" id="n_9"></div>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <div class="form-group" style="flex:1;"><label>Telephone</label><input type="text" id="n_del_phone"></div>
+                        <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_del_email"></div>
                     </div>
                     <div class="form-group"><label>Ref</label><input type="text" id="n_10"></div>
                     <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_del_dt"></div>
@@ -2520,8 +2528,8 @@ function escapeHtml(value) {
 
     function buildFullJobDetailsHtml(job, isGhost = false) {
         const knownFields = new Set([
-            'id', 'created_at', 'customer_name', 'customer_phone', 'customer_email', 'customers_own_invoice_number', 'fts_invoice_number',
-            'coll_cust_name', 'coll_postcode', 'coll_street', 'coll_town', 'coll_county', 'coll_ref', 'coll_datetime', 'coll_postcode_2', 'coll_town_2',
+            'id', 'created_at', 'customer_name', 'customer_phone', 'customer_email', 'job_notes', 'customers_own_invoice_number', 'fts_invoice_number',
+            'coll_cust_name', 'coll_phone', 'coll_email', 'coll_postcode', 'coll_street', 'coll_town', 'coll_county', 'coll_ref', 'coll_datetime', 'coll_postcode_2', 'coll_town_2',
             'del_postcode', 'del_cust_name', 'del_phone', 'del_email', 'del_street', 'del_town', 'del_county', 'del_ref', 'del_datetime', 'del_postcode_2', 'del_town_2',
             'total_price', 'total_pallets', 'total_weight', 'vehicle_type', 'status', 'dispatch_status', 'dispatch_release_date', 'dispatch_sequence', 'dispatch_scheduled_at', 'released_at', 'assigned_slot', 'assigned_driver', 'driver_phone',
             'ack_timestamp', 'ack_gps', 'arrived_timestamp', 'arrived_gps', 'loaded_timestamp', 'del_arrived_timestamp', 'tipped_timestamp', 'tipped_gps', 'pod_url'
@@ -2535,6 +2543,7 @@ function escapeHtml(value) {
             fullDetailRow('Booking customer', job.customer_name),
             fullDetailRow('Customer telephone', job.customer_phone),
             fullDetailRow('Customer email', job.customer_email),
+            fullDetailRow('Job notes', job.job_notes),
             fullDetailRow('Status', job.status),
             fullDetailRow('Dispatch status', job.dispatch_status),
             fullDetailRow('Dispatch release date', job.dispatch_release_date),
@@ -2547,8 +2556,8 @@ function escapeHtml(value) {
 
         const collectionRows = [
             fullDetailRow('Collection company/customer', job.coll_cust_name || job.customer_name),
-            fullDetailRow('Telephone', job.customer_phone),
-            fullDetailRow('Email', job.customer_email),
+            fullDetailRow('Telephone', job.coll_phone || job.customer_phone),
+            fullDetailRow('Email', job.coll_email || job.customer_email),
             fullDetailRow('Street', job.coll_street),
             fullDetailRow('Town', job.coll_town),
             fullDetailRow('County', job.coll_county),
@@ -3318,8 +3327,11 @@ function escapeHtml(value) {
             customer_name: document.getElementById('n_cust_name').value,
             customer_phone: document.getElementById('n_cust_phone').value,
             customer_email: document.getElementById('n_cust_email').value,
+            job_notes: document.getElementById('n_job_notes') ? document.getElementById('n_job_notes').value : '',
             
             coll_cust_name: document.getElementById('n_coll_name') ? document.getElementById('n_coll_name').value : '',
+            coll_phone: document.getElementById('n_coll_phone') ? document.getElementById('n_coll_phone').value : '',
+            coll_email: document.getElementById('n_coll_email') ? document.getElementById('n_coll_email').value : '',
             coll_postcode: document.getElementById('n_coll_pc').value,
             coll_street: document.getElementById('n_coll_street').value,
             coll_town: document.getElementById('n_coll_town').value,
@@ -3391,6 +3403,8 @@ function escapeHtml(value) {
                 let p2 = { ...payload };
                 p2.customer_name = payload.customer_name + " (Leg 2)";
                 p2.coll_cust_name = "FROST YARD";
+                p2.coll_phone = '';
+                p2.coll_email = '';
                 p2.coll_postcode = "YARD";
                 p2.coll_town = "YARD";
                 p2.coll_street = "FROST YARD";
@@ -3436,6 +3450,9 @@ To use the extra '+ Collection' or '+ Delivery' tabs, you must go to your Supaba
 3. del_town_2
 4. job_contract_type
 5. coll_cust_name
+6. coll_phone
+7. coll_email
+8. job_notes
 
 Standard jobs without extra legs will continue to save normally.`);
                     }
@@ -3461,7 +3478,10 @@ Standard jobs without extra legs will continue to save normally.`);
         document.getElementById('n_cust_name').value = j.customer_name || '';
         document.getElementById('n_cust_phone').value = j.customer_phone || '';
         document.getElementById('n_cust_email').value = j.customer_email || '';
+        if (document.getElementById('n_job_notes')) document.getElementById('n_job_notes').value = j.job_notes || '';
         if (document.getElementById('n_coll_name')) document.getElementById('n_coll_name').value = j.coll_cust_name || '';
+        if (document.getElementById('n_coll_phone')) document.getElementById('n_coll_phone').value = j.coll_phone || '';
+        if (document.getElementById('n_coll_email')) document.getElementById('n_coll_email').value = j.coll_email || '';
         
         document.getElementById('n_coll_pc').value = j.coll_postcode || '';
         document.getElementById('n_coll_street').value = j.coll_street || '';
@@ -4709,7 +4729,7 @@ Are you sure you want to place it here?`);
         y = sectionTitle('Collection Details', y, frostBlue);
         y = infoTable(y, [
             ['Collection company', value(j.coll_cust_name || j.customer_name), 'Collection ref', value(j.coll_ref)],
-            ['Telephone', value(j.customer_phone), 'Email', value(j.customer_email)],
+            ['Telephone', value(j.coll_phone || j.customer_phone), 'Email', value(j.coll_email || j.customer_email)],
             ['Address', addressBlock(j.coll_street, j.coll_town, j.coll_county, j.coll_postcode), 'Date & time', fmtDateTime(j.coll_datetime)],
             ['Second collection postcode', value(j.coll_postcode_2), 'Second collection town', value(j.coll_town_2)]
         ]);
@@ -5179,7 +5199,7 @@ Are you sure you want to place it here?`);
 
     function resetForm() {
         document.getElementById('sys_job_id').value = '';
-        ['n_cust_name','n_coll_address_search','n_del_address_search','n_coll_name','n_cust_phone', 'n_cust_email','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2', 'n_customers_own_invoice_number', 'n_fts_invoice_number', 'n_job_contract_type'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
+        ['n_cust_name','n_coll_address_search','n_del_address_search','n_coll_name','n_coll_phone','n_coll_email','n_cust_phone', 'n_cust_email','n_job_notes','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2', 'n_customers_own_invoice_number', 'n_fts_invoice_number', 'n_job_contract_type'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
         setJobBookingMode('');
         prefillNextFtsInvoiceNumber();
         switchFormTab('leg1');
