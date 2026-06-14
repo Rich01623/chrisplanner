@@ -991,6 +991,7 @@ function escapeHtml(value) {
     const _URL = "https://mbudwnwxucluwgbkgbfx.supabase.co";
     const _KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1idWR3bnd4dWNsdXdnYmtnYmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDQwMjYsImV4cCI6MjA5MDc4MDAyNn0.xFv-FiQ894vdfJuQYWQyF4WzQXmlnmnKvz_c8nuzl5Q";
     const sb = supabase.createClient(_URL, _KEY);
+    const DRIVER_PUSH_FUNCTION_NAME = "driver-dispatch-push";
     const podFolder = "https://drive.google.com/drive/folders/173z9mkrCmqmEyEENeH__-qvdw1SFJl7w?usp=sharing";
 
     const vehicles = [
@@ -1018,8 +1019,10 @@ function escapeHtml(value) {
     const drivers = [
         { name: "Unassigned", phone: "" },
         { name: "Andy Elston", phone: "447999811320" },
+        { name: "Agency One", phone: "447701238558" },
         { name: "Andy West", phone: "447734369810" },
         { name: "Callum Lee", phone: "447359390140" },
+        { name: "Chris Frost", phone: "447701238561" },
         { name: "Johannes Van Neerven", phone: "447701238575" },
         { name: "Josh Harrison", phone: "447701238574" },
         { name: "Lee Woodcock", phone: "447701238577" },
@@ -1029,12 +1032,69 @@ function escapeHtml(value) {
         { name: "Rhys Hill", phone: "447701238562" },
         { name: "Ricardo Morais", phone: "447746509636" },
         { name: "Richard Spence", phone: "447701238570" },
-        { name: "Roy Taylor", phone: "447701238558" },
+        { name: "Roy Taylor", phone: "447701238562" },
         { name: "Sean Walton", phone: "447701238572" },
         { name: "Svagunas Butnorius", phone: "447701238576" }
     ];
 
+
+    function normaliseDriverName(value) {
+        return String(value || '').trim().toLowerCase();
+    }
+
+    function getSelectedDriverFromDropdown(selectEl) {
+        if (!selectEl || selectEl.selectedIndex < 0) return { name: '', phone: '' };
+        const option = selectEl.options[selectEl.selectedIndex];
+        return {
+            name: (option ? option.textContent : '').trim(),
+            phone: (option ? option.value : '').trim()
+        };
+    }
+
+    function setDriverDropdownSelection(selectEl, savedDriverName, savedDriverPhone) {
+        if (!selectEl) return;
+
+        const targetName = normaliseDriverName(savedDriverName);
+        const targetPhone = String(savedDriverPhone || '').trim();
+
+        // Prefer the saved driver name. Phone numbers are not guaranteed to be unique
+        // because agency/temporary numbers can be shared or reused.
+        if (targetName) {
+            for (let i = 0; i < selectEl.options.length; i++) {
+                if (normaliseDriverName(selectEl.options[i].textContent) === targetName) {
+                    selectEl.selectedIndex = i;
+                    return;
+                }
+            }
+        }
+
+        // Old config rows only saved the phone number, so keep this fallback for existing data.
+        if (targetPhone) {
+            for (let i = 0; i < selectEl.options.length; i++) {
+                if (String(selectEl.options[i].value || '').trim() === targetPhone) {
+                    selectEl.selectedIndex = i;
+                    return;
+                }
+            }
+        }
+
+        selectEl.selectedIndex = 0;
+    }
+
+    function getDriverConfigSortValue(row) {
+        const updated = row && row.updated_at ? Date.parse(row.updated_at) : NaN;
+        if (!Number.isNaN(updated)) return updated;
+        const created = row && row.created_at ? Date.parse(row.created_at) : NaN;
+        if (!Number.isNaN(created)) return created;
+        const idNum = row && row.id !== undefined ? Number(row.id) : NaN;
+        return Number.isFinite(idNum) ? idNum : 0;
+    }
+
     let allJobsRaw = [];
+    let plannerSearchRows = [];
+    let plannerSearchCacheAt = 0;
+    let plannerSearchLoadPromise = null;
+    const PLANNER_SEARCH_CACHE_TTL_MS = 90000;
     let allJccBookings = []; 
     let historicalTrailers = {}; 
     let currentWeekOffset = 0;
@@ -1403,9 +1463,10 @@ function escapeHtml(value) {
 
         const cellId = j.assigned_slot.split('-s')[0]; 
         const dropdown = document.getElementById(`sel-${cellId}`);
-        if (!dropdown || !dropdown.value) return alert("The selected driver does not have a valid phone number assigned in the system.");
+        const selectedDriver = getSelectedDriverFromDropdown(dropdown);
+        if (!dropdown || !selectedDriver.phone) return alert("The selected driver does not have a valid phone number assigned in the system.");
 
-        const driverPhone = dropdown.value;
+        const driverPhone = selectedDriver.phone;
 
         const formatDt = (iso) => {
             if (!iso) return 'TBA';
@@ -2645,8 +2706,6 @@ function escapeHtml(value) {
 
     function hasPlannerSortOverride(job) {
         if (!job) return false;
-        const manualFlag = job.planner_sort_manual === true || String(job.planner_sort_manual).toLowerCase() === 'true';
-        if (!manualFlag) return false;
         const raw = job.planner_sort_order;
         if (raw === null || raw === undefined || raw === '') return false;
         return Number.isFinite(Number(raw));
@@ -2733,10 +2792,7 @@ function escapeHtml(value) {
             const sortValue = (index + 1) * 100;
             updates.push({ id, sortValue });
             const cached = allJobsRaw.find(job => String(job.id) === String(id));
-            if (cached) {
-                cached.planner_sort_order = sortValue;
-                cached.planner_sort_manual = true;
-            }
+            if (cached) cached.planner_sort_order = sortValue;
         });
 
         if (updates.length === 0) return;
@@ -2751,7 +2807,7 @@ function escapeHtml(value) {
         try {
             const results = await Promise.all(updates.map(update =>
                 sb.from('quotes')
-                    .update({ planner_sort_order: update.sortValue, planner_sort_manual: true })
+                    .update({ planner_sort_order: update.sortValue })
                     .eq('id', update.id)
             ));
 
@@ -3632,6 +3688,33 @@ Standard jobs without extra legs will continue to save normally.`);
         return highestSaved + 1;
     }
 
+    async function notifyDriverDispatchPush(jobId, driverName, driverPhone, releaseDate, sequence) {
+        if (!jobId || !driverName) return { ok: false, message: 'Missing job or driver details.' };
+
+        try {
+            const { data, error } = await sb.functions.invoke(DRIVER_PUSH_FUNCTION_NAME, {
+                body: {
+                    job_id: String(jobId),
+                    driver_name: String(driverName || '').toLowerCase().trim(),
+                    driver_phone: String(driverPhone || ''),
+                    release_date: releaseDate || null,
+                    dispatch_sequence: sequence || null,
+                    source: 'planner_send_to_driver'
+                }
+            });
+
+            if (error) {
+                console.warn('Driver push Edge Function error:', error);
+                return { ok: false, message: error.message || 'Edge Function error.' };
+            }
+
+            return { ok: true, data: data || {} };
+        } catch (err) {
+            console.warn('Driver push Edge Function failed:', err);
+            return { ok: false, message: err.message || String(err) };
+        }
+    }
+
     async function dispatchJob(e, id) {
         e.stopPropagation();
         const j = allJobsRaw.find(x => x.id == id);
@@ -3641,9 +3724,10 @@ Standard jobs without extra legs will continue to save normally.`);
 
         const cellId = j.assigned_slot.split('-s')[0]; 
         const dropdown = document.getElementById(`sel-${cellId}`);
-        if (!dropdown || !dropdown.value) return alert("Please select a driver in the row's dropdown first.");
+        const selectedDriver = getSelectedDriverFromDropdown(dropdown);
+        if (!dropdown || !selectedDriver.phone) return alert("Please select a driver in the row's dropdown first.");
         
-        const driverName = dropdown.options[dropdown.selectedIndex].text.toLowerCase();
+        const driverName = selectedDriver.name.toLowerCase();
         const releaseDate = getJobDispatchReleaseDate(j);
         const sequence = j.dispatch_sequence || getNextDispatchSequence(driverName, releaseDate, id);
         const nowIso = new Date().toISOString();
@@ -3653,16 +3737,34 @@ Standard jobs without extra legs will continue to save normally.`);
         // is already on shift and has no active job, the driver app will release the next
         // queued job automatically on its next sync.
         try {
-            await sb.from('quotes').update({
+            const { error: queueError } = await sb.from('quotes').update({
                 dispatch_status: 'scheduled',
                 assigned_driver: driverName,
+                driver_phone: selectedDriver.phone || null,
                 dispatch_release_date: releaseDate,
                 dispatch_sequence: sequence,
                 dispatch_scheduled_at: nowIso,
                 released_at: null
             }).eq('id', id);
+            if (queueError) throw queueError;
 
-            alert(`Job queued to the driver's Jobs card for ${releaseDate}. It will not become active until the driver app releases it as the next job in the queue.`);
+            let pushMessage = '';
+            if (isReleaseDateTodayOrPast(releaseDate)) {
+                const pushResult = await notifyDriverDispatchPush(id, driverName, selectedDriver.phone, releaseDate, sequence);
+                if (pushResult.ok && pushResult.data && pushResult.data.notified) {
+                    pushMessage = '\n\n✅ Background push notification sent to the driver phone.';
+                } else if (pushResult.ok && pushResult.data && pushResult.data.reason) {
+                    pushMessage = `\n\nℹ️ Push not sent yet: ${pushResult.data.reason}`;
+                } else if (!pushResult.ok) {
+                    pushMessage = `\n\n⚠️ Job queued, but the phone notification failed: ${pushResult.message}`;
+                } else {
+                    pushMessage = '\n\nℹ️ Job queued. No phone notification was required yet.';
+                }
+            } else {
+                pushMessage = '\n\nNo phone notification has been sent yet because this job is for a future date.';
+            }
+
+            alert(`Job queued to the driver's Jobs card for ${releaseDate}. It will not become active until the driver app releases it as the next job in the queue.${pushMessage}`);
 
             loadAll();
         } catch(err) {
@@ -3882,8 +3984,7 @@ Are you sure you want to place it here?`);
             assigned_driver: assignedDriver,
             // Normal drag/drop should use the default collection-time order.
             // Only the three-line reorder handle writes planner_sort_order as a manual override.
-            planner_sort_order: null,
-            planner_sort_manual: false
+            planner_sort_order: null
         };
 
         if (isPool) updatePayload.dispatch_status = 'unsent'; 
@@ -5021,7 +5122,7 @@ Are you sure you want to place it here?`);
             input.value = '';
             setTimeout(() => input.focus(), 50);
         }
-        renderPlannerSearchResults();
+        renderPlannerSearchResults(true);
     }
 
     function closePlannerSearch() {
@@ -5042,6 +5143,68 @@ Are you sure you want to place it here?`);
         return 'JOB';
     }
 
+    function isPlannerSearchableCard(job) {
+        if (!job) return false;
+        const status = String(job.status || '').toLowerCase();
+        if (['driver_config', 'archived', 'billed', 'subbed', 'cancelled', 'completed'].includes(status)) return false;
+
+        // Always include maintenance/note/instruction cards and normal active jobs that are
+        // either in a planner slot, in an unassigned pool, or dated within the 4 week board.
+        const slot = String(job.assigned_slot || '');
+        if (slot.startsWith('planner-w') || slot.startsWith('pool-zone') || isMaintenancePoolSlot(slot)) return true;
+
+        const weekOffset = getWeekOffsetFromNow(job.coll_datetime);
+        return weekOffset >= 0 && weekOffset <= 3;
+    }
+
+    function mergePlannerSearchRows(rows = []) {
+        const merged = new Map();
+        (allJobsRaw || []).forEach(job => {
+            if (job && job.id !== undefined && job.id !== null && isPlannerSearchableCard(job)) {
+                merged.set(String(job.id), job);
+            }
+        });
+        (plannerSearchRows || []).forEach(job => {
+            if (job && job.id !== undefined && job.id !== null && isPlannerSearchableCard(job)) {
+                merged.set(String(job.id), job);
+            }
+        });
+        (rows || []).forEach(job => {
+            if (job && job.id !== undefined && job.id !== null && isPlannerSearchableCard(job)) {
+                merged.set(String(job.id), job);
+            }
+        });
+        plannerSearchRows = Array.from(merged.values()).sort(comparePlannerCardsForDisplay);
+        plannerSearchCacheAt = Date.now();
+        return plannerSearchRows;
+    }
+
+    async function loadPlannerSearchRows(force = false) {
+        const cacheIsFresh = plannerSearchRows.length > 0 && (Date.now() - plannerSearchCacheAt) < PLANNER_SEARCH_CACHE_TTL_MS;
+        if (!force && cacheIsFresh) return mergePlannerSearchRows();
+        if (plannerSearchLoadPromise) return plannerSearchLoadPromise;
+
+        plannerSearchLoadPromise = (async () => {
+            try {
+                // Search is opened deliberately, so it is safe to do one wider read here.
+                // This avoids relying on whichever subset the live board currently has cached.
+                const { data, error } = await sb
+                    .from('quotes')
+                    .select('*')
+                    .limit(5000);
+                if (error) throw error;
+                return mergePlannerSearchRows(data || []);
+            } catch (err) {
+                console.warn('Planner search fell back to loaded board cache:', err);
+                return mergePlannerSearchRows();
+            } finally {
+                plannerSearchLoadPromise = null;
+            }
+        })();
+
+        return plannerSearchLoadPromise;
+    }
+
     function getSearchablePlannerText(job) {
         if (!job) return '';
         const values = [];
@@ -5052,6 +5215,7 @@ Are you sure you want to place it here?`);
             else values.push(String(value));
         });
         values.push(getPlannerSearchTypeLabel(getPlannerSearchType(job)));
+        values.push(getPlannerSearchRoute(job));
         return values.join(' ').toLowerCase();
     }
 
@@ -5077,14 +5241,19 @@ Are you sure you want to place it here?`);
         return `${from} ➔ ${to}`;
     }
 
-    function renderPlannerSearchResults() {
+    async function renderPlannerSearchResults(forceRefresh = false) {
         const input = document.getElementById('planner-search-input');
         const resultBox = document.getElementById('planner-search-results');
         const countBox = document.getElementById('planner-search-count');
         if (!resultBox || !countBox) return;
 
         const query = String(input?.value || '').trim().toLowerCase();
-        const jobs = (allJobsRaw || []).filter(job => !['driver_config', 'archived', 'billed', 'subbed', 'cancelled'].includes(String(job.status || '').toLowerCase()));
+        countBox.innerText = 'Loading planner search data...';
+        if (!query) {
+            resultBox.innerHTML = `<div style="padding:18px; color:#666; font-size:0.86rem;">Loading current planner cards...</div>`;
+        }
+
+        const jobs = await loadPlannerSearchRows(forceRefresh);
 
         if (!query) {
             countBox.innerText = `${jobs.length} cards loaded across the four-week planner`;
@@ -5112,11 +5281,12 @@ Are you sure you want to place it here?`);
             const route = escapeHtml(getPlannerSearchRoute(job));
             const customer = escapeHtml(job.customer_name || job.coll_cust_name || job.del_cust_name || getPlannerSearchTypeLabel(type));
             const slot = escapeHtml(job.assigned_slot || 'Unassigned');
-            const date = job.coll_datetime ? new Date(job.coll_datetime).toLocaleDateString('en-GB') : 'No date';
+            const parsedDate = job.coll_datetime ? new Date(job.coll_datetime) : null;
+            const date = parsedDate && !isNaN(parsedDate) ? parsedDate.toLocaleDateString('en-GB') : 'No date';
             const status = escapeHtml(job.status || 'pending');
             const ref = escapeHtml([job.coll_ref, job.del_ref, job.customers_own_invoice_number, job.fts_invoice_number].filter(Boolean).join(' | '));
             return `
-                <div class="planner-search-result" onclick="focusPlannerSearchResult('${job.id}')">
+                <div class="planner-search-result" onclick="focusPlannerSearchResult('${escapeInlineArg(job.id)}')">
                     <div class="planner-search-result-title"><span class="planner-search-result-type ${type}">${getPlannerSearchTypeLabel(type)}</span>${customer}</div>
                     <div class="planner-search-result-meta"><b>Route:</b> ${route}</div>
                     <div class="planner-search-result-meta"><b>Week:</b> WK ${info.week} | MON ${info.date} &nbsp; <b>Date:</b> ${date} &nbsp; <b>Status:</b> ${status}</div>
@@ -5125,8 +5295,8 @@ Are you sure you want to place it here?`);
         }).join('');
     }
 
-    function focusPlannerSearchResult(id) {
-        const job = (allJobsRaw || []).find(j => String(j.id) === String(id));
+    async function focusPlannerSearchResult(id) {
+        const job = (plannerSearchRows || []).concat(allJobsRaw || []).find(j => String(j.id) === String(id));
         if (!job) return;
 
         const type = getPlannerSearchType(job);
@@ -5148,12 +5318,21 @@ Are you sure you want to place it here?`);
             if (sidebar && !sidebar.classList.contains('open')) toggleMaintenancePool();
         }
 
-        setTimeout(() => {
+        const highlightCard = () => {
             const card = document.getElementById(String(id)) || document.getElementById(`ghost-${id}`);
-            if (!card) return;
+            if (!card) return false;
             card.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
             card.classList.add('planner-search-highlight');
             setTimeout(() => card.classList.remove('planner-search-highlight'), 3500);
+            return true;
+        };
+
+        setTimeout(async () => {
+            if (highlightCard()) return;
+            if (!loadAllInProgress) {
+                await loadAll();
+                setTimeout(highlightCard, 150);
+            }
         }, 250);
     }
 
@@ -5168,13 +5347,21 @@ Are you sure you want to place it here?`);
     }
 
     function restoreDrivers(jobs) {
-        jobs.forEach(q => {
-            if (q.status === 'driver_config') {
-                const el = document.getElementById(q.assigned_slot);
-                if (el) {
-                    el.value = q.driver_phone || q.customer_phone || "";
-                    updateTrailerDisplay(el);
-                }
+        const latestConfigBySlot = new Map();
+
+        (jobs || []).forEach(q => {
+            if (q.status !== 'driver_config' || !q.assigned_slot) return;
+            const existing = latestConfigBySlot.get(q.assigned_slot);
+            if (!existing || getDriverConfigSortValue(q) >= getDriverConfigSortValue(existing)) {
+                latestConfigBySlot.set(q.assigned_slot, q);
+            }
+        });
+
+        latestConfigBySlot.forEach(q => {
+            const el = document.getElementById(q.assigned_slot);
+            if (el) {
+                setDriverDropdownSelection(el, q.assigned_driver, q.driver_phone || q.customer_phone || "");
+                updateTrailerDisplay(el);
             }
         });
     }
@@ -5283,18 +5470,40 @@ Are you sure you want to place it here?`);
     // ==========================================
     document.addEventListener('change', async (e) => {
         if (e.target.classList.contains('driver-sel')) {
-            const selectId = e.target.id; 
-            const driverPhone = e.target.value;
+            const selectId = e.target.id;
+            const selectedDriver = getSelectedDriverFromDropdown(e.target);
+            const driverPhone = selectedDriver.phone;
+            const driverName = selectedDriver.name;
             
             updateTrailerDisplay(e.target);
 
-            const { data: existing } = await sb.from('quotes').select('id').eq('status', 'driver_config').eq('assigned_slot', selectId);
+            const { data: existing } = await sb
+                .from('quotes')
+                .select('id')
+                .eq('status', 'driver_config')
+                .eq('assigned_slot', selectId);
+
+            const configPayload = {
+                driver_phone: driverPhone,
+                customer_phone: driverPhone,
+                assigned_driver: driverName
+            };
 
             if (existing && existing.length > 0) {
-                await sb.from('quotes').update({ driver_phone: driverPhone, customer_phone: driverPhone }).eq('id', existing[0].id);
+                // Update every saved config row for this dropdown. Older builds could leave
+                // duplicate config rows behind; updating only one row let a stale Agency One
+                // row overwrite the selected driver on the next live refresh.
+                await sb
+                    .from('quotes')
+                    .update(configPayload)
+                    .eq('status', 'driver_config')
+                    .eq('assigned_slot', selectId);
             } else {
-                await sb.from('quotes').insert([{ 
-                    status: 'driver_config', customer_name: "DRIVER_CONFIG", assigned_slot: selectId, driver_phone: driverPhone, customer_phone: driverPhone 
+                await sb.from('quotes').insert([{
+                    status: 'driver_config',
+                    customer_name: "DRIVER_CONFIG",
+                    assigned_slot: selectId,
+                    ...configPayload
                 }]);
             }
         }
