@@ -924,6 +924,27 @@ function escapeHtml(value) {
         return `<div class="full-detail-row"><b>${escapeHtml(label)}:</b><span>${isDateTime ? detailDateTime(value) : detailDisplayValue(value)}</span></div>`;
     }
 
+    function gpsDetailLink(value) {
+        if (value === null || value === undefined || String(value).trim() === '') return '-';
+
+        const gps = parseGpsCoordinates(value);
+        if (!gps) return detailDisplayValue(value);
+
+        const coords = `${gps.lat},${gps.lng}`;
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coords)}`;
+
+        return `
+            <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--frost-blue); font-weight:800; text-decoration:underline;">
+                Open in Google Maps
+            </a>
+            <br><small style="color:#666; font-weight:600;">${escapeHtml(coords)}</small>
+        `;
+    }
+
+    function fullDetailGpsRow(label, value) {
+        return `<div class="full-detail-row"><b>${escapeHtml(label)}:</b><span>${gpsDetailLink(value)}</span></div>`;
+    }
+
     function fullDetailSection(title, rows, sectionClass = '') {
         return `<div class="full-detail-section ${sectionClass}"><h4>${escapeHtml(title)}</h4>${rows.join('')}</div>`;
     }
@@ -2592,13 +2613,13 @@ function escapeHtml(value) {
 
         const timestampRows = [
             fullDetailRow('Acknowledged', job.ack_timestamp, true),
-            fullDetailRow('Acknowledgement GPS', job.ack_gps),
+            fullDetailGpsRow('Acknowledgement GPS', job.ack_gps),
             fullDetailRow('Arrived collection', job.arrived_timestamp, true),
-            fullDetailRow('Collection arrival GPS', job.arrived_gps),
+            fullDetailGpsRow('Collection arrival GPS', job.arrived_gps),
             fullDetailRow('Loaded', job.loaded_timestamp, true),
             fullDetailRow('Arrived delivery', job.del_arrived_timestamp, true),
             fullDetailRow('Tipped', job.tipped_timestamp, true),
-            fullDetailRow('Tipped GPS', job.tipped_gps)
+            fullDetailGpsRow('Tipped GPS', job.tipped_gps)
         ];
 
         const extraRows = Object.keys(job)
