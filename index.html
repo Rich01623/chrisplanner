@@ -412,6 +412,7 @@
     </div>
     <div class="menu-group">
         <button class="week-btn nav-blue" id="btn-hist" onclick="switchView('history')">HISTORY</button>
+        <button class="week-btn nav-blue" id="btn-accounting-csv" onclick="exportAccountingCsv()" style="background:#16a085; color:white;">CSV EXPORT</button>
         <button class="week-btn nav-blue" id="btn-invoice" onclick="switchView('invoice')">INVOICES</button>
     </div>
 </div>
@@ -922,27 +923,6 @@ function escapeHtml(value) {
 
     function fullDetailRow(label, value, isDateTime = false) {
         return `<div class="full-detail-row"><b>${escapeHtml(label)}:</b><span>${isDateTime ? detailDateTime(value) : detailDisplayValue(value)}</span></div>`;
-    }
-
-    function gpsDetailLink(value) {
-        if (value === null || value === undefined || String(value).trim() === '') return '-';
-
-        const gps = parseGpsCoordinates(value);
-        if (!gps) return detailDisplayValue(value);
-
-        const coords = `${gps.lat},${gps.lng}`;
-        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coords)}`;
-
-        return `
-            <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="color:var(--frost-blue); font-weight:800; text-decoration:underline;">
-                Open in Google Maps
-            </a>
-            <br><small style="color:#666; font-weight:600;">${escapeHtml(coords)}</small>
-        `;
-    }
-
-    function fullDetailGpsRow(label, value) {
-        return `<div class="full-detail-row"><b>${escapeHtml(label)}:</b><span>${gpsDetailLink(value)}</span></div>`;
     }
 
     function fullDetailSection(title, rows, sectionClass = '') {
@@ -2613,13 +2593,13 @@ function escapeHtml(value) {
 
         const timestampRows = [
             fullDetailRow('Acknowledged', job.ack_timestamp, true),
-            fullDetailGpsRow('Acknowledgement GPS', job.ack_gps),
+            fullDetailRow('Acknowledgement GPS', job.ack_gps),
             fullDetailRow('Arrived collection', job.arrived_timestamp, true),
-            fullDetailGpsRow('Collection arrival GPS', job.arrived_gps),
+            fullDetailRow('Collection arrival GPS', job.arrived_gps),
             fullDetailRow('Loaded', job.loaded_timestamp, true),
             fullDetailRow('Arrived delivery', job.del_arrived_timestamp, true),
             fullDetailRow('Tipped', job.tipped_timestamp, true),
-            fullDetailGpsRow('Tipped GPS', job.tipped_gps)
+            fullDetailRow('Tipped GPS', job.tipped_gps)
         ];
 
         const extraRows = Object.keys(job)
@@ -2736,6 +2716,11 @@ function escapeHtml(value) {
 
     function hasPlannerSortOverride(job) {
         if (!job) return false;
+        // Manual order should only override the default collection-time order when the
+        // operator has used the three-line reorder handle. Old planner_sort_order values
+        // without this flag are ignored so normal timed cards still default to time order.
+        const manualFlag = job.planner_sort_manual === true || job.planner_sort_manual === 'true' || job.planner_sort_manual === 1;
+        if (!manualFlag) return false;
         const raw = job.planner_sort_order;
         if (raw === null || raw === undefined || raw === '') return false;
         return Number.isFinite(Number(raw));
@@ -2822,7 +2807,10 @@ function escapeHtml(value) {
             const sortValue = (index + 1) * 100;
             updates.push({ id, sortValue });
             const cached = allJobsRaw.find(job => String(job.id) === String(id));
-            if (cached) cached.planner_sort_order = sortValue;
+            if (cached) {
+                cached.planner_sort_order = sortValue;
+                cached.planner_sort_manual = true;
+            }
         });
 
         if (updates.length === 0) return;
@@ -2837,7 +2825,7 @@ function escapeHtml(value) {
         try {
             const results = await Promise.all(updates.map(update =>
                 sb.from('quotes')
-                    .update({ planner_sort_order: update.sortValue })
+                    .update({ planner_sort_order: update.sortValue, planner_sort_manual: true })
                     .eq('id', update.id)
             ));
 
@@ -2933,8 +2921,8 @@ function escapeHtml(value) {
         const dtFormat = (str) => str ? str.replace('T', ' ') : '-';
         const tOnly = (iso) => iso ? new Date(iso).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}) : '--:--';
 
-        let collTime = q.coll_datetime ? `<span style="display:block; font-size:0.55rem; color:#888; font-weight:normal; line-height:1; padding-top:2px;">${new Date(q.coll_datetime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}</span>` : '';
-        let delTime = q.del_datetime ? `<span style="display:block; font-size:0.55rem; color:#888; font-weight:normal; line-height:1; padding-top:2px;">${new Date(q.del_datetime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}</span>` : '';
+        let collTime = q.coll_datetime ? `<span style="display:block; font-size:0.65rem; color:#000; font-weight:800; line-height:1.05; padding-top:2px;">${new Date(q.coll_datetime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}</span>` : '';
+        let delTime = q.del_datetime ? `<span style="display:block; font-size:0.65rem; color:#000; font-weight:800; line-height:1.05; padding-top:2px;">${new Date(q.del_datetime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}</span>` : '';
 
         let targetWeek = getWeekOffsetFromNow(q.coll_datetime);
         card.dataset.targetWeek = targetWeek;
@@ -4131,7 +4119,8 @@ Are you sure you want to place it here?`);
             assigned_driver: assignedDriver,
             // Normal drag/drop should use the default collection-time order.
             // Only the three-line reorder handle writes planner_sort_order as a manual override.
-            planner_sort_order: null
+            planner_sort_order: null,
+            planner_sort_manual: false
         };
 
         if (isPool) updatePayload.dispatch_status = 'unsent'; 
@@ -5088,6 +5077,134 @@ Are you sure you want to place it here?`);
         else if (view === 'subbed') await renderSubbedList(force);
         else if (view === 'cancelled') await renderCancelledList(force);
         else if (view === 'map' && document.getElementById('map-view').style.display === 'block') updateMapPins();
+    }
+
+
+    function cleanCsvValue(value) {
+        const text = String(value ?? '').replace(/\r?\n|\r/g, ' ').trim();
+        if (/[",\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+        return text;
+    }
+
+    function parsePlannerDateForCsv(value) {
+        if (!value) return null;
+        if (value instanceof Date && !isNaN(value)) return value;
+        const raw = String(value).trim();
+        if (!raw) return null;
+        let parsed = new Date(raw);
+        if (!isNaN(parsed)) return parsed;
+
+        const ukMatch = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:\s+(\d{1,2}):(\d{2}))?/);
+        if (ukMatch) {
+            const day = Number(ukMatch[1]);
+            const month = Number(ukMatch[2]) - 1;
+            let year = Number(ukMatch[3]);
+            if (year < 100) year += 2000;
+            const hour = Number(ukMatch[4] || 0);
+            const minute = Number(ukMatch[5] || 0);
+            parsed = new Date(year, month, day, hour, minute);
+            if (!isNaN(parsed)) return parsed;
+        }
+        return null;
+    }
+
+    function formatCsvDate(value) {
+        const d = parsePlannerDateForCsv(value);
+        if (!d) return '';
+        return d.toLocaleDateString('en-GB');
+    }
+
+    function formatCsvDueDate(invoiceDateValue) {
+        const d = parsePlannerDateForCsv(invoiceDateValue);
+        if (!d) return '';
+        d.setDate(d.getDate() + 30);
+        return d.toLocaleDateString('en-GB');
+    }
+
+    function normaliseCsvAmount(value) {
+        const cleaned = String(value ?? '0').replace(/[^0-9.\-]/g, '');
+        const num = Number(cleaned || 0);
+        return Number.isFinite(num) ? num.toFixed(2) : '0.00';
+    }
+
+    async function exportAccountingCsv() {
+        try {
+            const exportBtn = document.getElementById('btn-accounting-csv');
+            const originalText = exportBtn ? exportBtn.innerText : '';
+            if (exportBtn) {
+                exportBtn.disabled = true;
+                exportBtn.innerText = 'EXPORTING...';
+            }
+
+            const { data, error } = await sb
+                .from('quotes')
+                .select('customer_name,fts_invoice_number,del_datetime,total_price,status')
+                .in('status', ['completed', 'billed', 'archived'])
+                .not('fts_invoice_number', 'is', null);
+
+            if (error) throw error;
+
+            const rows = (data || [])
+                .filter(row => String(row.fts_invoice_number || '').trim() && String(row.customer_name || '').trim())
+                .sort((a, b) => {
+                    const da = parsePlannerDateForCsv(a.del_datetime);
+                    const db = parsePlannerDateForCsv(b.del_datetime);
+                    return (db ? db.getTime() : 0) - (da ? da.getTime() : 0);
+                });
+
+            if (!rows.length) {
+                alert('No completed/billed invoice rows with an FTS invoice number were found to export.');
+                return;
+            }
+
+            const headers = [
+                'ContactName',
+                'InvoiceNumber',
+                'InvoiceDate',
+                'DueDate',
+                'Description',
+                'Quantity',
+                'UnitAmount',
+                'AccountCode',
+                'TaxType'
+            ];
+
+            const csvLines = [headers.join(',')];
+            rows.forEach(row => {
+                csvLines.push([
+                    row.customer_name || '',
+                    row.fts_invoice_number || '',
+                    formatCsvDate(row.del_datetime),
+                    formatCsvDueDate(row.del_datetime),
+                    'Invoice',
+                    '1',
+                    normaliseCsvAmount(row.total_price),
+                    '4000',
+                    '20%'
+                ].map(cleanCsvValue).join(','));
+            });
+
+            const csvContent = '\ufeff' + csvLines.join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const stamp = new Date().toISOString().slice(0, 10);
+            link.href = url;
+            link.download = `FTS_Invoice_Export_${stamp}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('CSV export failed:', err);
+            alert('CSV export failed: ' + (err?.message || err));
+        } finally {
+            const exportBtn = document.getElementById('btn-accounting-csv');
+            if (exportBtn) {
+                exportBtn.disabled = false;
+                exportBtn.innerText = 'CSV EXPORT';
+            }
+        }
     }
 
     function switchView(view) {
