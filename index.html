@@ -1511,7 +1511,9 @@ function escapeHtml(value) {
     async function renderTemplatesView() {
         const list = document.getElementById('templates-list');
         if (!list) return;
-        list.innerHTML = '<div class="template-empty-state">Loading templates...</div>';
+        if (!jobTemplatesCache.length) {
+            list.innerHTML = '<div class="template-empty-state">Loading templates...</div>';
+        }
         const templates = await fetchJobTemplates();
 
         if (!templates.length) {
@@ -1560,7 +1562,7 @@ function escapeHtml(value) {
     };
     const dataViewLoaded = { invoice: false, history: false, subbed: false, cancelled: false };
     const dataViewLoading = { invoice: false, history: false, subbed: false, cancelled: false };
-    const LAZY_DATA_VIEW_KEYS = ['invoice', 'history', 'subbed', 'cancelled'];
+    const LAZY_DATA_VIEW_KEYS = ['invoice', 'history', 'subbed', 'cancelled', 'templates'];
     let boardRefreshNeededAfterDataView = false;
 
     function isLazyDataView(view = activePlannerView) {
