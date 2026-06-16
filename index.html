@@ -9,8 +9,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
 /* ==========================================
@@ -38,16 +36,28 @@
         /* ==========================================
            2. HEADER & NAVIGATION
            ========================================== */
-        header { background: white; padding: 10px 20px; border-bottom: 3px solid var(--frost-red); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .logo-container img { height: 50px; }
+        header { background: #2c3e50; padding: 0; border-bottom: 3px solid var(--frost-red); display: flex; align-items: stretch; justify-content: space-between; flex-shrink: 0; z-index: 100; box-shadow: none; }
+        .logo-container { display:flex; align-items:center; padding: 0 14px; background:#2c3e50; }
+        .logo-container img { height: 50px; display:block; }
         
-        .grand-total-box { background: var(--frost-black); color: white; padding: 5px 15px; border-radius: 6px; border-left: 4px solid var(--price-green); }
+        .grand-total-box { background: var(--frost-black); color: white; padding: 5px 15px; border-radius: 0; border-left: 4px solid var(--price-green); display:flex; align-items:center; }
         .grand-total-value { font-size: 1.1rem; font-weight: bold; color: var(--whatsapp-green); }
-        .week-info-box { background: #e0e0e0; color: var(--frost-red); padding: 5px 12px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85rem; font-weight: bold; }
+        .week-info-box { background: #233241; color: white; padding: 5px 12px; border-radius: 0; border: none; border-left: 1px solid rgba(255,255,255,0.18); font-size: 0.85rem; font-weight: bold; display:flex; align-items:center; }
+        .week-info-box select { margin: 0 6px; background: #fff; color: #1a1a1a; border: none; border-radius: 3px; padding: 3px 6px; font-size: 0.82rem; font-weight: 900; cursor: pointer; }
+        .week-info-box span { white-space: nowrap; }
 
-        .week-selector { background: #333; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; z-index: 90; }
-        .menu-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .week-btn { padding: 8px 18px; border: none; background: #555; color: white; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 0.8rem; transition: background 0.2s, transform 0.1s; }
+        .header-actions-wrapper { display:flex; gap:0; align-items:stretch; justify-content:flex-end; min-width:0; flex:1; background:#2c3e50; }
+        .header-menu-stack { display:flex; flex-direction:column; min-width:0; flex:1; border:none; border-radius:0; overflow:hidden; background:#2c3e50; box-shadow:none; }
+        .header-menu-bar { display:flex; align-items:stretch; gap:0; border:none; border-radius:0; overflow:hidden; background:#2c3e50; box-shadow:none; flex-wrap:nowrap; width:100%; }
+        .header-menu-bar + .header-menu-bar { border-top:none; }
+        .header-menu-row-secondary .menu-group:last-child { margin-left:auto; }
+        .header-menu-bar .week-btn { border-radius:0 !important; margin:0; border-right:none; box-shadow:none; white-space:nowrap; background:#2c3e50 !important; color:white !important; }
+        .header-menu-bar .week-btn:last-child { border-right:none; }
+        .header-menu-bar .week-btn:hover { transform:none; background:#243342 !important; }
+
+        .menu-group { display: flex; gap: 0; align-items: center; flex-wrap: nowrap; }
+        .menu-group + .menu-group { margin-left:0; }
+        .week-btn { padding: 8px 18px; border: none; background: #555; color: white; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 0.8rem; transition: background 0.2s, transform 0.1s; white-space:nowrap; }
         .week-btn:hover { background: #666; transform: translateY(-1px); }
         .week-btn:active { transform: translateY(0); }
         .week-btn.active { background: var(--frost-red); }
@@ -77,14 +87,12 @@
         .pool-zone:hover { background: #f4f4f4; }
 
         #content-area { flex-grow: 1; overflow: hidden; padding: 10px; }
-        #planner-board, #invoicing-view, #history-view, #subbed-view, #cancelled-view, #map-view { background: white; border-radius: 8px; height: 100%; overflow: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
-        #map-container { height: 100%; width: 100%; border-radius: 0 0 8px 8px; z-index: 1; }
+        #planner-board, #invoicing-view, #history-view, #subbed-view, #cancelled-view, #templates-view { background: white; border-radius: 8px; height: 100%; overflow: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
         /* ==========================================
            4. PLANNER GRID & CELLS
            ========================================== */
-        table.planner-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 3720px; } 
+        table.planner-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 4200px; } 
         
         .corner-header { position: sticky; top: 0; left: 0; z-index: 30; background: var(--frost-black); color: white; border-right: 3px solid var(--frost-red); border-bottom: 3px solid var(--frost-red); width: 120px; text-align: center; }
         .vehicle-col-header { position: sticky; top: 0; z-index: 20; background: var(--frost-black); color: white; border-right: 1px solid var(--border-color); border-bottom: 3px solid var(--frost-red); padding: 10px; min-width: 240px; vertical-align: top; text-align: left; transition: background-color 0.3s; }
@@ -92,6 +100,13 @@
         .vehicle-col-header.palletforce-header .reg-title { color: white; }
         .vehicle-col-header.palletforce-header .driver-weekly-total { color: rgba(255,255,255,0.85); }
         .vehicle-col-header.palletforce-header .trailer-tag { background: rgba(0,0,0,0.28); color: white; }
+        .status-col-header { position: sticky; top: 0; z-index: 20; background: #34495e; color: white; border-right: 1px solid var(--border-color); border-bottom: 3px solid var(--frost-red); padding: 10px; min-width: 240px; vertical-align: middle; text-align: center; font-size: 0.9rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3px; }
+        .status-col-header.cancelled-header { background: #8a1c20; }
+        table.planner-table td.status-lane-cell { background: #f8fafc; }
+        table.planner-table td.status-subbed-cell { background: #f1f5f9; }
+        table.planner-table td.status-subbed-cell:hover { background: #e8eef6; }
+        table.planner-table td.status-cancelled-cell { background: #fff2f2; }
+        table.planner-table td.status-cancelled-cell:hover { background: #ffe7e7; }
         .palletforce-badge { display: inline-block; margin-top: 4px; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.4px; background: rgba(0,0,0,0.22); color: white; padding: 2px 6px; border-radius: 999px; }
         .date-cell { position: sticky; left: 0; z-index: 10; background: #eee; color: var(--frost-black); border-right: 3px solid var(--frost-red); border-bottom: 1px solid var(--border-color); padding: 10px; min-width: 120px; text-align: center; font-weight: bold; }
         
@@ -104,10 +119,19 @@
 
         .driver-sel { width: 100%; padding: 4px; background: white; color: black; border: 1px solid #ccc; border-radius: 3px; font-size: 0.75rem; cursor: pointer; }
         .driver-weekly-total { font-size: 0.7rem; color: #aaa; display: block; margin-top: 6px; font-weight: bold; }
+        .driver-contact-actions { display: flex; gap: 12px; margin-top: 3px; align-items: center; }
+        .driver-contact-btn { border: none; background: transparent; color: #aaa; font-size: 0.7rem; font-weight: bold; line-height: 1; cursor: pointer; padding: 0; font-family: inherit; }
+        .driver-contact-btn:hover { color: white; text-decoration: underline; }
         
         .weekend-row { display: none; }
         .show-weekend .weekend-row { display: table-row; }
         .show-weekend .weekend-row .date-cell { background: #e0e0e0; }
+        .past-day-row .date-cell { cursor: pointer; background: #e5e7eb; }
+        .past-day-row .date-cell:hover { background: #d8dde4; }
+        .past-day-toggle-label { margin-top: 4px; font-size: 0.62rem; color: #64748b; font-weight: 900; text-transform: uppercase; }
+        .past-day-collapsed td { height: 30px !important; min-height: 30px !important; max-height: 30px !important; padding: 2px 6px !important; overflow: hidden; background: #f1f5f9 !important; }
+        .past-day-collapsed .date-cell { padding: 6px 8px; background: #dfe3e8; }
+        .past-day-collapsed .job-card { display: none !important; }
 
         table.planner-table td { border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); min-height: 125px; height: 125px; vertical-align: top; padding: 6px; background: white; transition: background 0.2s; position: relative; }
         table.planner-table td:hover { background: #fdfdfd; }
@@ -343,6 +367,23 @@
         .planner-search-result-type.note { background:#d68910; }
         .planner-search-result-type.instruction { background:#0f766e; }
         .planner-search-highlight { outline: 4px solid #2563eb !important; box-shadow: 0 0 0 6px rgba(37,99,235,0.20), 0 10px 20px rgba(0,0,0,0.22) !important; position: relative; z-index: 100 !important; }
+        .timestamp-toast-container { position: fixed; top: 82px; right: 18px; z-index: 3000; display: flex; flex-direction: column; gap: 10px; max-width: 360px; pointer-events: none; }
+        .timestamp-toast { background: #0f172a; color: white; border-left: 5px solid var(--whatsapp-green); border-radius: 7px; padding: 12px 14px; box-shadow: 0 10px 24px rgba(0,0,0,0.28); font-size: 0.82rem; font-weight: 800; line-height: 1.35; opacity: 0; transform: translateY(-8px); animation: timestampToastIn 0.18s ease forwards; pointer-events: auto; }
+        .timestamp-toast small { display: block; margin-top: 4px; color: rgba(255,255,255,0.75); font-size: 0.68rem; font-weight: 700; }
+        .timestamp-toast-ok { margin-top: 10px; border: none; border-radius: 4px; background: var(--whatsapp-green); color: white; padding: 6px 14px; font-size: 0.72rem; font-weight: 900; cursor: pointer; }
+        .timestamp-toast-ok:hover { background: #1ebe5d; }
+        @keyframes timestampToastIn { to { opacity: 1; transform: translateY(0); } }
+        .header-menu-stack .week-btn,
+        .header-menu-stack .week-btn:hover,
+        .header-menu-stack .planner-search-btn,
+        .header-menu-stack .instruction-btn,
+        .header-menu-stack .quick-card-btn {
+            background:#2c3e50 !important;
+            color:#fff !important;
+            border:0 !important;
+            box-shadow:none !important;
+            outline:none !important;
+        }
         .header-mode-client .postcode-header .pc-coll,
         .header-mode-client .postcode-header .pc-del,
         .header-mode-client .postcode-header .pc-del-2 { font-size: 0.78rem; letter-spacing: -0.01em; }
@@ -361,10 +402,27 @@
         .google-address-helper small { display:block; margin-top:4px; color:#555; font-size:0.72rem; line-height:1.25; }
         .pac-container { z-index: 5000 !important; font-family: Arial, sans-serif; }
         .quick-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .time-period-btn-row { display: flex; gap: 6px; margin-top: 6px; }
+        .time-period-btn { flex: 1; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; border-radius: 5px; padding: 6px 8px; font-size: 0.72rem; font-weight: 900; cursor: pointer; transition: all 0.15s ease; }
+        .time-period-btn:hover { background: #eef2ff; border-color: var(--frost-blue); color: var(--frost-blue); }
+        .time-period-btn.active { background: var(--frost-blue); border-color: var(--frost-blue); color: #fff; box-shadow: 0 2px 6px rgba(0,86,179,0.22); }
+        .time-period-btn-row.delivery .time-period-btn.active { background: var(--price-green); border-color: var(--price-green); box-shadow: 0 2px 6px rgba(46,125,50,0.22); }
+        .time-period-help { display: block; margin-top: 4px; color: #666; font-size: 0.68rem; line-height: 1.2; }
         .quick-card-warning { background: #fff1f2; border: 1px solid #fecdd3; color: #991b1b; border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; font-weight: 700; margin: 12px 0; }
         .job-card.quick-card-incomplete { background: #fff1f2 !important; border-left-color: #dc2626 !important; box-shadow: 0 0 0 2px rgba(220,38,38,0.12), 0 2px 4px rgba(0,0,0,0.12) !important; }
         .job-card.quick-card-incomplete:hover { background: #ffe4e6 !important; }
         .quick-card-badge { display:inline-block; font-size:0.58rem; color:#991b1b; border:1px solid #dc2626; padding:1px 5px; border-radius:999px; background:#fff; margin-left:5px; font-weight:900; letter-spacing:0.3px; }
+        .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+        .template-card { background: #fff; border: 1px solid #d7dee8; border-left: 4px solid var(--frost-blue); border-radius: 6px; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); cursor: pointer; transition: box-shadow 0.15s ease, transform 0.15s ease; }
+        .template-card:hover { box-shadow: 0 4px 10px rgba(0,0,0,0.14); transform: translateY(-1px); }
+        .template-card-title { font-weight: 900; color: var(--frost-black); font-size: 0.9rem; margin-bottom: 8px; }
+        .template-card-route { display: flex; align-items: center; gap: 6px; color: var(--frost-blue); font-size: 0.78rem; font-weight: 800; margin-bottom: 8px; }
+        .template-card-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+        .template-empty-state { border: 1px dashed #b9c4d2; border-radius: 8px; padding: 28px; text-align: center; color: #64748b; font-weight: 800; background: #f8fafc; }
+        .template-delete-btn { border: none; background: #c1272d; color: white; border-radius: 4px; padding: 5px 8px; font-size: 0.68rem; font-weight: 900; cursor: pointer; }
+        .template-delete-btn:hover { background: #a02025; }
+        #create-template-btn { background: var(--frost-blue); color: white; border: none; padding: 12px; font-weight: bold; cursor: pointer; border-radius: 4px; transition: background 0.2s; }
+        #create-template-btn:hover { background: #004494; }
         @media (max-width: 700px) { .quick-card-grid { grid-template-columns: 1fr; } }
 
 </style>
@@ -376,46 +434,41 @@
      ========================================== -->
 <header>
     <div class="logo-container"><img src="logo.png" alt="FROST"></div>
-    <div style="display:flex; gap:15px; align-items:center;">
-        <button class="week-btn planner-search-btn" onclick="openPlannerSearch()">🔎 SEARCH</button>
-        <button class="week-btn instruction-btn" onclick="openInstructionModal()">➡️ INSTRUCTION</button>
-        <button class="week-btn quick-card-btn" onclick="openQuickCardModal()">⚡ QUICK CARD</button>
+    <div class="header-actions-wrapper">
+        <div class="header-menu-stack">
+            <div class="header-menu-bar">
+                <button class="week-btn planner-search-btn" onclick="openPlannerSearch()">🔎 SEARCH</button>
+                <button class="week-btn instruction-btn" onclick="openInstructionModal()">➡️ INSTRUCTION</button>
+                <button class="week-btn quick-card-btn" onclick="openQuickCardModal()">⚡ QUICK CARD</button>
+                <button class="week-btn templates-btn" id="btn-templates" onclick="switchView('templates')">📋 TEMPLATES</button>
+                <button class="week-btn nav-blue" id="btn-hist" onclick="switchView('history')">HISTORY</button>
+                <button class="week-btn nav-blue" id="btn-invoice" onclick="switchView('invoice')">INVOICE</button>
+                <button class="week-btn nav-blue" id="btn-accounting-csv" onclick="exportAccountingCsv()" style="background:#16a085; color:white;">CSV EXPORT</button>
+                <button class="week-btn nav-blue" onclick="openPostcodeSearch()" style="background:#2c3e50;">📍 POSTCODE</button>
+                <button class="week-btn" id="btn-toggle-maintenance" onclick="toggleMaintenanceCards()" style="background:#f58220; color:white;">🔧 HIDE MAINTENANCE</button>
+                <button class="week-btn" id="btn-toggle-header" onclick="toggleHeaderView()" style="background:#34495e; color:white;">🔄 TOWNS</button>
+                <button class="week-btn" onclick="syncMaintenanceAndLoadAll()">SYNC</button>
+            </div>
+            <div class="header-menu-bar header-menu-row-secondary">
+                <div class="menu-group">
+                    <button class="week-btn nav-blue" onclick="toggleUnassigned()">UNASSIGNED</button>
+                    <button class="week-btn nav-blue" onclick="toggleMaintenancePool()" style="background:#f58220; color:white;">MAINTENANCE POOL</button>
+                    <button class="week-btn nav-blue" onclick="resetForm(); openModal('modal-add')">+ NEW JOB</button>
+                    <button class="week-btn" onclick="openNoteModal()" style="background:#f39c12; color:white;">📝 NOTES</button>
+                </div>
+                <div class="menu-group">
+                    <button class="week-btn active" id="btn-w0" onclick="switchView(0)">WEEK 1</button>
+                    <button class="week-btn" id="btn-w1" onclick="switchView(1)">WEEK 2</button>
+                    <button class="week-btn" id="btn-w2" onclick="switchView(2)">WEEK 3</button>
+                    <button class="week-btn" id="btn-w3" onclick="switchView(3)">WEEK 4</button>
+                    <button class="week-btn" style="background:#888;" onclick="toggleWeekend()">W/E</button>
+                </div>
+            </div>
+        </div>
         <div id="week-display-box" class="week-info-box">WK -- | MON --/--/--</div>
-        <button class="week-btn" id="btn-map" onclick="switchView('map')" style="background:#27ae60; color:white;">🗺️ DROP SPOTS</button>
-        <button class="week-btn" id="btn-toggle-maintenance" onclick="toggleMaintenanceCards()" style="background:#f58220; color:white;">🔧 HIDE MAINTENANCE</button>
-        <button class="week-btn" id="btn-toggle-header" onclick="toggleHeaderView()" style="background:#34495e; color:white;">🔄 TOWNS</button>
-        <button class="week-btn" onclick="syncMaintenanceAndLoadAll()">SYNC</button>
         <div class="grand-total-box"><span class="grand-total-value" id="grand-total">£0.00</span></div>
     </div>
 </header>
-
-<!-- ==========================================
-     TOP NAVIGATION & TOOLBAR
-     ========================================== -->
-<div class="week-selector">
-    <div class="menu-group">
-        <button class="week-btn nav-blue" onclick="toggleUnassigned()">UNASSIGNED</button>
-        <button class="week-btn nav-blue" onclick="toggleMaintenancePool()" style="background:#f58220; color:white;">MAINTENANCE POOL</button>
-        <button class="week-btn nav-blue" onclick="resetForm(); openModal('modal-add')">+ NEW JOB</button>
-        <button class="week-btn nav-blue" onclick="window.open('https://rich01623.github.io/fleet-tracker/', '_blank')">TRACKER</button>
-        <button class="week-btn nav-blue" id="btn-subbed" onclick="switchView('subbed')">SUBBED TO CONTRACTOR</button>
-        <button class="week-btn nav-blue" id="btn-cancelled" onclick="switchView('cancelled')">CANCELLED JOBS</button>
-        <button class="week-btn nav-blue" onclick="openPostcodeSearch()" style="background:#2c3e50;">📍 POSTCODE</button>
-        <button class="week-btn" onclick="openNoteModal()" style="background:#f39c12; color:white;">📝 NOTES</button>
-    </div>
-    <div class="menu-group">
-        <button class="week-btn active" id="btn-w0" onclick="switchView(0)">WEEK 1</button>
-        <button class="week-btn" id="btn-w1" onclick="switchView(1)">WEEK 2</button>
-        <button class="week-btn" id="btn-w2" onclick="switchView(2)">WEEK 3</button>
-        <button class="week-btn" id="btn-w3" onclick="switchView(3)">WEEK 4</button>
-        <button class="week-btn" style="background:#888;" onclick="toggleWeekend()">W/E</button>
-    </div>
-    <div class="menu-group">
-        <button class="week-btn nav-blue" id="btn-hist" onclick="switchView('history')">HISTORY</button>
-        <button class="week-btn nav-blue" id="btn-accounting-csv" onclick="exportAccountingCsv()" style="background:#16a085; color:white;">CSV EXPORT</button>
-        <button class="week-btn nav-blue" id="btn-invoice" onclick="switchView('invoice')">INVOICES</button>
-    </div>
-</div>
 
 <!-- ==========================================
      MAIN CONTENT AREA
@@ -494,21 +547,13 @@
         <!-- Planner Boards -->
         <section id="planner-board"></section>
 
-        <!-- Drop Spots Map View -->
-        <section id="map-view" style="display:none; padding:10px; height:100%; box-sizing:border-box;">
-            <div style="background:var(--frost-black); color:white; padding:10px; border-radius:8px 8px 0 0; font-weight:bold; display:flex; justify-content:space-between; align-items:center;">
-                <div style="display:flex; align-items:center; gap:15px;">
-                    <span>🚚 Drop Spots (Current Week Only)</span>
-                    <label style="font-size:0.8rem; font-weight:normal; cursor:pointer; color:#eee; display:flex; align-items:center; gap:5px;">
-                        <input type="checkbox" id="toggle-routing" onchange="clearNextJobRouting()"> Show Next Route
-                    </label>
-                </div>
-                <div>
-                    <span style="font-size:0.75rem; margin-right:10px; font-weight:normal; background:#2e7d32; padding:2px 6px; border-radius:3px;">🟢 Next Coll (< 6hrs)</span>
-                    <span style="font-size:0.75rem; font-weight:normal; background:#c1272d; padding:2px 6px; border-radius:3px;">🔴 > 6h Idle / Empty</span>
-                </div>
+        <!-- Templates View -->
+        <section id="templates-view" style="display:none; padding:20px; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:15px; flex-wrap:wrap;">
+                <h2 style="margin:0; color:#0056b3;">Job Templates</h2>
+                <button class="week-btn nav-blue" onclick="resetForm(); openModal('modal-add')">+ NEW JOB</button>
             </div>
-            <div id="map-container" style="border-radius: 0 0 8px 8px;"></div>
+            <div id="templates-list" class="template-grid"></div>
         </section>
 
         <!-- Invoice View -->
@@ -731,7 +776,16 @@
                         <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_coll_email"></div>
                     </div>
                     <div class="form-group"><label>Ref</label><input type="text" id="n_coll_ref"></div>
-                    <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_coll_dt"></div>
+                    <div class="form-group">
+                        <label>Date & Time</label>
+                        <input type="datetime-local" id="n_coll_dt">
+                        <input type="hidden" id="n_coll_time_period">
+                        <div class="time-period-btn-row">
+                            <button type="button" class="time-period-btn" id="n_coll_time_period_am" onclick="toggleTimePeriod('coll', 'AM')">AM</button>
+                            <button type="button" class="time-period-btn" id="n_coll_time_period_pm" onclick="toggleTimePeriod('coll', 'PM')">PM</button>
+                        </div>
+                        <small class="time-period-help">Use AM/PM when there is no exact collection booking time. Click the active button again to go back to the exact time.</small>
+                    </div>
                 </div>
                 
                 <div style="flex: 1;">
@@ -761,7 +815,16 @@
                         <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_del_email"></div>
                     </div>
                     <div class="form-group"><label>Ref</label><input type="text" id="n_10"></div>
-                    <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_del_dt"></div>
+                    <div class="form-group">
+                        <label>Date & Time</label>
+                        <input type="datetime-local" id="n_del_dt">
+                        <input type="hidden" id="n_del_time_period">
+                        <div class="time-period-btn-row delivery">
+                            <button type="button" class="time-period-btn" id="n_del_time_period_am" onclick="toggleTimePeriod('del', 'AM')">AM</button>
+                            <button type="button" class="time-period-btn" id="n_del_time_period_pm" onclick="toggleTimePeriod('del', 'PM')">PM</button>
+                        </div>
+                        <small class="time-period-help">Use AM/PM when there is no exact delivery booking time. Click the active button again to go back to the exact time.</small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -795,6 +858,7 @@
         <h4 style="margin:5px 0 10px 0; color:#1a1a1a;">INVOICE NUMBERS</h4>
         <div id="invoice-number-fields-wrapper" style="display:flex; gap:15px; align-items:flex-end; flex-wrap:wrap;">
             <div class="form-group" style="flex:1; min-width:220px;"><label>Customers Invoice Number</label><input type="text" id="n_customers_own_invoice_number" placeholder="Customer's own invoice / booking number"></div>
+            <div class="form-group" style="flex:1; min-width:220px;"><label>CX Number</label><input type="text" id="n_cx_number" placeholder="CX number"></div>
             <div class="form-group" style="flex:1; min-width:220px;"><label>FTS Invoice Number</label><input type="text" id="n_fts_invoice_number" readonly placeholder="Auto generated" style="font-weight:bold; color:var(--frost-red); background:#f8fafc;"></div>
         </div>
         <h4 style="margin:5px 0 10px 0; color:#1a1a1a;">LOGISTICS</h4>
@@ -804,8 +868,9 @@
             <div class="form-group" style="flex:1;"><label>Total Weight (kg)</label><input type="number" id="n_total_weight" placeholder="e.g. 12500"></div>
             <div class="form-group" style="flex:1;"><label>Agreed Price (£)</label><input type="text" id="n_price" placeholder="0.00"></div>
             
-            <div style="flex:1.5; display:flex; gap:10px;">
+            <div style="flex:2.2; display:flex; gap:10px;">
                 <button type="button" class="week-btn" onclick="closeModal('modal-add')" style="flex: 1; background:#ddd; color:#333; padding: 10px; font-weight: bold; border-radius: 4px; height: 37px; margin-bottom: 10px;">Cancel</button>
+                <button type="button" id="create-template-btn" onclick="saveCurrentJobAsTemplate()" style="flex: 1.4; height: 37px; margin-bottom: 10px; border-radius: 4px;">Create Template</button>
                 <button type="button" id="add-job-btn" onclick="saveJob()" style="flex: 2; height: 37px; margin-bottom: 10px; border-radius: 4px;">Save Changes</button>
             </div>
         </div>
@@ -1060,6 +1125,36 @@ function escapeHtml(value) {
         };
     }
 
+    function getHeaderDriverContact(selectId) {
+        const selectEl = document.getElementById(selectId);
+        const selectedDriver = getSelectedDriverFromDropdown(selectEl);
+        const phone = String(selectedDriver.phone || '').replace(/[^\d+]/g, '');
+
+        if (!phone) {
+            alert("Please select a driver with a mobile number first.");
+            return null;
+        }
+
+        return {
+            name: selectedDriver.name || 'driver',
+            phone,
+            dialPhone: phone.startsWith('+') ? phone : `+${phone}`,
+            whatsappPhone: phone.replace(/^\+/, '')
+        };
+    }
+
+    function callHeaderDriver(selectId) {
+        const contact = getHeaderDriverContact(selectId);
+        if (!contact) return;
+        window.location.href = `tel:${contact.dialPhone}`;
+    }
+
+    function whatsappHeaderDriver(selectId) {
+        const contact = getHeaderDriverContact(selectId);
+        if (!contact) return;
+        window.open(`https://wa.me/${contact.whatsappPhone}`, '_blank');
+    }
+
     function setDriverDropdownSelection(selectEl, savedDriverName, savedDriverPhone) {
         if (!selectEl) return;
 
@@ -1107,19 +1202,217 @@ function escapeHtml(value) {
     let allJccBookings = []; 
     let historicalTrailers = {}; 
     let currentWeekOffset = 0;
+    let plannerWeekStartOffset = 0;
     let activePlannerView = 0;
     let plannerRefreshTimer = null;
     let showTownsInHeader = false; // legacy flag kept for older planner logic
     let headerDisplayMode = 'postcodes'; // postcodes -> towns -> client -> all
     let showMaintenanceCards = true;
-    let fleetMap = null;
-    let mapMarkers = [];
-    
-    // Routing variables
-    let routeLineLayer = null;
-    let nextJobPinLayer = null;
-    
     let isDragging = false;
+    const expandedPastPlannerDays = new Set();
+    const PLANNER_STATUS_LANES = [
+        { key: 'subbed', label: 'Subbed to Contractor' },
+        { key: 'cancelled', label: 'Cancelled Jobs' }
+    ];
+
+    function isPlannerStatusLaneSlot(slot) {
+        return /^planner-w\d+-status-(subbed|cancelled)-s\d$/.test(String(slot || ''));
+    }
+
+    function getPlannerStatusFromLaneSlot(slot) {
+        const match = String(slot || '').match(/^planner-w\d+-status-(subbed|cancelled)-s\d$/);
+        return match ? match[1] : '';
+    }
+
+    function getPlannerStatusLaneSlotForJob(status, job) {
+        const cleanStatus = String(status || '').toLowerCase();
+        const lane = PLANNER_STATUS_LANES.find(item => item.key === cleanStatus);
+        if (!lane) return null;
+
+        let weekOffset = getPlannerBoardWeekIndex(job && job.coll_datetime);
+        if (weekOffset < 0) weekOffset = 0;
+        if (weekOffset > 3) weekOffset = 3;
+
+        const d = new Date(job && job.coll_datetime);
+        const dayIndex = isNaN(d) ? 0 : ((d.getDay() + 6) % 7);
+        return `planner-w${weekOffset}-status-${lane.key}-s${dayIndex}`;
+    }
+
+    function getPlannerDisplayWeekOffset(viewOffset = currentWeekOffset) {
+        const n = Number(viewOffset);
+        return plannerWeekStartOffset + (Number.isInteger(n) ? n : 0);
+    }
+
+    function getPlannerBoardWeekIndex(dateValue) {
+        return getWeekOffsetFromNow(dateValue) - plannerWeekStartOffset;
+    }
+
+    function getPlannerVisibleDateWindow() {
+        const start = getCurrentPlannerMondayDate();
+        start.setDate(start.getDate() + (plannerWeekStartOffset * 7));
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(start);
+        end.setDate(start.getDate() + 28);
+        return { start, end, startIso: start.toISOString(), endIso: end.toISOString() };
+    }
+
+    const JOB_TEMPLATE_STORAGE_KEY = 'frost_job_templates_v1';
+    const JOB_TEMPLATE_FIELD_IDS = [
+        'n_cust_name', 'n_cust_phone', 'n_cust_email', 'n_job_notes',
+        'n_coll_address_search', 'n_coll_name', 'n_coll_phone', 'n_coll_email', 'n_coll_pc', 'n_coll_street', 'n_coll_town', 'n_coll_county', 'n_coll_ref', 'n_coll_dt', 'n_coll_time_period',
+        'n_coll_pc_2', 'n_coll_town_2',
+        'n_del_address_search', 'n_del_name', 'n_del_phone', 'n_del_email', 'n_del_pc', 'n_del_street', 'n_8', 'n_9', 'n_10', 'n_del_dt', 'n_del_time_period',
+        'n_del_pc_2', 'n_del_town_2',
+        'n_price', 'n_total_pallets', 'n_total_weight', 'n_veh_type',
+        'n_customers_own_invoice_number', 'n_cx_number', 'n_job_contract_type'
+    ];
+
+    function loadJobTemplates() {
+        try {
+            const parsed = JSON.parse(localStorage.getItem(JOB_TEMPLATE_STORAGE_KEY) || '[]');
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (err) {
+            console.warn('Could not read saved job templates.', err);
+            return [];
+        }
+    }
+
+    function saveJobTemplates(templates) {
+        localStorage.setItem(JOB_TEMPLATE_STORAGE_KEY, JSON.stringify(templates || []));
+    }
+
+    function getTemplateFormValues() {
+        const values = {};
+        JOB_TEMPLATE_FIELD_IDS.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) values[id] = el.value || '';
+        });
+        return values;
+    }
+
+    function getTemplateDisplayName(values) {
+        const customer = String(values.n_cust_name || '').trim() || 'Untitled Template';
+        const from = String(values.n_coll_town || values.n_coll_pc || '').trim();
+        const to = String(values.n_8 || values.n_del_pc || '').trim();
+        if (from || to) return `${customer} | ${from || 'Collection'} > ${to || 'Delivery'}`;
+        return customer;
+    }
+
+    function saveCurrentJobAsTemplate() {
+        const values = getTemplateFormValues();
+        const now = new Date().toISOString();
+        const template = {
+            id: `tpl-${Date.now()}`,
+            name: getTemplateDisplayName(values),
+            values,
+            createdAt: now,
+            updatedAt: now
+        };
+
+        const templates = loadJobTemplates();
+        templates.unshift(template);
+        saveJobTemplates(templates);
+        renderTemplatesView();
+
+        const btn = document.getElementById('create-template-btn');
+        if (btn) {
+            const originalText = btn.innerText;
+            btn.innerText = 'Template Saved';
+            btn.disabled = true;
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }, 1400);
+        }
+    }
+
+    function applyTemplateValuesToForm(values = {}) {
+        resetForm();
+        JOB_TEMPLATE_FIELD_IDS.forEach(id => {
+            if (id === 'n_job_contract_type') return;
+            const el = document.getElementById(id);
+            if (el) el.value = values[id] || '';
+        });
+
+        const mode = values.n_job_contract_type || '';
+        if (mode) setJobBookingMode(mode);
+        else setJobBookingMode('');
+
+        const collPeriodField = document.getElementById('n_coll_time_period');
+        const delPeriodField = document.getElementById('n_del_time_period');
+        if (collPeriodField) collPeriodField.value = normaliseTimePeriodValue(values.n_coll_time_period || '');
+        if (delPeriodField) delPeriodField.value = normaliseTimePeriodValue(values.n_del_time_period || '');
+        updateTimePeriodButtons('coll');
+        updateTimePeriodButtons('del');
+
+        document.getElementById('sys_job_id').value = '';
+        const ftsField = document.getElementById('n_fts_invoice_number');
+        if (ftsField) ftsField.value = '';
+        if (isPalletforceJobType(mode)) {
+            ftsInvoicePrefillToken++;
+        } else {
+            prefillNextFtsInvoiceNumber();
+        }
+
+        switchFormTab('leg1');
+    }
+
+    function loadTemplateIntoJobForm(templateId) {
+        const template = loadJobTemplates().find(item => String(item.id) === String(templateId));
+        if (!template) return alert('Could not find that template.');
+        applyTemplateValuesToForm(template.values || {});
+        openModal('modal-add');
+    }
+
+    function deleteJobTemplate(event, templateId) {
+        if (event) event.stopPropagation();
+        if (!confirm('Delete this template?')) return;
+        const templates = loadJobTemplates().filter(item => String(item.id) !== String(templateId));
+        saveJobTemplates(templates);
+        renderTemplatesView();
+    }
+
+    function renderTemplatesView() {
+        const list = document.getElementById('templates-list');
+        if (!list) return;
+        const templates = loadJobTemplates();
+
+        if (!templates.length) {
+            list.innerHTML = '<div class="template-empty-state">No templates saved yet. Open + New Job, fill in the regular job details, then press Create Template.</div>';
+            return;
+        }
+
+        list.innerHTML = '';
+        templates.forEach(template => {
+            const values = template.values || {};
+            const card = document.createElement('div');
+            card.className = 'template-card';
+            card.onclick = () => loadTemplateIntoJobForm(template.id);
+
+            const from = values.n_coll_town || values.n_coll_pc || 'Collection';
+            const to = values.n_8 || values.n_del_pc || 'Delivery';
+            const vehicle = values.n_veh_type || 'Vehicle';
+            const pallets = values.n_total_pallets ? `${values.n_total_pallets} Plt` : '';
+            const weight = values.n_total_weight ? `${values.n_total_weight}kg` : '';
+            const price = values.n_price ? `&pound;${escapeHtml(values.n_price)}` : '';
+
+            card.innerHTML = `
+                <div class="template-card-title">${escapeHtml(template.name || getTemplateDisplayName(values))}</div>
+                <div class="template-card-route"><span>${escapeHtml(from)}</span><span>&gt;</span><span>${escapeHtml(to)}</span></div>
+                <div class="template-card-meta">
+                    <span class="vehicle-tag">${escapeHtml(vehicle)}</span>
+                    ${pallets ? `<span class="vehicle-tag" style="background:#d68910;">${escapeHtml(pallets)}</span>` : ''}
+                    ${weight ? `<span class="vehicle-tag" style="background:#666;">${escapeHtml(weight)}</span>` : ''}
+                    ${price ? `<span class="price-tag">${price}</span>` : ''}
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; border-top:1px solid #eef2f7; padding-top:8px;">
+                    <span style="font-size:0.68rem; color:#64748b; font-weight:800;">Click to use template</span>
+                    <button type="button" class="template-delete-btn" onclick="deleteJobTemplate(event, '${escapeInlineArg(template.id)}')">Delete</button>
+                </div>`;
+            list.appendChild(card);
+        });
+    }
 
     // EGRESS SAVER: History / Invoice / Subbed / Cancelled rows are not loaded with the
     // main planner board anymore. They are fetched only when someone opens that view.
@@ -1226,6 +1519,72 @@ function escapeHtml(value) {
         }
     }
 
+    const DRIVER_APP_TIMESTAMP_STEPS = [
+        { field: 'ack_timestamp', action: 'acknowledged the job' },
+        { field: 'arrived_timestamp', action: 'arrived at collection' },
+        { field: 'loaded_timestamp', action: 'loaded the job' },
+        { field: 'del_arrived_timestamp', action: 'arrived at delivery' },
+        { field: 'tipped_timestamp', action: 'tipped the job' }
+    ];
+
+    function hasTimestampValue(value) {
+        return value !== null && value !== undefined && String(value).trim() !== '';
+    }
+
+    function formatTimestampToastTime(value) {
+        const d = new Date(value);
+        if (isNaN(d)) return String(value || '').replace('T', ' ').slice(0, 16);
+        return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function getTimestampToastContainer() {
+        let container = document.getElementById('timestamp-toast-container');
+        if (container) return container;
+
+        container = document.createElement('div');
+        container.id = 'timestamp-toast-container';
+        container.className = 'timestamp-toast-container';
+        document.body.appendChild(container);
+        return container;
+    }
+
+    function showDriverTimestampToast(message, detail = '') {
+        const container = getTimestampToastContainer();
+        const toast = document.createElement('div');
+        toast.className = 'timestamp-toast';
+        toast.innerHTML = `
+            <div>${escapeHtml(message)}</div>
+            ${detail ? `<small>${escapeHtml(detail)}</small>` : ''}
+            <button type="button" class="timestamp-toast-ok">OK</button>
+        `;
+        const okButton = toast.querySelector('.timestamp-toast-ok');
+        if (okButton) {
+            okButton.onclick = () => toast.remove();
+        }
+        container.prepend(toast);
+    }
+
+    function handleDriverTimestampUpdate(newJob) {
+        if (!newJob || newJob.id === undefined || newJob.id === null) return;
+
+        const existingJob = (allJobsRaw || []).find(job => String(job.id) === String(newJob.id));
+        if (!existingJob) return;
+
+        const driverName = newJob.assigned_driver || existingJob.assigned_driver || 'Driver';
+        const route = [
+            newJob.coll_postcode || existingJob.coll_postcode || newJob.coll_town || existingJob.coll_town,
+            newJob.del_postcode || existingJob.del_postcode || newJob.del_town || existingJob.del_town
+        ].filter(Boolean).join(' to ');
+
+        DRIVER_APP_TIMESTAMP_STEPS.forEach(step => {
+            if (hasTimestampValue(existingJob[step.field]) || !hasTimestampValue(newJob[step.field])) return;
+
+            const timeText = formatTimestampToastTime(newJob[step.field]);
+            showDriverTimestampToast(`${driverName} has ${step.action} at ${timeText}`, route ? `Route: ${route}` : '');
+            existingJob[step.field] = newJob[step.field];
+        });
+    }
+
     // ==========================================
     // 3. UI TOGGLES
     // ==========================================
@@ -1261,6 +1620,77 @@ function escapeHtml(value) {
         loadAll(); 
     }
 
+
+    function normaliseTimePeriodValue(value) {
+        const period = String(value || '').trim().toUpperCase();
+        return (period === 'AM' || period === 'PM') ? period : '';
+    }
+
+    function updateTimePeriodButtons(type) {
+        const cleanType = type === 'del' ? 'del' : 'coll';
+        const hidden = document.getElementById(`n_${cleanType}_time_period`);
+        const selected = normaliseTimePeriodValue(hidden ? hidden.value : '');
+
+        ['AM', 'PM'].forEach(period => {
+            const btn = document.getElementById(`n_${cleanType}_time_period_${period.toLowerCase()}`);
+            if (btn) btn.classList.toggle('active', selected === period);
+        });
+    }
+
+    function setTimePeriodValue(type, value) {
+        const cleanType = type === 'del' ? 'del' : 'coll';
+        const hidden = document.getElementById(`n_${cleanType}_time_period`);
+        if (!hidden) return;
+
+        hidden.value = normaliseTimePeriodValue(value);
+        updateTimePeriodButtons(cleanType);
+    }
+
+    function toggleTimePeriod(type, period) {
+        const cleanType = type === 'del' ? 'del' : 'coll';
+        const hidden = document.getElementById(`n_${cleanType}_time_period`);
+        if (!hidden) return;
+
+        const current = normaliseTimePeriodValue(hidden.value);
+        const next = normaliseTimePeriodValue(period);
+
+        hidden.value = current === next ? '' : next;
+        updateTimePeriodButtons(cleanType);
+    }
+
+    function getStoredTimePeriod(type) {
+        const cleanType = type === 'del' ? 'del' : 'coll';
+        const hidden = document.getElementById(`n_${cleanType}_time_period`);
+        return normaliseTimePeriodValue(hidden ? hidden.value : '');
+    }
+
+    function buildCardTimeLabel(iso, period) {
+        const selectedPeriod = normaliseTimePeriodValue(period);
+        const label = selectedPeriod || (iso ? new Date(iso).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}) : '');
+        if (!label) return '';
+
+        const isPeriod = selectedPeriod ? ' letter-spacing:0.4px;' : '';
+        return `<span style="display:block; font-size:0.65rem; color:#000; font-weight:800; line-height:1.05; padding-top:2px;${isPeriod}">${escapeHtml(label)}</span>`;
+    }
+
+    function detailDateTimeWithPeriod(value, period) {
+        const selectedPeriod = normaliseTimePeriodValue(period);
+        if (!value) return selectedPeriod || '-';
+
+        const d = new Date(value);
+        if (isNaN(d)) return selectedPeriod ? `${detailDisplayValue(value)} ${selectedPeriod}` : detailDisplayValue(value);
+
+        const datePart = d.toLocaleDateString('en-GB');
+        if (selectedPeriod) return `${datePart} ${selectedPeriod}`;
+
+        return datePart + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
+    }
+
+    function fullDetailDateTimePeriodRow(label, value, period) {
+        return `<div class="full-detail-row"><b>${escapeHtml(label)}:</b><span>${escapeHtml(detailDateTimeWithPeriod(value, period))}</span></div>`;
+    }
+
+
     function switchFormTab(tabId) {
         document.querySelectorAll('.tab-content-zone').forEach(el => el.classList.remove('active'));
         document.getElementById('tab-content-' + tabId).classList.add('active');
@@ -1286,6 +1716,7 @@ function escapeHtml(value) {
         const banner = document.getElementById('palletforce-mode-banner');
         const invoiceWrap = document.getElementById('invoice-number-fields-wrapper');
         const customerInv = document.getElementById('n_customers_own_invoice_number');
+        const cxNumber = document.getElementById('n_cx_number');
         const ftsInv = document.getElementById('n_fts_invoice_number');
         const isSameMode = hidden && hidden.value === mode;
         const newMode = isSameMode ? '' : (mode || '');
@@ -1303,6 +1734,10 @@ function escapeHtml(value) {
         if (customerInv) {
             customerInv.disabled = isPFMode;
             if (isPFMode) customerInv.value = '';
+        }
+        if (cxNumber) {
+            cxNumber.disabled = isPFMode;
+            if (isPFMode) cxNumber.value = '';
         }
         if (ftsInv) {
             ftsInv.disabled = isPFMode;
@@ -1334,6 +1769,21 @@ function escapeHtml(value) {
         const collRef = String((job && job.coll_ref) || '').trim().toUpperCase();
         const customerName = String((job && job.customer_name) || '').trim().toUpperCase();
         return contractType === 'instruction' || collRef.startsWith('INSTRUCTION - EMPTY') || customerName.includes('EMPTY MOVEMENT INSTRUCTION');
+    }
+
+    function isNoteJob(job) {
+        if (!job) return false;
+
+        const customerName = String(job.customer_name || '').trim();
+        const contractType = String(job.job_contract_type || job.contract_type || '').trim().toLowerCase();
+        const collPostcode = String(job.coll_postcode || '').trim().toUpperCase();
+        const delPostcode = String(job.del_postcode || '').trim().toUpperCase();
+
+        return (
+            customerName === '📝 PLANNER NOTE' ||
+            contractType === 'note' ||
+            (collPostcode === 'NOTE' && delPostcode === 'NOTE')
+        );
     }
 
     function openInstructionModal() {
@@ -1477,10 +1927,14 @@ function escapeHtml(value) {
 
         const driverPhone = selectedDriver.phone;
 
-        const formatDt = (iso) => {
-            if (!iso) return 'TBA';
+        const formatDt = (iso, period = '') => {
+            const selectedPeriod = normaliseTimePeriodValue(period);
+            if (!iso) return selectedPeriod || 'TBA';
             const d = new Date(iso);
-            return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
+            if (isNaN(d)) return selectedPeriod ? `${String(iso).replace('T', ' ')} ${selectedPeriod}` : String(iso).replace('T', ' ');
+            const datePart = d.toLocaleDateString('en-GB');
+            if (selectedPeriod) return `${datePart} ${selectedPeriod}`;
+            return datePart + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
         };
 
         let msg = `🚚 *FROST TRANSPORT - NEW JOB*\n\n`;
@@ -1491,7 +1945,7 @@ function escapeHtml(value) {
         if(j.coll_town) msg += `${j.coll_town}\n`;
         if(j.coll_county) msg += `${j.coll_county}\n`;
         msg += `*Postcode:* ${j.coll_postcode || 'TBA'}\n`;
-        msg += `*Time:* ${formatDt(j.coll_datetime)}\n`;
+        msg += `*Time:* ${formatDt(j.coll_datetime, j.coll_time_period)}\n`;
         msg += `*Ref:* ${j.coll_ref || 'N/A'}\n\n`;
 
         msg += `🔴 *DELIVERY:*\n`;
@@ -1500,7 +1954,7 @@ function escapeHtml(value) {
         if(j.del_town) msg += `${j.del_town}\n`;
         if(j.del_county) msg += `${j.del_county}\n`;
         msg += `*Postcode:* ${j.del_postcode || 'TBA'}\n`;
-        msg += `*Time:* ${formatDt(j.del_datetime)}\n`;
+        msg += `*Time:* ${formatDt(j.del_datetime, j.del_time_period)}\n`;
         msg += `*Ref:* ${j.del_ref || 'N/A'}\n\n`;
 
         msg += `📦 *GOODS:*\n`;
@@ -1539,7 +1993,15 @@ function escapeHtml(value) {
                         ${driverOptions}
                     </select>
                     <span class="driver-weekly-total" id="planner-w${week}-total-${i}">Week: £0</span>
+                    <div class="driver-contact-actions">
+                        <button type="button" class="driver-contact-btn phone" title="Call selected driver" onclick="callHeaderDriver('sel-planner-w${week}-dr${i}')">Call</button>
+                        <button type="button" class="driver-contact-btn whatsapp" title="WhatsApp selected driver" onclick="whatsappHeaderDriver('sel-planner-w${week}-dr${i}')">Text</button>
+                    </div>
                 </th>`;
+        });
+
+        PLANNER_STATUS_LANES.forEach(lane => {
+            headRow.innerHTML += `<th class="status-col-header ${lane.key}-header" id="header-w${week}-status-${lane.key}">${lane.label}</th>`;
         });
         thead.appendChild(headRow);
         table.appendChild(thead);
@@ -1549,6 +2011,7 @@ function escapeHtml(value) {
         
         for(let day = 0; day < 7; day++) {
             let row = document.createElement('tr');
+            row.id = `planner-row-w${week}-d${day}`;
             if(day >= 5) row.classList.add('weekend-row');
             
             row.innerHTML = `<th class="date-cell" id="date-w${week}-d${day}">...</th>`;
@@ -1557,6 +2020,9 @@ function escapeHtml(value) {
                 const reg = vehicles[veh];
                 row.innerHTML += `<td id="planner-w${week}-dr${veh}-s${day}" class="${isPalletforceVehicle(reg) ? 'palletforce-cell' : ''}" ondrop="drop(event)" ondragover="allowDrop(event)"></td>`;
             }
+            PLANNER_STATUS_LANES.forEach(lane => {
+                row.innerHTML += `<td id="planner-w${week}-status-${lane.key}-s${day}" class="status-lane-cell status-${lane.key}-cell" ondrop="drop(event)" ondragover="allowDrop(event)"></td>`;
+            });
             tbody.appendChild(row);
         }
         table.appendChild(tbody);
@@ -1649,7 +2115,7 @@ function escapeHtml(value) {
     }
 
     function getMaintenancePoolWeekOffset(dateValue) {
-        const offset = getWeekOffsetFromNow(dateValue);
+        const offset = getPlannerBoardWeekIndex(dateValue);
         if (offset < 0) return 0;
         if (offset > 3) return 3;
         return offset;
@@ -1668,8 +2134,8 @@ function escapeHtml(value) {
         [0, 1, 2, 3].forEach(offset => {
             const title = document.getElementById(`maintenance-pool-title-w${offset}`);
             if (!title) return;
-            const info = getWeekInfo(offset);
-            const label = offset === 0 ? 'CURRENT WEEK' : `WEEK +${offset}`;
+            const info = getWeekInfo(getPlannerDisplayWeekOffset(offset));
+            const label = offset === 0 ? (plannerWeekStartOffset === 0 ? 'CURRENT WEEK' : 'SELECTED WEEK') : `WEEK +${offset}`;
             title.innerText = `${label} | ISO WK ${info.week} | MON ${info.date}`;
         });
     }
@@ -1953,6 +2419,10 @@ function escapeHtml(value) {
             del_town_2: ""
         };
 
+        if (Object.prototype.hasOwnProperty.call(j, 'del_time_period')) {
+            p1.del_time_period = "";
+        }
+
         if (j.coll_datetime) {
             let d = new Date(j.coll_datetime);
             d.setHours(d.getHours() + 2);
@@ -1968,6 +2438,9 @@ function escapeHtml(value) {
         p2.coll_town = "YARD";
         p2.coll_street = "FROST YARD";
         p2.coll_ref = "From Storage";
+        if (Object.prototype.hasOwnProperty.call(j, 'coll_time_period')) {
+            p2.coll_time_period = "";
+        }
         delete p2.coll_postcode_2;
         delete p2.coll_town_2;
         
@@ -2010,21 +2483,33 @@ function escapeHtml(value) {
 
         updateMaintenancePoolHeaders();
         updateUnassignedPoolDateHeaders(getActivePlannerWeekOffset());
+        const visibleWindow = getPlannerVisibleDateWindow();
 
         const boardJobsQuery = sb.from('quotes')
             .select('*')
             // Main planner board only. Invoice/history/subbed/cancelled rows are fetched lazily
             // when those views are opened, which cuts unnecessary Supabase egress.
             .or('status.is.null,status.not.in.(completed,archived,billed,subbed,cancelled)');
+        const visibleWindowJobsQuery = sb.from('quotes')
+            .select('*')
+            .gte('coll_datetime', visibleWindow.startIso)
+            .lt('coll_datetime', visibleWindow.endIso);
+        const statusLaneJobsQuery = sb.from('quotes')
+            .select('*')
+            .in('status', ['subbed', 'cancelled'])
+            .not('assigned_slot', 'is', null)
+            .like('assigned_slot', 'planner-w%');
 
-        const [jobsRes, jccRes, vehRes, trailersRes] = await Promise.all([
+        const [jobsRes, visibleWindowRes, statusLaneRes, jccRes, vehRes, trailersRes] = await Promise.all([
             boardJobsQuery,
+            visibleWindowJobsQuery,
+            statusLaneJobsQuery,
             sb.from('jcc_bookings').select('*'),
             sb.from('vehicles').select('registration_number, is_vor'),
             sb.from('daily_trailer_checks').select('driver_name, trailer_number, created_at').order('created_at', { ascending: false }).limit(2000)
         ]);
         
-        if (!jobsRes.data) return;
+        if (!jobsRes.data && !visibleWindowRes.data) return;
 
         historicalTrailers = {};
         if (trailersRes && trailersRes.data) {
@@ -2062,7 +2547,11 @@ function escapeHtml(value) {
             }
         });
 
-        const boardJobs = jobsRes.data || [];
+        const boardJobsById = new Map();
+        [...(jobsRes.data || []), ...(visibleWindowRes.data || []), ...(statusLaneRes.data || [])].forEach(row => {
+            if (row && row.id !== undefined && row.id !== null) boardJobsById.set(String(row.id), row);
+        });
+        const boardJobs = Array.from(boardJobsById.values());
         boardJobs.sort(comparePlannerCardsForDisplay);
 
         // Keep lazy-loaded invoice/history/subbed/cancelled rows in memory while the
@@ -2091,7 +2580,9 @@ function escapeHtml(value) {
         allJccBookings = jccRes.data || [];
 
         boardJobs.forEach(q => {
-            if (['driver_config', 'archived', 'billed', 'subbed', 'cancelled'].includes(q.status)) return;
+            const status = String(q.status || '').toLowerCase();
+            if (status === 'driver_config') return;
+            if (['subbed', 'cancelled'].includes(status) && !isPlannerStatusLaneSlot(q.assigned_slot)) return;
             
             let isON = false;
             if (q.coll_datetime && q.del_datetime) {
@@ -2100,11 +2591,16 @@ function escapeHtml(value) {
                 if (cD !== dD) isON = true;
             }
 
-            let targetWeek = getWeekOffsetFromNow(q.coll_datetime);
-            let delTargetWeek = q.del_datetime ? getWeekOffsetFromNow(q.del_datetime) : targetWeek;
-            let maxWeek = Math.max(targetWeek, delTargetWeek);
+            let absoluteTargetWeek = getWeekOffsetFromNow(q.coll_datetime);
+            let absoluteDelTargetWeek = q.del_datetime ? getWeekOffsetFromNow(q.del_datetime) : absoluteTargetWeek;
+            let targetWeek = absoluteTargetWeek - plannerWeekStartOffset;
+            let delTargetWeek = absoluteDelTargetWeek - plannerWeekStartOffset;
+            let maxWeek = Math.max(absoluteTargetWeek, absoluteDelTargetWeek);
+            const isInVisiblePlannerWindow = targetWeek >= 0 && targetWeek <= 3;
 
-            if (maxWeek < 0) {
+            if (['archived', 'billed', 'completed'].includes(status) && !isInVisiblePlannerWindow) return;
+
+            if (plannerWeekStartOffset === 0 && maxWeek < 0) {
                 if (q.status === 'assigned' || q.status === 'pending') {
                     q.status = 'archived'; 
                     sb.from('quotes').update({ status: 'archived', assigned_slot: null }).eq('id', q.id);
@@ -2118,6 +2614,8 @@ function escapeHtml(value) {
                 }
             }
 
+            if (plannerWeekStartOffset !== 0 && !isInVisiblePlannerWindow) return;
+
             if (q.assigned_slot && q.assigned_slot.startsWith('planner-w')) {
                 let savedWeekMatch = q.assigned_slot.match(/w(\d+)/);
                 if (savedWeekMatch) {
@@ -2125,7 +2623,9 @@ function escapeHtml(value) {
                     if (savedWeek !== targetWeek && targetWeek >= 0 && targetWeek <= 3) {
                         let newSlot = q.assigned_slot.replace(`w${savedWeek}`, `w${targetWeek}`);
                         q.assigned_slot = newSlot; 
-                        sb.from('quotes').update({ assigned_slot: newSlot }).eq('id', q.id); 
+                        if (plannerWeekStartOffset === 0) {
+                            sb.from('quotes').update({ assigned_slot: newSlot }).eq('id', q.id); 
+                        }
                     }
                 }
             }
@@ -2184,10 +2684,6 @@ function escapeHtml(value) {
         // sync happens in the background.
         if (!isLazyDataView(activePlannerView)) {
             restoreActivePlannerView();
-        }
-
-        if (document.getElementById('map-view').style.display === 'block') {
-            updateMapPins();
         }
     
         } finally {
@@ -2272,6 +2768,7 @@ function escapeHtml(value) {
             <div class="invoice-number-banner">
                 <div class="invoice-number-pill"><b>FTS Invoice Number</b><span>${detailDisplayValue(job.fts_invoice_number)}</span></div>
                 <div class="invoice-number-pill customer"><b>Customer's Invoice Number</b><span>${detailDisplayValue(job.customers_own_invoice_number)}</span></div>
+                <div class="invoice-number-pill customer"><b>CX Number</b><span>${detailDisplayValue(job.cx_number)}</span></div>
             </div>`;
     }
 
@@ -2343,35 +2840,6 @@ function escapeHtml(value) {
     }
 
     async function getLatestDriverLocationForEta(job, stage) {
-        const driverName = (job.assigned_driver || '').trim();
-
-        if (driverName) {
-            try {
-                const { data, error } = await sb
-                    .from('vehicle_tracking')
-                    .select('coordinates, created_at, speed, heading')
-                    .ilike('driver_name', driverName)
-                    .order('created_at', { ascending: false })
-                    .limit(1);
-
-                if (!error && data && data.length > 0) {
-                    const gps = parseGpsCoordinates(data[0].coordinates);
-                    if (gps) {
-                        return {
-                            gps,
-                            source: 'Live driver tracking',
-                            gpsAge: formatGpsAge(data[0].created_at),
-                            createdAt: data[0].created_at,
-                            speed: data[0].speed,
-                            heading: data[0].heading
-                        };
-                    }
-                }
-            } catch (err) {
-                console.warn('ETA live tracking lookup failed:', err);
-            }
-        }
-
         const fallbackFields = stage.stage === 'delivery'
             ? [
                 ['arrived_gps', 'Collection arrival GPS'],
@@ -2477,7 +2945,7 @@ function escapeHtml(value) {
         if (!driverLocation) {
             setJobEtaContent(job.id, `
                 <div class="job-eta-warning">
-                    Waiting for usable driver GPS. This will use live tracking first, then fall back to ack_gps / arrived_gps when available.
+                    Waiting for usable driver GPS from ack_gps / arrived_gps.
                 </div>
             `);
             return;
@@ -2529,9 +2997,9 @@ function escapeHtml(value) {
 
     function buildFullJobDetailsHtml(job, isGhost = false) {
         const knownFields = new Set([
-            'id', 'created_at', 'customer_name', 'customer_phone', 'customer_email', 'job_notes', 'customers_own_invoice_number', 'fts_invoice_number',
-            'coll_cust_name', 'coll_phone', 'coll_email', 'coll_postcode', 'coll_street', 'coll_town', 'coll_county', 'coll_ref', 'coll_datetime', 'coll_postcode_2', 'coll_town_2',
-            'del_postcode', 'del_cust_name', 'del_phone', 'del_email', 'del_street', 'del_town', 'del_county', 'del_ref', 'del_datetime', 'del_postcode_2', 'del_town_2',
+            'id', 'created_at', 'customer_name', 'customer_phone', 'customer_email', 'job_notes', 'customers_own_invoice_number', 'cx_number', 'fts_invoice_number',
+            'coll_cust_name', 'coll_phone', 'coll_email', 'coll_postcode', 'coll_street', 'coll_town', 'coll_county', 'coll_ref', 'coll_datetime', 'coll_time_period', 'coll_postcode_2', 'coll_town_2',
+            'del_postcode', 'del_cust_name', 'del_phone', 'del_email', 'del_street', 'del_town', 'del_county', 'del_ref', 'del_datetime', 'del_time_period', 'del_postcode_2', 'del_town_2',
             'total_price', 'total_pallets', 'total_weight', 'vehicle_type', 'status', 'dispatch_status', 'dispatch_release_date', 'dispatch_sequence', 'dispatch_scheduled_at', 'released_at', 'assigned_slot', 'assigned_driver', 'driver_phone',
             'ack_timestamp', 'ack_gps', 'arrived_timestamp', 'arrived_gps', 'loaded_timestamp', 'del_arrived_timestamp', 'tipped_timestamp', 'tipped_gps', 'pod_url'
         ]);
@@ -2540,6 +3008,7 @@ function escapeHtml(value) {
             fullDetailRow('Job / booking ID', job.id),
             fullDetailRow('FTS invoice number', job.fts_invoice_number),
             fullDetailRow('Customer invoice number', job.customers_own_invoice_number),
+            fullDetailRow('CX number', job.cx_number),
             fullDetailRow('Created', job.created_at, true),
             fullDetailRow('Booking customer', job.customer_name),
             fullDetailRow('Customer telephone', job.customer_phone),
@@ -2564,7 +3033,7 @@ function escapeHtml(value) {
             fullDetailRow('County', job.coll_county),
             fullDetailRow('Postcode', job.coll_postcode),
             fullDetailRow('Collection ref / booking no', job.coll_ref),
-            fullDetailRow('Date & time', job.coll_datetime, true),
+            fullDetailDateTimePeriodRow('Date & time', job.coll_datetime, job.coll_time_period),
             fullDetailRow('Second collection postcode', job.coll_postcode_2),
             fullDetailRow('Second collection town', job.coll_town_2)
         ];
@@ -2578,7 +3047,7 @@ function escapeHtml(value) {
             fullDetailRow('County', job.del_county),
             fullDetailRow('Postcode', job.del_postcode),
             fullDetailRow('Delivery ref / booking no', job.del_ref),
-            fullDetailRow('Date & time', job.del_datetime, true),
+            fullDetailDateTimePeriodRow('Date & time', job.del_datetime, job.del_time_period),
             fullDetailRow('Second delivery postcode', job.del_postcode_2),
             fullDetailRow('Second delivery town', job.del_town_2)
         ];
@@ -2921,8 +3390,8 @@ function escapeHtml(value) {
         const dtFormat = (str) => str ? str.replace('T', ' ') : '-';
         const tOnly = (iso) => iso ? new Date(iso).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}) : '--:--';
 
-        let collTime = q.coll_datetime ? `<span style="display:block; font-size:0.65rem; color:#000; font-weight:800; line-height:1.05; padding-top:2px;">${new Date(q.coll_datetime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}</span>` : '';
-        let delTime = q.del_datetime ? `<span style="display:block; font-size:0.65rem; color:#000; font-weight:800; line-height:1.05; padding-top:2px;">${new Date(q.del_datetime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}</span>` : '';
+        let collTime = buildCardTimeLabel(q.coll_datetime, q.coll_time_period);
+        let delTime = buildCardTimeLabel(q.del_datetime, q.del_time_period);
 
         let targetWeek = getWeekOffsetFromNow(q.coll_datetime);
         card.dataset.targetWeek = targetWeek;
@@ -3365,9 +3834,24 @@ function escapeHtml(value) {
             total_weight: document.getElementById('n_total_weight').value,
             vehicle_type: document.getElementById('n_veh_type').value,
             customers_own_invoice_number: isPalletforceJobType(getCurrentJobBookingMode()) ? '' : document.getElementById('n_customers_own_invoice_number').value,
+            cx_number: isPalletforceJobType(getCurrentJobBookingMode()) ? '' : document.getElementById('n_cx_number').value,
             fts_invoice_number: isPalletforceJobType(getCurrentJobBookingMode()) ? '' : document.getElementById('n_fts_invoice_number').value,
             job_contract_type: isQuickCardJobType(getCurrentJobBookingMode()) ? '' : getCurrentJobBookingMode()
         };
+
+        const collTimePeriodField = document.getElementById('n_coll_time_period');
+        const delTimePeriodField = document.getElementById('n_del_time_period');
+        const collTimePeriod = getStoredTimePeriod('coll');
+        const delTimePeriod = getStoredTimePeriod('del');
+
+        // Only send these optional fields when they are being used or cleared from an existing value.
+        // This protects older Supabase tables until the two new columns are added.
+        if (collTimePeriod || (collTimePeriodField && collTimePeriodField.dataset.original)) {
+            payload.coll_time_period = collTimePeriod;
+        }
+        if (delTimePeriod || (delTimePeriodField && delTimePeriodField.dataset.original)) {
+            payload.del_time_period = delTimePeriod;
+        }
 
         if (isQuickCardJobType(getCurrentJobBookingMode()) && String(payload.coll_ref || '').toUpperCase().startsWith('QUICK CARD')) {
             payload.coll_ref = '';
@@ -3405,6 +3889,9 @@ function escapeHtml(value) {
                 p1.del_cust_name = "FROST YARD";
                 p1.del_street = "Storage";
                 p1.del_datetime = addHoursLocal(payload.coll_datetime, 2); 
+                if (Object.prototype.hasOwnProperty.call(payload, 'del_time_period')) {
+                    p1.del_time_period = '';
+                }
                 p1.del_postcode_2 = "";
                 delete p1.del_town_2; 
                 p1.status = 'pending';
@@ -3419,6 +3906,9 @@ function escapeHtml(value) {
                 p2.coll_street = "FROST YARD";
                 p2.coll_ref = "From Storage";
                 p2.coll_datetime = addHoursLocal(payload.del_datetime, -2); 
+                if (Object.prototype.hasOwnProperty.call(payload, 'coll_time_period')) {
+                    p2.coll_time_period = '';
+                }
                 delete p2.coll_postcode_2; 
                 delete p2.coll_town_2;
                 p2.status = 'pending';
@@ -3449,6 +3939,14 @@ To use PalletForce Assist / NPC job mode, add this text column to your Supabase 
 job_contract_type
 
 After adding it, try saving the job again.`);
+                    } else if (msg.includes('cx_number')) {
+                        alert(`⚠️ DATABASE UPDATE REQUIRED!
+
+To save the CX Number field, add this text column to your Supabase quotes table:
+
+cx_number
+
+After adding it, try saving the job again.`);
                     } else {
                         alert(`⚠️ DATABASE UPDATE REQUIRED!
 
@@ -3462,6 +3960,9 @@ To use the extra '+ Collection' or '+ Delivery' tabs, you must go to your Supaba
 6. coll_phone
 7. coll_email
 8. job_notes
+9. coll_time_period
+10. del_time_period
+11. cx_number
 
 Standard jobs without extra legs will continue to save normally.`);
                     }
@@ -3482,6 +3983,7 @@ Standard jobs without extra legs will continue to save normally.`);
         resetForm();
         document.getElementById('sys_job_id').value = id;
         document.getElementById('n_customers_own_invoice_number').value = j.customers_own_invoice_number || '';
+        document.getElementById('n_cx_number').value = j.cx_number || '';
         document.getElementById('n_fts_invoice_number').value = j.fts_invoice_number || '';
         setJobBookingMode(j.job_contract_type || j.contract_type || '');
         document.getElementById('n_cust_name').value = j.customer_name || '';
@@ -3498,6 +4000,12 @@ Standard jobs without extra legs will continue to save normally.`);
         document.getElementById('n_coll_county').value = j.coll_county || '';
         document.getElementById('n_coll_ref').value = j.coll_ref || '';
         document.getElementById('n_coll_dt').value = j.coll_datetime || '';
+        const collPeriodField = document.getElementById('n_coll_time_period');
+        if (collPeriodField) {
+            collPeriodField.value = normaliseTimePeriodValue(j.coll_time_period);
+            collPeriodField.dataset.original = collPeriodField.value;
+            updateTimePeriodButtons('coll');
+        }
 
         document.getElementById('n_coll_pc_2').value = j.coll_postcode_2 || '';
         document.getElementById('n_coll_town_2').value = j.coll_town_2 || '';
@@ -3511,6 +4019,12 @@ Standard jobs without extra legs will continue to save normally.`);
         document.getElementById('n_9').value = j.del_county || '';
         document.getElementById('n_10').value = j.del_ref || '';
         document.getElementById('n_del_dt').value = j.del_datetime || '';
+        const delPeriodField = document.getElementById('n_del_time_period');
+        if (delPeriodField) {
+            delPeriodField.value = normaliseTimePeriodValue(j.del_time_period);
+            delPeriodField.dataset.original = delPeriodField.value;
+            updateTimePeriodButtons('del');
+        }
 
         document.getElementById('n_del_pc_2').value = j.del_postcode_2 || '';
         document.getElementById('n_del_town_2').value = j.del_town_2 || '';
@@ -3664,7 +4178,8 @@ Standard jobs without extra legs will continue to save normally.`);
     async function markSubbed(e, id) {
         e.stopPropagation();
         if(confirm("Move this job to Subbed to Contractor?" + linkedActionLabel(id))) {
-            await updateLinkedJobs(id, { status: 'subbed', assigned_slot: null, dispatch_status: 'unsent', dispatch_release_date: null, dispatch_sequence: null, dispatch_scheduled_at: null, released_at: null });
+            const job = allJobsRaw.find(x => String(x.id) === String(id));
+            await updateLinkedJobs(id, { status: 'subbed', assigned_slot: getPlannerStatusLaneSlotForJob('subbed', job), assigned_driver: null, driver_phone: null, dispatch_status: 'unsent', dispatch_release_date: null, dispatch_sequence: null, dispatch_scheduled_at: null, released_at: null });
             loadAll();
         }
     }
@@ -3672,7 +4187,8 @@ Standard jobs without extra legs will continue to save normally.`);
     async function markCancelled(e, id) {
         e.stopPropagation();
         if(confirm("Cancel this job?" + linkedActionLabel(id))) {
-            await updateLinkedJobs(id, { status: 'cancelled', assigned_slot: null, dispatch_status: 'unsent', dispatch_release_date: null, dispatch_sequence: null, dispatch_scheduled_at: null, released_at: null });
+            const job = allJobsRaw.find(x => String(x.id) === String(id));
+            await updateLinkedJobs(id, { status: 'cancelled', assigned_slot: getPlannerStatusLaneSlotForJob('cancelled', job), assigned_driver: null, driver_phone: null, dispatch_status: 'unsent', dispatch_release_date: null, dispatch_sequence: null, dispatch_scheduled_at: null, released_at: null });
             loadAll();
         }
     }
@@ -4001,9 +4517,9 @@ No phone notification has been sent yet because this job is for a future date.`;
         const candidates = [currentWeekOffset, activePlannerView];
         for (const value of candidates) {
             const n = Number(value);
-            if (Number.isInteger(n) && n >= 0 && n <= 3) return n;
+            if (Number.isInteger(n) && n >= 0 && n <= 3) return getPlannerDisplayWeekOffset(n);
         }
-        return 0;
+        return getPlannerDisplayWeekOffset(0);
     }
 
     function getActiveWeekPoolAnchorDate() {
@@ -4024,11 +4540,20 @@ No phone notification has been sent yet because this job is for a future date.`;
         // Main planner grid cells, e.g. planner-w1-dr3-s2
         const plannerMatch = targetId.match(/planner-w(\d+)-dr\d+-s(\d+)/);
         if (plannerMatch) {
-            const weekOffset = parseInt(plannerMatch[1], 10);
+            const weekOffset = getPlannerDisplayWeekOffset(parseInt(plannerMatch[1], 10));
             const dayIndex = parseInt(plannerMatch[2], 10);
             const targetDate = getCurrentPlannerMondayDate();
             targetDate.setDate(targetDate.getDate() + (weekOffset * 7) + dayIndex);
             return { date: targetDate, label: 'planner date' };
+        }
+
+        const statusLaneMatch = targetId.match(/planner-w(\d+)-status-(subbed|cancelled)-s(\d+)/);
+        if (statusLaneMatch) {
+            const weekOffset = getPlannerDisplayWeekOffset(parseInt(statusLaneMatch[1], 10));
+            const dayIndex = parseInt(statusLaneMatch[3], 10);
+            const targetDate = getCurrentPlannerMondayDate();
+            targetDate.setDate(targetDate.getDate() + (weekOffset * 7) + dayIndex);
+            return { date: targetDate, label: 'planner status lane date' };
         }
 
         // Normal unassigned day pools, e.g. pool-zone-1 to pool-zone-0.
@@ -4091,6 +4616,7 @@ Are you sure you want to place it here?`);
         }
 
         const isMaintenancePool = isMaintenancePoolSlot(finalTarget.id);
+        const statusLaneStatus = getPlannerStatusFromLaneSlot(finalTarget.id);
         const isPool = finalTarget.id === 'pool-container' || finalTarget.classList.contains('pool-zone') || finalTarget.closest('.pool-zone') !== null;
         const draggedJob = allJobsRaw.find(x => String(x.id) === String(id));
 
@@ -4104,7 +4630,7 @@ Are you sure you want to place it here?`);
         if (!confirmWrongDateMoveIfNeeded(draggedJob, finalTarget)) return;
 
         let assignedDriver = null;
-        if (!isPool) {
+        if (!isPool && !statusLaneStatus) {
             const cellId = finalTarget.id.split('-s')[0]; 
             const dropdown = document.getElementById(`sel-${cellId}`);
             if (dropdown && dropdown.value) {
@@ -4113,9 +4639,9 @@ Are you sure you want to place it here?`);
             }
         }
 
-        let updatePayload = { 
-            status: isPool ? 'pending' : 'assigned', 
-            assigned_slot: isMaintenancePool ? finalTarget.id : (isPool ? null : finalTarget.id),
+        let updatePayload = {
+            status: statusLaneStatus || (isPool ? 'pending' : 'assigned'),
+            assigned_slot: isMaintenancePool || statusLaneStatus ? finalTarget.id : (isPool ? null : finalTarget.id),
             assigned_driver: assignedDriver,
             // Normal drag/drop should use the default collection-time order.
             // Only the three-line reorder handle writes planner_sort_order as a manual override.
@@ -4123,7 +4649,14 @@ Are you sure you want to place it here?`);
             planner_sort_manual: false
         };
 
-        if (isPool) updatePayload.dispatch_status = 'unsent'; 
+        if (isPool || statusLaneStatus) {
+            updatePayload.dispatch_status = 'unsent';
+            updatePayload.dispatch_release_date = null;
+            updatePayload.dispatch_sequence = null;
+            updatePayload.dispatch_scheduled_at = null;
+            updatePayload.released_at = null;
+            updatePayload.driver_phone = null;
+        }
 
         await sb.from('quotes').update(updatePayload).eq('id', id);
         loadAll();
@@ -4198,11 +4731,17 @@ Are you sure you want to place it here?`);
         return str ? str : fallback;
     }
 
-    function formatInvoiceDateTime(v) {
-        if (!v) return 'N/A';
+    function formatInvoiceDateTime(v, period = '') {
+        const selectedPeriod = normaliseTimePeriodValue(period);
+        if (!v) return selectedPeriod || 'N/A';
         const d = new Date(v);
-        if (isNaN(d)) return String(v).replace('T', ' ');
-        return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        if (isNaN(d)) {
+            const fallback = String(v).replace('T', ' ');
+            return selectedPeriod ? `${fallback} ${selectedPeriod}` : fallback;
+        }
+        const datePart = d.toLocaleDateString('en-GB');
+        if (selectedPeriod) return `${datePart} ${selectedPeriod}`;
+        return datePart + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     }
 
     function invoiceAddressLine(...parts) {
@@ -4315,11 +4854,11 @@ Are you sure you want to place it here?`);
             '',
             `Booking customer: ${invoiceTextValue(j.customer_name)}`,
             `Collection: ${invoiceAddressLine(j.coll_street, j.coll_town, j.coll_county, j.coll_postcode)}`,
-            `Collection date/time: ${formatInvoiceDateTime(j.coll_datetime)}`,
+            `Collection date/time: ${formatInvoiceDateTime(j.coll_datetime, j.coll_time_period)}`,
             `Collection reference: ${invoiceTextValue(j.coll_ref)}`,
             '',
             `Delivery: ${invoiceAddressLine(j.del_cust_name, j.del_street, j.del_town, j.del_county, j.del_postcode)}`,
-            `Delivery date/time: ${formatInvoiceDateTime(j.del_datetime)}`,
+            `Delivery date/time: ${formatInvoiceDateTime(j.del_datetime, j.del_time_period)}`,
             `Delivery reference: ${invoiceTextValue(j.del_ref)}`,
             `Completed: ${completedAt ? formatInvoiceDateTime(completedAt) : 'Not recorded'}`,
             '',
@@ -4867,177 +5406,6 @@ Are you sure you want to place it here?`);
     }
 
     // ==========================================
-    // 9. LEAFLET MAP & DROP SPOTS LOGIC
-    // ==========================================
-    function clearNextJobRouting() {
-        if (routeLineLayer && fleetMap) fleetMap.removeLayer(routeLineLayer);
-        if (nextJobPinLayer && fleetMap) fleetMap.removeLayer(nextJobPinLayer);
-        routeLineLayer = null;
-        nextJobPinLayer = null;
-    }
-
-    async function updateMapPins() {
-        if (!fleetMap) return;
-
-        mapMarkers.forEach(m => fleetMap.removeLayer(m));
-        mapMarkers = [];
-        clearNextJobRouting();
-
-        // DATE FILTER: Show only jobs from Today through the end of the Current Week
-        let now = new Date();
-        let startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-        let dayNum = now.getDay() || 7; 
-        let endOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (7 - dayNum), 23, 59, 59, 999).getTime();
-
-        const activeJobs = allJobsRaw.filter(j => {
-            if (j.status !== 'assigned' && j.status !== 'pending') return false;
-            if (!j.del_postcode || j.del_postcode.trim() === '' || j.del_postcode === 'NOTE' || j.del_postcode === 'BOOK INSPECTION') return false;
-            if (!j.del_datetime) return false;
-            
-            let jobTime = new Date(j.del_datetime).getTime();
-            if (jobTime < startOfToday || jobTime > endOfWeek) return false; // Hide past/future jobs
-            
-            return true;
-        });
-
-        if (activeJobs.length === 0) return;
-
-        let rawPostcodes = [];
-        activeJobs.forEach(j => {
-            if(j.del_postcode) rawPostcodes.push(j.del_postcode);
-            if(j.coll_postcode) rawPostcodes.push(j.coll_postcode);
-        });
-        const postcodes = [...new Set(rawPostcodes.map(pc => pc.toUpperCase().replace(/\s+/g, '')))];
-        
-        let coords = {};
-
-        for (let i = 0; i < postcodes.length; i += 100) {
-            const chunk = postcodes.slice(i, i + 100);
-            try {
-                const res = await fetch('https://api.postcodes.io/postcodes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ postcodes: chunk })
-                });
-                const data = await res.json();
-                if (data.status === 200 && data.result) {
-                    data.result.forEach(r => {
-                        if (r.result) {
-                            coords[r.query] = { lat: r.result.latitude, lng: r.result.longitude };
-                        }
-                    });
-                }
-            } catch(e) { console.error("Map Geocoding Error:", e); }
-        }
-
-        activeJobs.forEach(j => {
-            const pc = j.del_postcode.toUpperCase().replace(/\s+/g, '');
-            if (coords[pc]) {
-                const dt = j.del_datetime ? new Date(j.del_datetime).toLocaleString('en-GB', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : 'Time TBC';
-                
-                let isIdle = true; // DEFAULT TO RED
-                let nextJobTimeStr = "None scheduled";
-                let diffHoursStr = "";
-                let nextJob = null;
-
-                if (j.assigned_driver && j.del_datetime) {
-                    let currentDelTime = new Date(j.del_datetime).getTime();
-
-                    // Find future jobs for this specific driver
-                    let nextJobs = allJobsRaw.filter(nextJ =>
-                        nextJ.assigned_driver === j.assigned_driver &&
-                        nextJ.coll_datetime &&
-                        new Date(nextJ.coll_datetime).getTime() >= currentDelTime &&
-                        nextJ.id !== j.id &&
-                        nextJ.status !== 'cancelled' &&
-                        nextJ.status !== 'archived'
-                    );
-
-                    if (nextJobs.length > 0) {
-                        nextJobs.sort((a, b) => new Date(a.coll_datetime).getTime() - new Date(b.coll_datetime).getTime());
-                        nextJob = nextJobs[0];
-                        let nextCollTime = new Date(nextJob.coll_datetime).getTime();
-
-                        let diffHours = (nextCollTime - currentDelTime) / (1000 * 60 * 60);
-                        if (diffHours <= 6) {
-                            isIdle = false; // Blue Pin - Job found within 6 hours!
-                        } else {
-                            diffHoursStr = ` (${Math.round(diffHours)}h gap)`;
-                        }
-                        nextJobTimeStr = new Date(nextJob.coll_datetime).toLocaleString('en-GB', {weekday:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'}) + diffHoursStr;
-                    }
-                }
-                
-                let markerIcon = isIdle ? new L.Icon({
-                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34],
-                    shadowSize: [41, 41]
-                }) : new L.Icon.Default();
-
-                const marker = L.marker([coords[pc].lat, coords[pc].lng], { icon: markerIcon }).addTo(fleetMap);
-                
-                marker.bindPopup(`
-                    <div style="font-family:Segoe UI, sans-serif; font-size:0.85rem; line-height:1.4;">
-                        <strong style="color:var(--frost-red); font-size:0.95rem;">${j.customer_name || 'Unknown'}</strong><br>
-                        <b>Town:</b> ${j.del_town || 'Unknown'}<br>
-                        <b>Postcode:</b> ${j.del_postcode}<br>
-                        <b>Unloading Time:</b> <span style="color:#0056b3;">${dt}</span><br>
-                        <b>Next Job:</b> <span style="color:${isIdle ? 'red' : '#2e7d32'}; font-weight:bold;">${nextJobTimeStr}</span><br>
-                        <hr style="border:0; border-top:1px solid #ccc; margin:5px 0;">
-                        <span style="font-size:0.75rem; color:#555;"><b>Vehicle:</b> ${j.vehicle_type} | <b>Driver:</b> <span style="text-transform:capitalize;">${j.assigned_driver || 'Unassigned'}</span></span>
-                    </div>
-                `);
-
-                marker.on('click', () => {
-                    clearNextJobRouting();
-                    if (!document.getElementById('toggle-routing').checked) return;
-                    
-                    if (!isIdle && nextJob && nextJob.coll_postcode) {
-                        let nextPc = nextJob.coll_postcode.toUpperCase().replace(/\s+/g, '');
-                        if (coords[nextPc]) {
-                            
-                            let greenIcon = new L.Icon({
-                                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-                                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                                iconSize: [25, 41],
-                                iconAnchor: [12, 41],
-                                popupAnchor: [1, -34],
-                                shadowSize: [41, 41]
-                            });
-                            
-                            nextJobPinLayer = L.marker([coords[nextPc].lat, coords[nextPc].lng], {icon: greenIcon}).addTo(fleetMap);
-                            
-                            let nTime = new Date(nextJob.coll_datetime).toLocaleString('en-GB', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
-                            nextJobPinLayer.bindPopup(`
-                                <div style="font-family:Segoe UI, sans-serif; font-size:0.85rem; line-height:1.4;">
-                                    <strong style="color:#2e7d32; font-size:0.95rem;">${nextJob.customer_name || 'Unknown'} <span style="font-size:0.65rem; background:#2e7d32; color:white; padding:2px 4px; border-radius:3px;">Next Job</span></strong><br>
-                                    <b>Town:</b> ${nextJob.coll_town || 'Unknown'}<br>
-                                    <b>Postcode:</b> ${nextJob.coll_postcode}<br>
-                                    <b>Loading Time:</b> <span style="color:#0056b3;">${nTime}</span><br>
-                                    <hr style="border:0; border-top:1px solid #ccc; margin:5px 0;">
-                                    <span style="font-size:0.75rem; color:#555;"><b>Vehicle:</b> ${nextJob.vehicle_type} | <b>Driver:</b> <span style="text-transform:capitalize;">${nextJob.assigned_driver || 'Unassigned'}</span></span>
-                                </div>
-                            `);
-                            
-                            routeLineLayer = L.polyline([
-                                [coords[pc].lat, coords[pc].lng],
-                                [coords[nextPc].lat, coords[nextPc].lng]
-                            ], {color: '#2e7d32', weight: 4, dashArray: '8, 8'}).addTo(fleetMap);
-                        }
-                    }
-                });
-
-                mapMarkers.push(marker);
-            }
-        });
-
-        fleetMap.on('popupclose', clearNextJobRouting);
-    }
-
-    // ==========================================
     // 10. UI UPDATERS & UTILS
     // ==========================================
     function updateCalculations() {
@@ -5076,7 +5444,6 @@ Are you sure you want to place it here?`);
         else if (view === 'history') await renderHistoryList(force);
         else if (view === 'subbed') await renderSubbedList(force);
         else if (view === 'cancelled') await renderCancelledList(force);
-        else if (view === 'map' && document.getElementById('map-view').style.display === 'block') updateMapPins();
     }
 
 
@@ -5216,9 +5583,15 @@ Are you sure you want to place it here?`);
         document.getElementById('history-view').style.display = 'none';
         document.getElementById('subbed-view').style.display = 'none';
         document.getElementById('cancelled-view').style.display = 'none';
-        document.getElementById('map-view').style.display = 'none';
+        document.getElementById('templates-view').style.display = 'none';
 
-        if (view === 'invoice') {
+        if (view === 'templates') {
+            document.getElementById('templates-view').style.display = 'block';
+            const templatesButton = document.getElementById('btn-templates');
+            if (templatesButton) templatesButton.classList.add('active');
+            renderTemplatesView();
+        }
+        else if (view === 'invoice') {
             document.getElementById('invoicing-view').style.display = 'block';
             document.getElementById('btn-invoice').classList.add('active');
         }
@@ -5228,29 +5601,15 @@ Are you sure you want to place it here?`);
         }
         else if (view === 'subbed') {
             document.getElementById('subbed-view').style.display = 'block';
-            document.getElementById('btn-subbed').classList.add('active');
+            const subbedButton = document.getElementById('btn-subbed');
+            if (subbedButton) subbedButton.classList.add('active');
         }
         else if (view === 'cancelled') {
             document.getElementById('cancelled-view').style.display = 'block';
-            document.getElementById('btn-cancelled').classList.add('active');
+            const cancelledButton = document.getElementById('btn-cancelled');
+            if (cancelledButton) cancelledButton.classList.add('active');
         }
-        else if (view === 'map') { 
-            document.getElementById('map-view').style.display = 'flex'; document.getElementById('map-view').style.flexDirection = 'column';
-            document.getElementById('btn-map').classList.add('active'); 
-            
-            if (!fleetMap) {
-                fleetMap = L.map('map-container').setView([53.48, -2.24], 6); 
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
-                }).addTo(fleetMap);
-            }
-            
-            setTimeout(() => { 
-                fleetMap.invalidateSize(); 
-                updateMapPins();
-            }, 100);
-            
-        } else {
+        else {
             currentWeekOffset = view;
             document.getElementById('planner-board').style.display = 'block';
             document.getElementById(`btn-w${view}`).classList.add('active');
@@ -5260,7 +5619,8 @@ Are you sure you want to place it here?`);
                 if (tbl) tbl.style.display = (i === view ? 'table' : 'none');
             });
 
-            const info = getWeekInfo(view); document.getElementById('week-display-box').innerText = `WK ${info.week} | MON ${info.date}`;
+            const info = getWeekInfo(getPlannerDisplayWeekOffset(view));
+            renderWeekInfoBox(info);
             updateDateHeaders(view);
             updateUnassignedPoolDateHeaders(view);
             updateCalculations();
@@ -5292,6 +5652,62 @@ Are you sure you want to place it here?`);
         }
     }
 
+    function getISOWeekYear(dateValue) {
+        const d = new Date(dateValue);
+        const utcDate = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        const dNum = utcDate.getUTCDay() || 7;
+        utcDate.setUTCDate(utcDate.getUTCDate() + 4 - dNum);
+        return utcDate.getUTCFullYear();
+    }
+
+    function getISOWeeksInYear(year) {
+        return getISOWeekNumber(new Date(year, 11, 28));
+    }
+
+    function getISOWeekMonday(isoYear, isoWeek) {
+        const jan4 = new Date(isoYear, 0, 4, 12, 0, 0, 0);
+        const dayNum = jan4.getDay() || 7;
+        const monday = new Date(jan4);
+        monday.setDate(jan4.getDate() - dayNum + 1 + ((isoWeek - 1) * 7));
+        monday.setHours(12, 0, 0, 0);
+        return monday;
+    }
+
+    function getPlannerOffsetForISOWeek(isoWeek, isoYear) {
+        const selectedMonday = getISOWeekMonday(isoYear, isoWeek);
+        const currentMonday = getCurrentPlannerMondayDate();
+        return Math.round((selectedMonday - currentMonday) / (7 * 24 * 60 * 60 * 1000));
+    }
+
+    function renderWeekInfoBox(info = getWeekInfo(getPlannerDisplayWeekOffset(currentWeekOffset))) {
+        const box = document.getElementById('week-display-box');
+        if (!box) return;
+
+        const isoYear = info.year || getISOWeekYear(new Date());
+        const weekCount = getISOWeeksInYear(isoYear);
+        const options = Array.from({ length: weekCount }, (_, i) => i + 1)
+            .map(week => `<option value="${week}" ${week === info.week ? 'selected' : ''}>${week}</option>`)
+            .join('');
+
+        box.innerHTML = `<span>WK</span><select id="iso-week-select" title="Select ISO week" onchange="selectISOWeek(this.value)">${options}</select><span>| MON ${info.date}</span>`;
+    }
+
+    function selectISOWeek(value) {
+        const selectedWeek = parseInt(value, 10);
+        if (!Number.isInteger(selectedWeek)) return;
+
+        const currentInfo = getWeekInfo(getPlannerDisplayWeekOffset(currentWeekOffset));
+        const isoYear = currentInfo.year || getISOWeekYear(new Date());
+        const maxWeek = getISOWeeksInYear(isoYear);
+        if (selectedWeek < 1 || selectedWeek > maxWeek) return alert(`Please choose an ISO week between 1 and ${maxWeek}.`);
+
+        plannerWeekStartOffset = getPlannerOffsetForISOWeek(selectedWeek, isoYear);
+        currentWeekOffset = 0;
+        activePlannerView = 0;
+        switchView(0);
+        loadAll();
+    }
+
     function getWeekInfo(offset) {
         let now = new Date(); 
         let dayNum = now.getDay() || 7; 
@@ -5300,26 +5716,60 @@ Are you sure you want to place it here?`);
         let dNum = d.getUTCDay() || 7; d.setUTCDate(d.getUTCDate() + 4 - dNum);
         let yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
         let weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
-        return { week: weekNo, date: mon.toLocaleDateString('en-GB') };
+        return { week: weekNo, year: d.getUTCFullYear(), date: mon.toLocaleDateString('en-GB') };
+    }
+
+    function getPastPlannerDayKey(offset, day) {
+        return `w${offset}-d${day}`;
+    }
+
+    function isPastPlannerDate(dateValue) {
+        const today = new Date();
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const targetStart = new Date(dateValue.getFullYear(), dateValue.getMonth(), dateValue.getDate());
+        return targetStart < todayStart;
+    }
+
+    function togglePastPlannerDay(offset, day) {
+        const key = getPastPlannerDayKey(offset, day);
+        if (expandedPastPlannerDays.has(key)) {
+            expandedPastPlannerDays.delete(key);
+        } else {
+            expandedPastPlannerDays.add(key);
+        }
+        updateDateHeaders(offset);
     }
 
     function updateDateHeaders(offset) {
         let now = new Date(); 
         let dayNum = now.getDay() || 7; 
-        let first = now.getDate() - dayNum + 1 + (offset * 7);
+        const displayOffset = getPlannerDisplayWeekOffset(offset);
+        let first = now.getDate() - dayNum + 1 + (displayOffset * 7);
         
         ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach((dayName, day) => {
             let d = new Date(now.getTime());
             d.setDate(first + day);
             const dateHeader = document.getElementById(`date-w${offset}-d${day}`);
+            const row = document.getElementById(`planner-row-w${offset}-d${day}`);
+            const dayKey = getPastPlannerDayKey(offset, day);
+            const isPastCurrentWeekDay = displayOffset === 0 && isPastPlannerDate(d);
+            const isExpanded = expandedPastPlannerDays.has(dayKey);
             if (dateHeader) {
-                dateHeader.innerHTML = `<div class="day-name">${dayName}</div><div class="day-date">${d.toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'})}</div>`;
+                const toggleLabel = isPastCurrentWeekDay ? `<div class="past-day-toggle-label">${isExpanded ? 'Click to collapse' : 'Click to expand'}</div>` : '';
+                dateHeader.innerHTML = `<div class="day-name">${dayName}</div><div class="day-date">${d.toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'})}</div>${toggleLabel}`;
+                dateHeader.onclick = isPastCurrentWeekDay ? () => togglePastPlannerDay(offset, day) : null;
+                dateHeader.title = isPastCurrentWeekDay ? (isExpanded ? 'Click to collapse this past day' : 'Click to expand this past day') : '';
+            }
+            if (row) {
+                row.classList.toggle('past-day-row', isPastCurrentWeekDay);
+                row.classList.toggle('past-day-collapsed', isPastCurrentWeekDay && !isExpanded);
             }
         });
     }
 
     function updateUnassignedPoolDateHeaders(offset = getActivePlannerWeekOffset()) {
-        const weekOffset = Number.isInteger(Number(offset)) ? Number(offset) : getActivePlannerWeekOffset();
+        const rawOffset = Number.isInteger(Number(offset)) ? Number(offset) : currentWeekOffset;
+        const weekOffset = rawOffset >= 0 && rawOffset <= 3 ? getPlannerDisplayWeekOffset(rawOffset) : rawOffset;
         const monday = getCurrentPlannerMondayDate();
         monday.setDate(monday.getDate() + (weekOffset * 7));
 
@@ -5337,7 +5787,13 @@ Are you sure you want to place it here?`);
 
     function resetForm() {
         document.getElementById('sys_job_id').value = '';
-        ['n_cust_name','n_coll_address_search','n_del_address_search','n_coll_name','n_coll_phone','n_coll_email','n_cust_phone', 'n_cust_email','n_job_notes','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2', 'n_customers_own_invoice_number', 'n_fts_invoice_number', 'n_job_contract_type'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
+        ['n_cust_name','n_coll_address_search','n_del_address_search','n_coll_name','n_coll_phone','n_coll_email','n_cust_phone', 'n_cust_email','n_job_notes','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2', 'n_customers_own_invoice_number', 'n_cx_number', 'n_fts_invoice_number', 'n_job_contract_type', 'n_coll_time_period', 'n_del_time_period'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
+        ['n_coll_time_period', 'n_del_time_period'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) delete el.dataset.original;
+        });
+        updateTimePeriodButtons('coll');
+        updateTimePeriodButtons('del');
         setJobBookingMode('');
         prefillNextFtsInvoiceNumber();
         switchFormTab('leg1');
@@ -5573,10 +6029,16 @@ Are you sure you want to place it here?`);
         const slot = String(job.assigned_slot || '');
         const isPool = slot.startsWith('pool-zone') && !isMaintenancePoolSlot(slot);
         const isMaintPool = isMaintenancePoolSlot(slot);
-        if (isPool) {
+
+        // Jobs / notes / instructions with no assigned_slot are rendered in the Unassigned pool
+        // based on their collection date, so open the sidebar before trying to scroll to them.
+        const shouldOpenUnassigned = isPool || (!slot && type !== 'maintenance');
+
+        if (shouldOpenUnassigned) {
             const sidebar = document.getElementById('unassigned-sidebar');
             if (sidebar && !sidebar.classList.contains('open')) toggleUnassigned();
         }
+
         if (isMaintPool) {
             const sidebar = document.getElementById('maintenance-sidebar');
             if (sidebar && !sidebar.classList.contains('open')) toggleMaintenancePool();
@@ -5803,6 +6265,9 @@ Are you sure you want to place it here?`);
                 // the Invoice/History table. Mark the board as needing a refresh and do it
                 // when the user goes back to a week view.
                 console.log('Planner quote sync update received.');
+                if (payload.eventType === 'UPDATE' && payload.new) {
+                    handleDriverTimestampUpdate(payload.new);
+                }
                 if (cardOrderSaveInProgress) {
                     cardOrderSaveRefreshPending = true;
                     loadAllQueued = true;
