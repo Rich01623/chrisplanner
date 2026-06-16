@@ -1268,7 +1268,9 @@ function escapeHtml(value) {
         'n_customers_own_invoice_number', 'n_cx_number', 'n_job_contract_type'
     ];
 
-    function loadJobTemplates() {
+    let jobTemplatesCache = [];
+
+    function loadLocalJobTemplates() {
         try {
             const parsed = JSON.parse(localStorage.getItem(JOB_TEMPLATE_STORAGE_KEY) || '[]');
             return Array.isArray(parsed) ? parsed : [];
@@ -1280,6 +1282,121 @@ function escapeHtml(value) {
 
     function saveJobTemplates(templates) {
         localStorage.setItem(JOB_TEMPLATE_STORAGE_KEY, JSON.stringify(templates || []));
+    }
+
+    function quoteRowToTemplateValues(row = {}) {
+        return {
+            n_cust_name: row.customer_name || '',
+            n_cust_phone: row.customer_phone || '',
+            n_cust_email: row.customer_email || '',
+            n_job_notes: row.job_notes || '',
+            n_coll_name: row.coll_cust_name || '',
+            n_coll_phone: row.coll_phone || '',
+            n_coll_email: row.coll_email || '',
+            n_coll_pc: row.coll_postcode || '',
+            n_coll_street: row.coll_street || '',
+            n_coll_town: row.coll_town || '',
+            n_coll_county: row.coll_county || '',
+            n_coll_ref: row.coll_ref || '',
+            n_coll_dt: row.coll_datetime || '',
+            n_coll_time_period: row.coll_time_period || '',
+            n_coll_pc_2: row.coll_postcode_2 || '',
+            n_coll_town_2: row.coll_town_2 || '',
+            n_del_name: row.del_cust_name || '',
+            n_del_phone: row.del_phone || '',
+            n_del_email: row.del_email || '',
+            n_del_pc: row.del_postcode || '',
+            n_del_street: row.del_street || '',
+            n_8: row.del_town || '',
+            n_9: row.del_county || '',
+            n_10: row.del_ref || '',
+            n_del_dt: row.del_datetime || '',
+            n_del_time_period: row.del_time_period || '',
+            n_del_pc_2: row.del_postcode_2 || '',
+            n_del_town_2: row.del_town_2 || '',
+            n_price: row.total_price || '',
+            n_total_pallets: row.total_pallets || '',
+            n_total_weight: row.total_weight || '',
+            n_veh_type: row.vehicle_type || 'Artic',
+            n_customers_own_invoice_number: row.customers_own_invoice_number || '',
+            n_cx_number: row.cx_number || '',
+            n_job_contract_type: row.job_contract_type || row.contract_type || ''
+        };
+    }
+
+    function templateValuesToQuotePayload(values = {}) {
+        const payload = {
+            status: 'template',
+            dispatch_status: 'unsent',
+            assigned_slot: null,
+            assigned_driver: null,
+            customer_name: values.n_cust_name || 'Untitled Template',
+            customer_phone: values.n_cust_phone || '',
+            customer_email: values.n_cust_email || '',
+            job_notes: values.n_job_notes || '',
+            coll_cust_name: values.n_coll_name || '',
+            coll_phone: values.n_coll_phone || '',
+            coll_email: values.n_coll_email || '',
+            coll_postcode: values.n_coll_pc || '',
+            coll_street: values.n_coll_street || '',
+            coll_town: values.n_coll_town || '',
+            coll_county: values.n_coll_county || '',
+            coll_ref: values.n_coll_ref || '',
+            coll_datetime: values.n_coll_dt || null,
+            del_postcode: values.n_del_pc || '',
+            del_cust_name: values.n_del_name || '',
+            del_phone: values.n_del_phone || '',
+            del_email: values.n_del_email || '',
+            del_street: values.n_del_street || '',
+            del_town: values.n_8 || '',
+            del_county: values.n_9 || '',
+            del_ref: values.n_10 || '',
+            del_datetime: values.n_del_dt || null,
+            del_postcode_2: values.n_del_pc_2 || '',
+            del_town_2: values.n_del_town_2 || '',
+            total_price: values.n_price || '0',
+            total_pallets: values.n_total_pallets || '',
+            total_weight: values.n_total_weight || '',
+            vehicle_type: values.n_veh_type || 'Artic',
+            customers_own_invoice_number: values.n_customers_own_invoice_number || '',
+            cx_number: values.n_cx_number || '',
+            fts_invoice_number: '',
+            job_contract_type: values.n_job_contract_type || ''
+        };
+
+        if (values.n_coll_pc_2) payload.coll_postcode_2 = values.n_coll_pc_2;
+        if (values.n_coll_town_2) payload.coll_town_2 = values.n_coll_town_2;
+        if (values.n_coll_time_period) payload.coll_time_period = normaliseTimePeriodValue(values.n_coll_time_period);
+        if (values.n_del_time_period) payload.del_time_period = normaliseTimePeriodValue(values.n_del_time_period);
+        return payload;
+    }
+
+    function quoteRowToJobTemplate(row = {}) {
+        const values = quoteRowToTemplateValues(row);
+        return {
+            id: String(row.id),
+            source: 'database',
+            name: getTemplateDisplayName(values),
+            values,
+            createdAt: row.created_at || ''
+        };
+    }
+
+    async function fetchJobTemplates() {
+        const localTemplates = loadLocalJobTemplates().map(template => ({ ...template, source: 'local' }));
+        try {
+            const { data, error } = await sb.from('quotes')
+                .select('*')
+                .eq('status', 'template')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+
+            jobTemplatesCache = [...(data || []).map(quoteRowToJobTemplate), ...localTemplates];
+        } catch (err) {
+            console.error('Could not load database templates, using browser templates only.', err);
+            jobTemplatesCache = localTemplates;
+        }
+        return jobTemplatesCache;
     }
 
     function getTemplateFormValues() {
@@ -1299,31 +1416,35 @@ function escapeHtml(value) {
         return customer;
     }
 
-    function saveCurrentJobAsTemplate() {
+    async function saveCurrentJobAsTemplate() {
         const values = getTemplateFormValues();
-        const now = new Date().toISOString();
-        const template = {
-            id: `tpl-${Date.now()}`,
-            name: getTemplateDisplayName(values),
-            values,
-            createdAt: now,
-            updatedAt: now
-        };
-
-        const templates = loadJobTemplates();
-        templates.unshift(template);
-        saveJobTemplates(templates);
-        renderTemplatesView();
-
         const btn = document.getElementById('create-template-btn');
+        const originalText = btn ? btn.innerText : '';
         if (btn) {
-            const originalText = btn.innerText;
-            btn.innerText = 'Template Saved';
+            btn.innerText = 'Saving...';
             btn.disabled = true;
+        }
+
+        try {
+            const payload = templateValuesToQuotePayload(values);
+            const { error } = await sb.from('quotes').insert([payload]);
+            if (error) throw error;
+
+            await renderTemplatesView();
+            if (btn) btn.innerText = 'Template Saved';
             setTimeout(() => {
+                if (btn) {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            }, 1400);
+        } catch (err) {
+            console.error('Could not save template to database.', err);
+            if (btn) {
                 btn.innerText = originalText;
                 btn.disabled = false;
-            }, 1400);
+            }
+            alert('Could not save the template to the database. Error: ' + (err.message || err));
         }
     }
 
@@ -1358,25 +1479,40 @@ function escapeHtml(value) {
         switchFormTab('leg1');
     }
 
-    function loadTemplateIntoJobForm(templateId) {
-        const template = loadJobTemplates().find(item => String(item.id) === String(templateId));
+    async function loadTemplateIntoJobForm(templateId) {
+        let template = jobTemplatesCache.find(item => String(item.id) === String(templateId));
+        if (!template) {
+            const templates = await fetchJobTemplates();
+            template = templates.find(item => String(item.id) === String(templateId));
+        }
         if (!template) return alert('Could not find that template.');
         applyTemplateValuesToForm(template.values || {});
         openModal('modal-add');
     }
 
-    function deleteJobTemplate(event, templateId) {
+    async function deleteJobTemplate(event, templateId, source = 'database') {
         if (event) event.stopPropagation();
         if (!confirm('Delete this template?')) return;
-        const templates = loadJobTemplates().filter(item => String(item.id) !== String(templateId));
-        saveJobTemplates(templates);
-        renderTemplatesView();
+        try {
+            if (source === 'local') {
+                const templates = loadLocalJobTemplates().filter(item => String(item.id) !== String(templateId));
+                saveJobTemplates(templates);
+            } else {
+                const { error } = await sb.from('quotes').delete().eq('id', templateId).eq('status', 'template');
+                if (error) throw error;
+            }
+            await renderTemplatesView();
+        } catch (err) {
+            console.error('Could not delete template.', err);
+            alert('Could not delete this template. Error: ' + (err.message || err));
+        }
     }
 
-    function renderTemplatesView() {
+    async function renderTemplatesView() {
         const list = document.getElementById('templates-list');
         if (!list) return;
-        const templates = loadJobTemplates();
+        list.innerHTML = '<div class="template-empty-state">Loading templates...</div>';
+        const templates = await fetchJobTemplates();
 
         if (!templates.length) {
             list.innerHTML = '<div class="template-empty-state">No templates saved yet. Open + New Job, fill in the regular job details, then press Create Template.</div>';
@@ -1408,7 +1544,7 @@ function escapeHtml(value) {
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; border-top:1px solid #eef2f7; padding-top:8px;">
                     <span style="font-size:0.68rem; color:#64748b; font-weight:800;">Click to use template</span>
-                    <button type="button" class="template-delete-btn" onclick="deleteJobTemplate(event, '${escapeInlineArg(template.id)}')">Delete</button>
+                    <button type="button" class="template-delete-btn" onclick="deleteJobTemplate(event, '${escapeInlineArg(template.id)}', '${escapeInlineArg(template.source || 'database')}')">Delete</button>
                 </div>`;
             list.appendChild(card);
         });
@@ -2489,11 +2625,12 @@ function escapeHtml(value) {
             .select('*')
             // Main planner board only. Invoice/history/subbed/cancelled rows are fetched lazily
             // when those views are opened, which cuts unnecessary Supabase egress.
-            .or('status.is.null,status.not.in.(completed,archived,billed,subbed,cancelled)');
+            .or('status.is.null,status.not.in.(completed,archived,billed,subbed,cancelled,template)');
         const visibleWindowJobsQuery = sb.from('quotes')
             .select('*')
             .gte('coll_datetime', visibleWindow.startIso)
-            .lt('coll_datetime', visibleWindow.endIso);
+            .lt('coll_datetime', visibleWindow.endIso)
+            .neq('status', 'template');
         const statusLaneJobsQuery = sb.from('quotes')
             .select('*')
             .in('status', ['subbed', 'cancelled'])
@@ -2581,7 +2718,7 @@ function escapeHtml(value) {
 
         boardJobs.forEach(q => {
             const status = String(q.status || '').toLowerCase();
-            if (status === 'driver_config') return;
+            if (['driver_config', 'template'].includes(status)) return;
             if (['subbed', 'cancelled'].includes(status) && !isPlannerStatusLaneSlot(q.assigned_slot)) return;
             
             let isON = false;
@@ -5866,7 +6003,7 @@ Are you sure you want to place it here?`);
     function isPlannerSearchableCard(job) {
         if (!job) return false;
         const status = String(job.status || '').toLowerCase();
-        if (['driver_config', 'archived', 'billed', 'subbed', 'cancelled', 'completed'].includes(status)) return false;
+        if (['driver_config', 'template', 'archived', 'billed', 'subbed', 'cancelled', 'completed'].includes(status)) return false;
 
         // Always include maintenance/note/instruction cards and normal active jobs that are
         // either in a planner slot, in an unassigned pool, or dated within the 4 week board.
