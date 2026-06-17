@@ -45,6 +45,18 @@
         .week-info-box { background: #233241; color: white; padding: 5px 12px; border-radius: 0; border: none; border-left: 1px solid rgba(255,255,255,0.18); font-size: 0.85rem; font-weight: bold; display:flex; align-items:center; }
         .week-info-box select { margin: 0 6px; background: #fff; color: #1a1a1a; border: none; border-radius: 3px; padding: 3px 6px; font-size: 0.82rem; font-weight: 900; cursor: pointer; }
         .week-info-box span { white-space: nowrap; }
+        .driver-notification-ticker { flex-shrink: 0; height: 30px; display: flex; align-items: center; background: #0f172a; color: #fff; border-bottom: 2px solid var(--frost-red); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.18); }
+        .driver-ticker-label { align-self: stretch; display: flex; align-items: center; gap: 8px; padding: 0 10px 0 12px; background: var(--frost-red); font-size: 0.68rem; font-weight: 900; letter-spacing: 0.4px; white-space: nowrap; }
+        .driver-ticker-toggle { border: 1px solid rgba(255,255,255,0.55); background: rgba(255,255,255,0.16); color: white; border-radius: 3px; padding: 2px 6px; font-size: 0.62rem; font-weight: 900; cursor: pointer; line-height: 1.1; }
+        .driver-ticker-toggle:hover { background: rgba(255,255,255,0.28); }
+        .driver-ticker-window { flex: 1; overflow: hidden; min-width: 0; }
+        .driver-ticker-track { display: inline-flex; align-items: center; gap: 36px; white-space: nowrap; padding-left: 100%; animation: driverTickerScroll 55s linear infinite; font-size: 0.78rem; font-weight: 800; }
+        .driver-ticker-track:hover { animation-play-state: paused; }
+        .driver-ticker-item { display: inline-flex; align-items: center; gap: 7px; }
+        .driver-ticker-time { color: var(--whatsapp-green); font-weight: 900; }
+        .driver-notification-ticker.disabled { background: var(--frost-red); }
+        .driver-notification-ticker.disabled .driver-ticker-window { display: none; }
+        @keyframes driverTickerScroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
 
         .header-actions-wrapper { display:flex; gap:0; align-items:stretch; justify-content:flex-end; min-width:0; flex:1; background:#2c3e50; }
         .header-menu-stack { display:flex; flex-direction:column; min-width:0; flex:1; border:none; border-radius:0; overflow:hidden; background:#2c3e50; box-shadow:none; }
@@ -313,8 +325,11 @@
         .full-detail-row b { color: #444; min-width: 135px; }
         .full-detail-row span { text-align: right; word-break: break-word; color: #111; }
         .pod-detail-box { margin: 0 14px 14px 14px; border: 1px dashed #0056b3; background: #f4f9ff; border-radius: 8px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .pod-detail-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .pod-detail-box button { background: var(--frost-blue); color: white; border: none; border-radius: 5px; padding: 8px 12px; font-weight: bold; cursor: pointer; white-space: nowrap; }
         .pod-detail-box button:hover { background: #004494; }
+        .pod-download-card-btn { width: 100%; margin-top: 8px; padding: 7px; background: var(--frost-blue); color: white; border: none; border-radius: 3px; font-size: 0.7rem; font-weight: 900; cursor: pointer; }
+        .pod-download-card-btn:hover { background: #004494; }
         .pod-detail-url { font-size: 0.75rem; color: #555; word-break: break-all; text-align: right; }
         .invoice-number-banner { margin-bottom: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
         .invoice-number-pill { background: white; border: 1px solid #ddd; border-left: 4px solid var(--frost-red); border-radius: 8px; padding: 10px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
@@ -469,6 +484,15 @@
         <div class="grand-total-box"><span class="grand-total-value" id="grand-total">£0.00</span></div>
     </div>
 </header>
+
+<div id="driver-notification-ticker" class="driver-notification-ticker">
+    <div class="driver-ticker-label">DRIVER UPDATES <button type="button" class="driver-ticker-toggle" onclick="toggleDriverTicker()">OFF</button></div>
+    <div class="driver-ticker-window">
+        <div id="driver-ticker-track" class="driver-ticker-track">
+            <span class="driver-ticker-item">Waiting for driver app updates...</span>
+        </div>
+    </div>
+</div>
 
 <!-- ==========================================
      MAIN CONTENT AREA
@@ -999,7 +1023,7 @@ function escapeHtml(value) {
         if (!podUrl) {
             return `<div class="pod-detail-box"><b>📎 POD Image</b><span class="pod-detail-url">No POD image URL saved against this job yet.</span></div>`;
         }
-        return `<div class="pod-detail-box"><button type="button" onclick="openPODImage(event, '${escapeInlineArg(job.id)}')">📎 Open POD Image</button><span class="pod-detail-url">${escapeHtml(podUrl)}</span></div>`;
+        return `<div class="pod-detail-box"><div class="pod-detail-actions"><button type="button" onclick="openPODImage(event, '${escapeInlineArg(job.id)}')">Open POD Image</button><button type="button" onclick="downloadPODPdf(event, '${escapeInlineArg(job.id)}')">Download POD PDF</button></div><span class="pod-detail-url">${escapeHtml(podUrl)}</span></div>`;
     }
 
 
@@ -1658,12 +1682,15 @@ function escapeHtml(value) {
     }
 
     const DRIVER_APP_TIMESTAMP_STEPS = [
-        { field: 'ack_timestamp', action: 'acknowledged the job' },
-        { field: 'arrived_timestamp', action: 'arrived at collection' },
-        { field: 'loaded_timestamp', action: 'loaded the job' },
-        { field: 'del_arrived_timestamp', action: 'arrived at delivery' },
-        { field: 'tipped_timestamp', action: 'tipped the job' }
+        { field: 'ack_timestamp', action: 'acknowledged the job', tickerVerb: 'acknowledged', tickerLocation: 'collection' },
+        { field: 'arrived_timestamp', action: 'arrived at collection', tickerVerb: 'arrived collection', tickerLocation: 'collection' },
+        { field: 'loaded_timestamp', action: 'loaded the job', tickerVerb: 'loaded', tickerLocation: 'collection' },
+        { field: 'del_arrived_timestamp', action: 'arrived at delivery', tickerVerb: 'arrived delivery', tickerLocation: 'delivery' },
+        { field: 'tipped_timestamp', action: 'tipped the job', tickerVerb: 'tipped', tickerLocation: 'delivery' }
     ];
+    const DRIVER_TICKER_DISABLED_KEY = 'frost_driver_ticker_disabled';
+    const driverTickerItems = [];
+    let driverTickerDisabled = localStorage.getItem(DRIVER_TICKER_DISABLED_KEY) === 'true';
 
     function hasTimestampValue(value) {
         return value !== null && value !== undefined && String(value).trim() !== '';
@@ -1702,6 +1729,92 @@ function escapeHtml(value) {
         container.prepend(toast);
     }
 
+    function getTickerPlace(job, type) {
+        if (!job) return 'unknown location';
+        if (type === 'delivery') return job.del_town || job.del_postcode || job.del_cust_name || 'delivery';
+        return job.coll_town || job.coll_postcode || job.coll_cust_name || job.customer_name || 'collection';
+    }
+
+    function getNextDriverTickerDestination(currentJob, eventTimestamp) {
+        if (!currentJob) return '';
+        const driverName = String(currentJob.assigned_driver || '').trim().toLowerCase();
+        if (!driverName) return '';
+
+        const eventTime = Date.parse(eventTimestamp || '');
+        const currentEndTime = Date.parse(currentJob.del_datetime || currentJob.coll_datetime || '');
+        const baseline = Math.max(Number.isNaN(eventTime) ? 0 : eventTime, Number.isNaN(currentEndTime) ? 0 : currentEndTime);
+
+        const nextJob = (allJobsRaw || [])
+            .filter(job => {
+                if (!job || String(job.id) === String(currentJob.id)) return false;
+                if (String(job.assigned_driver || '').trim().toLowerCase() !== driverName) return false;
+                const status = String(job.status || '').toLowerCase();
+                if (['completed', 'archived', 'billed', 'cancelled', 'subbed', 'template', 'driver_config'].includes(status)) return false;
+                const startTime = Date.parse(job.coll_datetime || '');
+                return !Number.isNaN(startTime) && startTime > baseline;
+            })
+            .sort((a, b) => new Date(a.coll_datetime) - new Date(b.coll_datetime))[0];
+
+        return nextJob ? getTickerPlace(nextJob, 'collection') : '';
+    }
+
+    function buildDriverTickerMessage(newJob, existingJob, step, timeText) {
+        const combinedJob = { ...(existingJob || {}), ...(newJob || {}) };
+        const driverName = combinedJob.assigned_driver || 'Driver';
+        const place = getTickerPlace(combinedJob, step.tickerLocation);
+        let message = `${driverName} ${step.tickerVerb} @ ${place} @ ${timeText}`;
+
+        if (step.field === 'tipped_timestamp') {
+            const nextDestination = getNextDriverTickerDestination(combinedJob, newJob && newJob[step.field]);
+            if (nextDestination) message += ` and is now heading to ${nextDestination}`;
+        }
+
+        return message;
+    }
+
+    function renderDriverNotificationTicker() {
+        const track = document.getElementById('driver-ticker-track');
+        if (!track) return;
+
+        if (!driverTickerItems.length) {
+            track.innerHTML = '<span class="driver-ticker-item">Waiting for driver app updates...</span>';
+            return;
+        }
+
+        track.innerHTML = driverTickerItems.map(item => `
+            <span class="driver-ticker-item"><span>${escapeHtml(item.text)}</span></span>
+        `).join('');
+        track.style.animation = 'none';
+        void track.offsetWidth;
+        track.style.animation = '';
+    }
+
+    function addDriverTickerNotification(text, eventTime) {
+        driverTickerItems.unshift({
+            text,
+            time: formatTimestampToastTime(eventTime || new Date().toISOString())
+        });
+        if (driverTickerItems.length > 12) driverTickerItems.length = 12;
+        renderDriverNotificationTicker();
+    }
+
+    function setDriverTickerDisabled(disabled) {
+        driverTickerDisabled = !!disabled;
+        localStorage.setItem(DRIVER_TICKER_DISABLED_KEY, driverTickerDisabled ? 'true' : 'false');
+        const ticker = document.getElementById('driver-notification-ticker');
+        if (ticker) ticker.classList.toggle('disabled', driverTickerDisabled);
+        document.querySelectorAll('.driver-ticker-toggle').forEach(btn => {
+            btn.innerText = driverTickerDisabled ? 'ON' : 'OFF';
+            btn.title = driverTickerDisabled ? 'Turn driver update ticker on' : 'Turn driver update ticker off';
+        });
+    }
+
+    function toggleDriverTicker() {
+        setDriverTickerDisabled(!driverTickerDisabled);
+    }
+
+    setDriverTickerDisabled(driverTickerDisabled);
+
     function handleDriverTimestampUpdate(newJob) {
         if (!newJob || newJob.id === undefined || newJob.id === null) return;
 
@@ -1719,6 +1832,7 @@ function escapeHtml(value) {
 
             const timeText = formatTimestampToastTime(newJob[step.field]);
             showDriverTimestampToast(`${driverName} has ${step.action} at ${timeText}`, route ? `Route: ${route}` : '');
+            addDriverTickerNotification(buildDriverTickerMessage(newJob, existingJob, step, timeText), newJob[step.field]);
             existingJob[step.field] = newJob[step.field];
         });
     }
@@ -3811,6 +3925,7 @@ function escapeHtml(value) {
             let palletTag = q.total_pallets ? `<span class="vehicle-tag" style="background:#d68910;">${q.total_pallets} Plt</span>` : '';
             let contractBadge = isPalletforceJob ? `<span class="palletforce-job-badge">${jobContractType}</span>` : '';
             if (isQuickCard) contractBadge += `<span class="quick-card-badge">QUICK CARD - COMPLETE</span>`;
+            let podDownloadButton = q.pod_url ? `<button type="button" class="pod-download-card-btn" onclick="downloadPODPdf(event, '${escapeInlineArg(q.id)}')">DOWNLOAD POD PDF</button>` : '';
 
             let extraActions = isGhost ? '' : `
                 <div style="display:flex; gap:5px; margin-top:10px; padding-top:8px; border-top: 1px solid #eee;">
@@ -3835,6 +3950,7 @@ function escapeHtml(value) {
                     <!-- Duplicate live timestamps and compact collection/delivery rows removed from the top modal card.
                          The full details are shown once in the neat cards below. -->
 
+                    ${podDownloadButton}
                     ${extraActions}
                 </div>`;
         }
@@ -4615,6 +4731,112 @@ No phone notification has been sent yet because this job is for a future date.`;
         const podUrl = j && j.pod_url ? String(j.pod_url).trim() : '';
         if (!podUrl) return alert("No POD image has been uploaded for this job yet.");
         window.open(podUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    function getPODPdfFileName(job) {
+        const invoice = job && job.fts_invoice_number ? String(job.fts_invoice_number) : '';
+        const customer = job && job.customer_name ? String(job.customer_name) : '';
+        const ref = invoice || customer || `job-${job && job.id ? job.id : 'pod'}`;
+        return `POD_${ref}`.replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '').slice(0, 80) + '.pdf';
+    }
+
+    function blobToDataUrl(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    function loadImageForPdf(dataUrl) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Could not read the POD image file.'));
+            img.src = dataUrl;
+        });
+    }
+
+    function imageToJpegDataUrl(img) {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        return canvas.toDataURL('image/jpeg', 0.92);
+    }
+
+    async function downloadPODPdf(e, id) {
+        if (e) e.stopPropagation();
+        const j = allJobsRaw.find(x => String(x.id) === String(id));
+        const podUrl = j && j.pod_url ? String(j.pod_url).trim() : '';
+        if (!podUrl) return alert("No POD image has been uploaded for this job yet.");
+
+        if (/\.pdf(?:$|\?)/i.test(podUrl)) {
+            const link = document.createElement('a');
+            link.href = podUrl;
+            link.download = getPODPdfFileName(j);
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            return;
+        }
+
+        const clickedButton = e && e.currentTarget && e.currentTarget.tagName === 'BUTTON' ? e.currentTarget : null;
+        const originalText = clickedButton ? clickedButton.innerText : '';
+        if (clickedButton) {
+            clickedButton.disabled = true;
+            clickedButton.innerText = 'BUILDING POD...';
+        }
+
+        try {
+            const response = await fetch(podUrl);
+            if (!response.ok) throw new Error(`POD image could not be downloaded (${response.status}).`);
+            const blob = await response.blob();
+            const imageDataUrl = await blobToDataUrl(blob);
+            const image = await loadImageForPdf(imageDataUrl);
+            const jpegDataUrl = imageToJpegDataUrl(image);
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pageW = doc.internal.pageSize.getWidth();
+            const pageH = doc.internal.pageSize.getHeight();
+            const margin = 10;
+            const headerH = 22;
+            const maxW = pageW - (margin * 2);
+            const maxH = pageH - headerH - (margin * 2);
+            const imgW = image.naturalWidth || image.width;
+            const imgH = image.naturalHeight || image.height;
+            const ratio = Math.min(maxW / imgW, maxH / imgH);
+            const drawW = imgW * ratio;
+            const drawH = imgH * ratio;
+            const x = (pageW - drawW) / 2;
+            const y = headerH + ((maxH - drawH) / 2);
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.text('Proof of Delivery', margin, 12);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.text(`Job: ${j.fts_invoice_number || j.id || '-'}`, margin, 17);
+            doc.text(`Customer: ${j.customer_name || '-'}`, margin, 21);
+            doc.addImage(jpegDataUrl, 'JPEG', x, y, drawW, drawH);
+            doc.save(getPODPdfFileName(j));
+        } catch (err) {
+            console.error('Could not build POD PDF:', err);
+            alert('Could not build a POD PDF from this upload. The POD link will open instead so you can still view/download it. Error: ' + (err.message || err));
+            window.open(podUrl, '_blank', 'noopener,noreferrer');
+        } finally {
+            if (clickedButton) {
+                clickedButton.disabled = false;
+                clickedButton.innerText = originalText;
+            }
+        }
     }
     async function markPODReceived(e, id) {
         e.stopPropagation();
