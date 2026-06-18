@@ -201,6 +201,9 @@
            ========================================== */
         .job-card { background: white; color: black; border: 1px solid var(--border-color); border-left: 4px solid var(--frost-red); padding: 8px; margin-bottom: 6px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: grab; font-size: 0.72rem; position: relative; transition: all 0.2s; z-index: 2; }
         .job-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .job-card.pod-received-card::after { content: 'POD RECEIVED'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-16deg); z-index: 7; pointer-events: none; border: 3px solid rgba(46, 125, 50, 0.82); color: rgba(46, 125, 50, 0.9); background: rgba(255,255,255,0.72); border-radius: 5px; padding: 5px 10px; font-size: 1rem; font-weight: 1000; letter-spacing: 1px; text-transform: uppercase; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+        .job-card.pod-received-card .card-reorder-handle { z-index: 9; }
+        .modal-job-card-copy.pod-received-card::after { display: none; }
         .card-reorder-handle { position: absolute; top: 4px; right: 5px; width: 18px; height: 18px; border: 1px solid rgba(15, 23, 42, 0.18); border-radius: 4px; background: rgba(255,255,255,0.92); color: #64748b; font-size: 13px; font-weight: 900; line-height: 16px; display: inline-flex; align-items: center; justify-content: center; cursor: ns-resize; user-select: none; z-index: 8; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
         .card-reorder-handle:hover { color: #c1272d; border-color: #c1272d; background: #fff5f5; }
         .job-card.card-reorder-dragging { opacity: 0.55; outline: 2px dashed #c1272d; }
@@ -215,6 +218,9 @@
         /* Ghost Card Styling */
         .job-card.ghost-card { border: 2px dashed var(--frost-blue); background: #f4f9ff; opacity: 0.85; cursor: pointer; border-left: 4px solid var(--frost-blue); }
         .ghost-badge { background: var(--frost-blue); color: white; font-size: 0.65rem; padding: 3px 6px; border-radius: 3px; display: block; text-align: center; margin-bottom: 6px; font-weight: bold; letter-spacing: 0.5px; }
+        .on-unlock-wrap { display: flex; justify-content: center; margin: -2px 0 7px; }
+        .on-unlock-btn { border: 1px solid #e67e22; background: #fff7ed; color: #9a3412; border-radius: 4px; padding: 3px 7px; font-size: 0.68rem; font-weight: 900; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; line-height: 1; font-family: inherit; }
+        .on-unlock-btn:hover { background: #e67e22; border-color: #e67e22; color: white; }
         .maintenance-card { background: #fffaf4 !important; border-left-color: #f58220 !important; }
         .maintenance-card.vehicle-maintenance { border-left-color: #8e44ad !important; }
         .maintenance-card.trailer-maintenance { border-left-color: #f58220 !important; }
@@ -1279,6 +1285,43 @@ function escapeHtml(value) {
         const end = new Date(start);
         end.setDate(start.getDate() + 28);
         return { start, end, startIso: start.toISOString(), endIso: end.toISOString() };
+    }
+
+    function getRecentCompletedCutoffISO(weeks = 2) {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - (weeks * 7));
+        cutoff.setHours(0, 0, 0, 0);
+        return cutoff.toISOString();
+    }
+
+    function getJobCompletedDate(job) {
+        const value = job && (
+            job.tipped_timestamp ||
+            job.completed_at ||
+            job.completed_timestamp ||
+            job.del_arrived_timestamp ||
+            job.del_datetime ||
+            job.coll_datetime
+        );
+        const date = value ? new Date(value) : null;
+        return date && !isNaN(date.getTime()) ? date : null;
+    }
+
+    function isCompletedWithinPreviousWeeks(job, weeks = 2) {
+        const status = String(job && job.status || '').toLowerCase();
+        if (status !== 'completed') return false;
+
+        const completedDate = getJobCompletedDate(job);
+        if (!completedDate) return false;
+
+        const cutoff = new Date(getRecentCompletedCutoffISO(weeks));
+        const now = new Date();
+        return completedDate >= cutoff && completedDate <= now;
+    }
+
+    function shouldShowPODReceivedStamp(job) {
+        const hasPOD = !!(job && job.pod_url && String(job.pod_url).trim() !== '');
+        return hasPOD || isCompletedWithinPreviousWeeks(job, 2);
     }
 
     const JOB_TEMPLATE_STORAGE_KEY = 'frost_job_templates_v1';
@@ -2635,30 +2678,50 @@ function escapeHtml(value) {
     // O/N DROP REASSIGNMENT ENGINE
     // ==========================================
     async function reassignONJob(e, id) {
-        e.stopPropagation();
-        if(!confirm("Reassign this O/N drop to a new driver? This will lock the original collection to the current driver and create a new orange job card for the delivery.")) return;
+        if (e && e.stopPropagation) e.stopPropagation();
         
         const j = allJobsRaw.find(x => x.id == id);
         if(!j) return;
 
+        const collDate = j.coll_datetime ? new Date(j.coll_datetime) : null;
+        const delDate = j.del_datetime ? new Date(j.del_datetime) : null;
+        if (!collDate || !delDate || isNaN(collDate) || isNaN(delDate) || collDate.toDateString() === delDate.toDateString()) {
+            return alert("This unlock button is only for overnight jobs with a delivery on a different day.");
+        }
+
+        if (hasLegSuffix(j.customer_name)) {
+            return alert("This overnight job has already been unlocked into separate legs.");
+        }
+
+        if(!confirm("Unlock this O/N delivery? This will keep the collection on the current driver and create a separate orange delivery card that can be moved to any driver.")) return;
+
         let ghostSlotId = null;
         let assignedDriver = null;
-        
-        let delTargetWeek = getWeekOffsetFromNow(j.del_datetime);
+
+        const clickedGhostCard = e && e.target && e.target.closest ? e.target.closest('.ghost-card') : null;
+        const clickedGhostSlotId = clickedGhostCard && clickedGhostCard.parentElement ? clickedGhostCard.parentElement.id : '';
+
+        let delTargetWeek = getPlannerBoardWeekIndex(j.del_datetime);
         let delDateObj = new Date(j.del_datetime);
         let delDayIndex = (delDateObj.getDay() + 6) % 7; 
         
         let match = j.assigned_slot ? j.assigned_slot.match(/dr(\d+)/) : null;
-        if (match) {
+        if (clickedGhostSlotId && clickedGhostSlotId.startsWith('planner-w')) {
+            ghostSlotId = clickedGhostSlotId;
+        } else if (match) {
             let vehIndex = match[1];
             ghostSlotId = `planner-w${delTargetWeek}-dr${vehIndex}-s${delDayIndex}`;
-            let dropdown = document.getElementById(`sel-planner-w${delTargetWeek}-dr${vehIndex}`);
+        } else {
+            ghostSlotId = `pool-zone-${delDateObj.getDay()}`; 
+        }
+
+        if (ghostSlotId && ghostSlotId.startsWith('planner-w')) {
+            const cellId = ghostSlotId.split('-s')[0];
+            let dropdown = document.getElementById(`sel-${cellId}`);
             if(dropdown && dropdown.value) {
                 assignedDriver = dropdown.options[dropdown.selectedIndex].text.toLowerCase();
                 if(assignedDriver === 'unassigned') assignedDriver = null;
             }
-        } else {
-            ghostSlotId = `pool-zone-${delDateObj.getDay()}`; 
         }
 
         let p1 = {
@@ -2685,6 +2748,7 @@ function escapeHtml(value) {
         let p2 = { ...j };
         delete p2.id;
         delete p2.created_at;
+        delete p2.updated_at;
         p2.customer_name = j.customer_name + " (Leg 2)";
         p2.coll_postcode = "YARD";
         p2.coll_town = "YARD";
@@ -2736,6 +2800,7 @@ function escapeHtml(value) {
         updateMaintenancePoolHeaders();
         updateUnassignedPoolDateHeaders(getActivePlannerWeekOffset());
         const visibleWindow = getPlannerVisibleDateWindow();
+        const recentCompletedCutoff = getRecentCompletedCutoffISO(2);
 
         const boardJobsQuery = sb.from('quotes')
             .select('*')
@@ -2752,11 +2817,21 @@ function escapeHtml(value) {
             .in('status', ['subbed', 'cancelled'])
             .not('assigned_slot', 'is', null)
             .like('assigned_slot', 'planner-w%');
+        const recentCompletedByTippedQuery = sb.from('quotes')
+            .select('*')
+            .eq('status', 'completed')
+            .gte('tipped_timestamp', recentCompletedCutoff);
+        const recentCompletedByDeliveryQuery = sb.from('quotes')
+            .select('*')
+            .eq('status', 'completed')
+            .gte('del_datetime', recentCompletedCutoff);
 
-        const [jobsRes, visibleWindowRes, statusLaneRes, jccRes, vehRes, trailersRes] = await Promise.all([
+        const [jobsRes, visibleWindowRes, statusLaneRes, recentCompletedByTippedRes, recentCompletedByDeliveryRes, jccRes, vehRes, trailersRes] = await Promise.all([
             boardJobsQuery,
             visibleWindowJobsQuery,
             statusLaneJobsQuery,
+            recentCompletedByTippedQuery,
+            recentCompletedByDeliveryQuery,
             sb.from('jcc_bookings').select('*'),
             sb.from('vehicles').select('registration_number, is_vor'),
             sb.from('daily_trailer_checks').select('driver_name, trailer_number, created_at').order('created_at', { ascending: false }).limit(2000)
@@ -2801,7 +2876,13 @@ function escapeHtml(value) {
         });
 
         const boardJobsById = new Map();
-        [...(jobsRes.data || []), ...(visibleWindowRes.data || []), ...(statusLaneRes.data || [])].forEach(row => {
+        [
+            ...(jobsRes.data || []),
+            ...(visibleWindowRes.data || []),
+            ...(statusLaneRes.data || []),
+            ...(recentCompletedByTippedRes.data || []),
+            ...(recentCompletedByDeliveryRes.data || [])
+        ].forEach(row => {
             if (row && row.id !== undefined && row.id !== null) boardJobsById.set(String(row.id), row);
         });
         const boardJobs = Array.from(boardJobsById.values());
@@ -2850,15 +2931,17 @@ function escapeHtml(value) {
             let delTargetWeek = absoluteDelTargetWeek - plannerWeekStartOffset;
             let maxWeek = Math.max(absoluteTargetWeek, absoluteDelTargetWeek);
             const isInVisiblePlannerWindow = targetWeek >= 0 && targetWeek <= 3;
+            const isRecentCompletedForStamp = isCompletedWithinPreviousWeeks(q, 2);
 
-            if (['archived', 'billed', 'completed'].includes(status) && !isInVisiblePlannerWindow) return;
+            if (['archived', 'billed'].includes(status) && !isInVisiblePlannerWindow) return;
+            if (status === 'completed' && !isInVisiblePlannerWindow && !isRecentCompletedForStamp) return;
 
             if (plannerWeekStartOffset === 0 && maxWeek < 0) {
-                if (q.status === 'assigned' || q.status === 'pending') {
+                if (status === 'assigned' || status === 'pending') {
                     q.status = 'archived'; 
                     sb.from('quotes').update({ status: 'archived', assigned_slot: null }).eq('id', q.id);
                     return; 
-                } else if (q.status === 'completed') {
+                } else if (status === 'completed' && !isRecentCompletedForStamp) {
                     if (q.assigned_slot) {
                         q.assigned_slot = null;
                         sb.from('quotes').update({ assigned_slot: null }).eq('id', q.id);
@@ -3616,6 +3699,7 @@ function escapeHtml(value) {
         if (isPalletforceJob) card.classList.add('palletforce-job-card');
         if (isQuickCard) card.classList.add('quick-card-incomplete');
         if (isInstruction) card.classList.add('instruction-card');
+        if (shouldShowPODReceivedStamp(q)) card.classList.add('pod-received-card');
         
         if (isCompleted || isLockedLeg1) card.classList.add('completed-grey');
         if (isLeg2 && !isCompleted && !isGhost) card.classList.add('reassigned-orange');
@@ -3782,18 +3866,28 @@ function escapeHtml(value) {
             pcHeader = routeArr.join('');
         }
 
-        let ghostBanner = isGhost ? `<div class="ghost-badge">🚚 O/N DELIVERY</div>` : '';
+        let ghostBanner = isGhost ? `
+            <div class="ghost-badge">O/N DELIVERY</div>
+            <div class="on-unlock-wrap">
+                <button type="button" class="on-unlock-btn" title="Unlock this delivery so it can be moved to another driver" onclick="reassignONJob(event, '${q.id}')">
+                    <span aria-hidden="true">&#128275;</span><span>Unlock delivery</span>
+                </button>
+            </div>
+        ` : '';
+        const onUnlockHtml = (!isGhost && isON && !isLeg1 && !isLeg2 && !isCompleted && !isMaintenance && !isNote && !isInstruction)
+            ? `<div class="on-unlock-wrap">
+                <button type="button" class="on-unlock-btn" title="Unlock this overnight delivery so it can be moved to another driver" onclick="reassignONJob(event, '${q.id}')">
+                    <span aria-hidden="true">&#128275;</span><span>Unlock delivery</span>
+                </button>
+            </div>`
+            : '';
         let actionsHtml = '';
         const reorderHandleHtml = (!isGhost && !isCompleted && !isLockedLeg1)
             ? `<div class="card-reorder-handle" draggable="true" title="Rearrange this card within this grid space" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()" ondragstart="startCardReorderDrag(event, '${q.id}')" ondragend="endCardReorderDrag(event)">☰</div>`
             : '';
         
         if (isGhost) {
-            actionsHtml = `
-                <div class="card-actions" style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:8px; justify-content:center;">
-                    <button style="width:100%; background:#e67e22; color:white; border:none; padding:8px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.75rem; box-shadow:0 2px 4px rgba(0,0,0,0.1);" onclick="reassignONJob(event, '${q.id}')">🔄 REASSIGN DROP TO NEW DRIVER</button>
-                </div>
-            `;
+            actionsHtml = '';
         } else {
             actionsHtml = `
                 <div class="card-actions">
@@ -3937,6 +4031,7 @@ function escapeHtml(value) {
                 ${ghostBanner}
                 ${reorderHandleHtml}
                 <div class="postcode-header" style="align-items: ${headerAlignment};">${pcHeader}</div>
+                ${onUnlockHtml}
                 <div class="card-body">
                     ${actionsHtml}
                     <div style="font-weight:bold; color:black; font-size: 0.8rem; margin-bottom: 5px;">${q.customer_name} ${contractBadge} ${dispatchBadge}</div>
