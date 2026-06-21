@@ -777,7 +777,7 @@
                     
                     <div class="form-group" style="position: relative;">
                         <label>Booking Customer Name</label>
-                        <input type="text" id="n_cust_name" onkeyup="showCustomerSuggestions()" autocomplete="off" placeholder="Start typing booking customer...">
+                        <input type="text" id="n_cust_name" oninput="showCustomerSuggestions()" autocomplete="off" placeholder="Start typing booking customer...">
                         <div id="cust-suggestions" class="autocomplete-suggestions"></div>
                     </div>
                     
@@ -1124,6 +1124,7 @@ function escapeHtml(value) {
         { name: "Unassigned", phone: "" },
         { name: "Andy Elston", phone: "447999811320" },
         { name: "Agency One", phone: "447701238558" },
+        { name: "Agency Two", phone: "" },
         { name: "Andy West", phone: "447734369810" },
         { name: "Callum Lee", phone: "447359390140" },
         { name: "Chris Frost", phone: "447701238561" },
@@ -1132,6 +1133,7 @@ function escapeHtml(value) {
         { name: "Lee Woodcock", phone: "447701238577" },
         { name: "Marc Wickham", phone: "447725566632" },
         { name: "Marco Marco", phone: "447701238566" },
+        { name: "Myke Trowbridge", phone: "" },
         { name: "Neil Woods", phone: "447701238567" },
         { name: "Rhys Hill", phone: "447701238562" },
         { name: "Ricardo Morais", phone: "447746509636" },
@@ -4057,50 +4059,90 @@ function escapeHtml(value) {
     // 7. JOB DATA HANDLING & DB OPERATIONS
     // ==========================================
     
+    let customerSuggestionTimer = null;
+    let customerSuggestionRequestId = 0;
+
     function showCustomerSuggestions() {
-        const input = document.getElementById('n_cust_name').value.toLowerCase();
+        const input = document.getElementById('n_cust_name');
         const box = document.getElementById('cust-suggestions');
+        const searchTerm = String(input && input.value || '').trim();
+
+        clearTimeout(customerSuggestionTimer);
+        customerSuggestionRequestId += 1;
         box.innerHTML = '';
-        
-        if (input.length < 2) {
+
+        if (searchTerm.length < 2) {
             box.style.display = 'none';
             return;
         }
 
-        const customers = {};
-        allJobsRaw.forEach(j => {
-            if (j.customer_name && j.customer_name.toLowerCase().includes(input)) {
-                if (j.customer_name !== "🔧 PLANNED MAINTENANCE" && j.customer_name !== "📝 PLANNER NOTE" && j.customer_name !== "DRIVER_CONFIG") {
-                    let cleanName = j.customer_name.replace(' (Leg 2)', '').replace(' (Leg 1)', '');
-                    if (!customers[cleanName]) {
-                        customers[cleanName] = {
-                            name: cleanName,
-                            phone: j.customer_phone || '',
-                            email: j.customer_email || ''
-                        };
-                    }
-                }
+        const requestId = customerSuggestionRequestId;
+        customerSuggestionTimer = setTimeout(() => loadCustomerSuggestions(searchTerm, requestId), 250);
+    }
+
+    async function loadCustomerSuggestions(searchTerm, requestId) {
+        const input = document.getElementById('n_cust_name');
+        const box = document.getElementById('cust-suggestions');
+        if (!input || !box) return;
+
+        const escapedSearchTerm = searchTerm.replace(/[\\%_]/g, '\\$&');
+        const { data, error } = await sb
+            .from('customer_invoice_emails')
+            .select('customer_name, accounts_email, accounts_tel')
+            .ilike('customer_name', `%${escapedSearchTerm}%`)
+            .order('customer_name', { ascending: true })
+            .limit(15);
+
+        const currentSearch = String(input.value || '').trim();
+        if (requestId !== customerSuggestionRequestId || currentSearch.toLowerCase() !== searchTerm.toLowerCase()) return;
+
+        box.innerHTML = '';
+        if (error) {
+            console.error('Could not search customer_invoice_emails:', error);
+            box.style.display = 'none';
+            return;
+        }
+
+        const customersByName = new Map();
+        (data || []).forEach(row => {
+            const name = String(row.customer_name || '').trim();
+            if (!name) return;
+            const key = name.toLowerCase();
+            if (!customersByName.has(key)) {
+                customersByName.set(key, {
+                    name,
+                    phone: String(row.accounts_tel || '').trim(),
+                    email: String(row.accounts_email || '').trim()
+                });
             }
         });
 
-        const results = Object.values(customers);
-        if (results.length === 0) {
+        const customers = Array.from(customersByName.values());
+        if (!customers.length) {
             box.style.display = 'none';
             return;
         }
 
-        results.forEach(c => {
-            const div = document.createElement('div');
-            div.className = 'autocomplete-item';
-            div.innerHTML = `<span class="ac-name">${c.name}</span> <span class="ac-details">${c.email}</span>`;
-            
-            div.onclick = () => {
-                document.getElementById('n_cust_name').value = c.name;
-                document.getElementById('n_cust_phone').value = c.phone;
-                document.getElementById('n_cust_email').value = c.email;
+        customers.forEach(customer => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+
+            const name = document.createElement('span');
+            name.className = 'ac-name';
+            name.textContent = customer.name;
+
+            const details = document.createElement('span');
+            details.className = 'ac-details';
+            details.textContent = [customer.phone, customer.email].filter(Boolean).join(' | ');
+
+            item.append(name, details);
+            item.onclick = () => {
+                document.getElementById('n_cust_name').value = customer.name;
+                document.getElementById('n_cust_phone').value = customer.phone;
+                document.getElementById('n_cust_email').value = customer.email;
                 box.style.display = 'none';
             };
-            box.appendChild(div);
+            box.appendChild(item);
         });
 
         box.style.display = 'block';
