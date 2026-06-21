@@ -1322,6 +1322,8 @@ function escapeHtml(value) {
     }
 
     function shouldShowPODReceivedStamp(job) {
+        const status = String(job && job.status || '').toLowerCase();
+        if (status === 'cancelled') return false;
         const hasPOD = !!(job && job.pod_url && String(job.pod_url).trim() !== '');
         return hasPOD || isCompletedWithinPreviousWeeks(job, 2);
     }
@@ -2802,7 +2804,6 @@ function escapeHtml(value) {
         updateMaintenancePoolHeaders();
         updateUnassignedPoolDateHeaders(getActivePlannerWeekOffset());
         const visibleWindow = getPlannerVisibleDateWindow();
-        const recentCompletedCutoff = getRecentCompletedCutoffISO(2);
 
         const boardJobsQuery = sb.from('quotes')
             .select('*')
@@ -2819,21 +2820,11 @@ function escapeHtml(value) {
             .in('status', ['subbed', 'cancelled'])
             .not('assigned_slot', 'is', null)
             .like('assigned_slot', 'planner-w%');
-        const recentCompletedByTippedQuery = sb.from('quotes')
-            .select('*')
-            .eq('status', 'completed')
-            .gte('tipped_timestamp', recentCompletedCutoff);
-        const recentCompletedByDeliveryQuery = sb.from('quotes')
-            .select('*')
-            .eq('status', 'completed')
-            .gte('del_datetime', recentCompletedCutoff);
 
-        const [jobsRes, visibleWindowRes, statusLaneRes, recentCompletedByTippedRes, recentCompletedByDeliveryRes, jccRes, vehRes, trailersRes] = await Promise.all([
+        const [jobsRes, visibleWindowRes, statusLaneRes, jccRes, vehRes, trailersRes] = await Promise.all([
             boardJobsQuery,
             visibleWindowJobsQuery,
             statusLaneJobsQuery,
-            recentCompletedByTippedQuery,
-            recentCompletedByDeliveryQuery,
             sb.from('jcc_bookings').select('*'),
             sb.from('vehicles').select('registration_number, is_vor'),
             sb.from('daily_trailer_checks').select('driver_name, trailer_number, created_at').order('created_at', { ascending: false }).limit(2000)
@@ -2881,9 +2872,7 @@ function escapeHtml(value) {
         [
             ...(jobsRes.data || []),
             ...(visibleWindowRes.data || []),
-            ...(statusLaneRes.data || []),
-            ...(recentCompletedByTippedRes.data || []),
-            ...(recentCompletedByDeliveryRes.data || [])
+            ...(statusLaneRes.data || [])
         ].forEach(row => {
             if (row && row.id !== undefined && row.id !== null) boardJobsById.set(String(row.id), row);
         });
@@ -2914,11 +2903,15 @@ function escapeHtml(value) {
         });
 
         allJccBookings = jccRes.data || [];
+        const currentPlannerMonday = getCurrentPlannerMondayDate();
 
         boardJobs.forEach(q => {
-            const status = String(q.status || '').toLowerCase();
+            let status = String(q.status || '').toLowerCase();
             if (['driver_config', 'template'].includes(status)) return;
             if (['subbed', 'cancelled'].includes(status) && !isPlannerStatusLaneSlot(q.assigned_slot)) return;
+            const dispatchStatus = String(q.dispatch_status || '').toLowerCase();
+            const hasTippedTimestamp = !!String(q.tipped_timestamp || '').trim();
+            const isDriverAppCompleted = dispatchStatus === 'completed' || dispatchStatus === 'tipped' || hasTippedTimestamp;
             
             let isON = false;
             if (q.coll_datetime && q.del_datetime) {
@@ -2927,32 +2920,51 @@ function escapeHtml(value) {
                 if (cD !== dD) isON = true;
             }
 
-            let absoluteTargetWeek = getWeekOffsetFromNow(q.coll_datetime);
+            const plannerAnchorDate = q.coll_datetime || (isDriverAppCompleted ? q.tipped_timestamp : null);
+            let absoluteTargetWeek = getWeekOffsetFromNow(plannerAnchorDate);
             let absoluteDelTargetWeek = q.del_datetime ? getWeekOffsetFromNow(q.del_datetime) : absoluteTargetWeek;
             let targetWeek = absoluteTargetWeek - plannerWeekStartOffset;
             let delTargetWeek = absoluteDelTargetWeek - plannerWeekStartOffset;
             let maxWeek = Math.max(absoluteTargetWeek, absoluteDelTargetWeek);
             const isInVisiblePlannerWindow = targetWeek >= 0 && targetWeek <= 3;
-            const isRecentCompletedForStamp = isCompletedWithinPreviousWeeks(q, 2);
+            const isDeliveryInVisiblePlannerWindow = isON && delTargetWeek >= 0 && delTargetWeek <= 3;
+            const hasVisiblePlannerDate = isInVisiblePlannerWindow || isDeliveryInVisiblePlannerWindow;
+            const completionDate = getJobCompletedDate(q);
+            const hasCompletionEvidence = !!String(q.pod_url || q.tipped_timestamp || '').trim();
+            const hasStaleCancelledProof = status === 'cancelled' && hasCompletionEvidence && completionDate && completionDate < currentPlannerMonday;
+            if (isDriverAppCompleted && !['completed', 'archived', 'billed', 'subbed', 'cancelled'].includes(status)) {
+                status = 'completed';
+                q.status = 'completed';
 
-            if (['archived', 'billed'].includes(status) && !isInVisiblePlannerWindow) return;
-            if (status === 'completed' && !isInVisiblePlannerWindow && !isRecentCompletedForStamp) return;
-
-            if (plannerWeekStartOffset === 0 && maxWeek < 0) {
-                if (status === 'assigned' || status === 'pending') {
-                    q.status = 'archived'; 
-                    sb.from('quotes').update({ status: 'archived', assigned_slot: null }).eq('id', q.id);
-                    return; 
-                } else if (status === 'completed' && !isRecentCompletedForStamp) {
-                    if (q.assigned_slot) {
-                        q.assigned_slot = null;
-                        sb.from('quotes').update({ assigned_slot: null }).eq('id', q.id);
-                    }
-                    return; 
+                // A past completed job is updated together with its stale slot below.
+                if (!(plannerWeekStartOffset === 0 && maxWeek < 0)) {
+                    sb.from('quotes').update({ status: 'completed' }).eq('id', q.id);
                 }
             }
 
-            if (plannerWeekStartOffset !== 0 && !isInVisiblePlannerWindow) return;
+            if (plannerWeekStartOffset === 0 && (maxWeek < 0 || hasStaleCancelledProof)) {
+                if (['completed', 'subbed', 'cancelled'].includes(status)) {
+                    if (q.assigned_slot) {
+                        q.assigned_slot = null;
+                        const rolloverPayload = status === 'completed'
+                            ? { status: 'completed', assigned_slot: null }
+                            : { assigned_slot: null };
+                        sb.from('quotes').update(rolloverPayload).eq('id', q.id);
+                    }
+                    return;
+                }
+
+                if (['archived', 'billed'].includes(status)) return;
+
+                q.status = 'archived';
+                q.assigned_slot = null;
+                sb.from('quotes').update({ status: 'archived', assigned_slot: null }).eq('id', q.id);
+                return;
+            }
+
+            if (['archived', 'billed', 'completed'].includes(status) && !hasVisiblePlannerDate) return;
+
+            if (plannerWeekStartOffset !== 0 && !hasVisiblePlannerDate) return;
 
             if (q.assigned_slot && q.assigned_slot.startsWith('planner-w')) {
                 let savedWeekMatch = q.assigned_slot.match(/w(\d+)/);
@@ -2968,33 +2980,35 @@ function escapeHtml(value) {
                 }
             }
 
-            const card = createCardElement(q, false, isON);
-            
-            let slot = null;
-            const isMaintenanceCard = q.customer_name === MAINTENANCE_CUSTOMER_NAME;
+            const shouldRenderCollectionCard = targetWeek >= 0 && targetWeek <= 3;
+            if (shouldRenderCollectionCard) {
+                const card = createCardElement(q, false, isON);
+                let slot = null;
+                const isMaintenanceCard = q.customer_name === MAINTENANCE_CUSTOMER_NAME;
 
-            if (isMaintenanceCard && (!q.assigned_slot || isMaintenancePoolSlot(q.assigned_slot) || String(q.assigned_slot).includes('pool-zone'))) {
-                slot = document.getElementById(getMaintenancePoolSlotForDate(q.coll_datetime));
-            }
-
-            if (!slot && q.assigned_slot) {
-                slot = document.getElementById(q.assigned_slot);
-            }
-            
-            if (!slot) {
-                if (isMaintenanceCard) {
+                if (isMaintenanceCard && (!q.assigned_slot || isMaintenancePoolSlot(q.assigned_slot) || String(q.assigned_slot).includes('pool-zone'))) {
                     slot = document.getElementById(getMaintenancePoolSlotForDate(q.coll_datetime));
-                } else if (q.coll_datetime) {
-                    let d = new Date(q.coll_datetime);
-                    if (!isNaN(d)) {
-                        let day = d.getDay(); 
-                        slot = document.getElementById(`pool-zone-${day}`);
-                    }
                 }
-                if (!slot) slot = document.getElementById('pool-zone-tba');
+
+                if (!slot && q.assigned_slot) {
+                    slot = document.getElementById(q.assigned_slot);
+                }
+                
+                if (!slot) {
+                    if (isMaintenanceCard) {
+                        slot = document.getElementById(getMaintenancePoolSlotForDate(q.coll_datetime));
+                    } else if (q.coll_datetime) {
+                        let d = new Date(q.coll_datetime);
+                        if (!isNaN(d)) {
+                            let day = d.getDay(); 
+                            slot = document.getElementById(`pool-zone-${day}`);
+                        }
+                    }
+                    if (!slot) slot = document.getElementById('pool-zone-tba');
+                }
+                
+                slot.appendChild(card);
             }
-            
-            slot.appendChild(card);
 
             if (isON && q.assigned_slot && !q.assigned_slot.includes('pool')) {
                 let delDateObj = new Date(q.del_datetime);
@@ -4829,6 +4843,19 @@ No phone notification has been sent yet because this job is for a future date.`;
         j.dispatch_sequence = null;
         j.dispatch_scheduled_at = null;
         j.released_at = null;
+        j.driver_phone = null;
+        j.ack_timestamp = null;
+        j.ack_gps = null;
+        j.arrived_timestamp = null;
+        j.arrived_gps = null;
+        j.loaded_timestamp = null;
+        j.del_arrived_timestamp = null;
+        j.tipped_timestamp = null;
+        j.tipped_gps = null;
+        j.pod_url = null;
+        j.invoice_pdf_url = null;
+        j.invoice_pdf_path = null;
+        j.invoice_pdf_generated_at = null;
         return j;
     }
 
