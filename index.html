@@ -565,7 +565,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px;">
             <div>
                 <h2 style="margin:0; color:#1a1a1a;">Search Planner</h2>
-                <p style="font-size:0.78rem; color:#666; margin:4px 0 0;">Search all loaded job cards, maintenance cards, note cards, instruction cards and unassigned cards across the four-week planner.</p>
+                <p style="font-size:0.78rem; color:#666; margin:4px 0 0;">Search job cards, maintenance, notes, instructions and unassigned cards across the entire planner history.</p>
             </div>
             <button type="button" onclick="closePlannerSearch()" style="border:none; background:#f1f5f9; color:#111827; font-size:1.2rem; font-weight:bold; width:34px; height:34px; border-radius:999px; cursor:pointer;">×</button>
         </div>
@@ -1538,6 +1538,13 @@ function escapeHtml(value) {
                 prefillNextFtsInvoiceNumber();
             }
         }
+        if (priceField) {
+            priceField.required = !isPFMode;
+            priceField.readOnly = isPFMode;
+            if (isPFMode) priceField.value = 'PFJ';
+            else if (priceField.value === 'PFJ') priceField.value = '';
+            priceField.placeholder = isPFMode ? 'PFJ' : '0.00';
+        }
     }
 
     function isQuickCardJobType(type) {
@@ -1559,6 +1566,10 @@ function escapeHtml(value) {
         const collRef = String((job && job.coll_ref) || '').trim().toUpperCase();
         const customerName = String((job && job.customer_name) || '').trim().toUpperCase();
         return contractType === 'instruction' || collRef.startsWith('INSTRUCTION - EMPTY') || customerName.includes('EMPTY MOVEMENT INSTRUCTION');
+    }
+
+    function isNoteJob(job) {
+        return String((job && job.customer_name) || '').toUpperCase().includes('PLANNER NOTE');
     }
 
     function openInstructionModal() {
@@ -2231,14 +2242,6 @@ function escapeHtml(value) {
                 if(assignedDriver === 'unassigned') assignedDriver = null;
             }
         }
-        if (priceField) {
-            priceField.required = !isPFMode;
-            priceField.readOnly = isPFMode;
-            if (isPFMode) priceField.value = 'PFJ';
-            else if (priceField.value === 'PFJ') priceField.value = '';
-            priceField.placeholder = isPFMode ? 'PFJ' : '0.00';
-        }
-
         let p1 = {
             customer_name: j.customer_name + " (Leg 1)",
             del_postcode: "YARD",
@@ -5085,15 +5088,12 @@ Are you sure you want to place it here?`);
     function isPlannerSearchableCard(job) {
         if (!job) return false;
         const status = String(job.status || '').toLowerCase();
-        if (['driver_config', 'template', 'archived', 'billed', 'subbed', 'cancelled', 'completed'].includes(status)) return false;
+        if (['driver_config', 'template'].includes(status)) return false;
 
-        // Always include maintenance/note/instruction cards and normal active jobs that are
-        // either in a planner slot, in an unassigned pool, or dated within the 4 week board.
+        // Search the permanent planner record, including completed and historical weeks.
         const slot = String(job.assigned_slot || '');
         if (slot.startsWith('planner-w') || slot.startsWith('pool-zone') || isMaintenancePoolSlot(slot)) return true;
-
-        const weekOffset = getWeekOffsetFromNow(job.coll_datetime);
-        return weekOffset >= 0 && weekOffset <= 3;
+        return !!job.coll_datetime;
     }
 
     function mergePlannerSearchRows(rows = []) {
@@ -5159,15 +5159,13 @@ Are you sure you want to place it here?`);
     }
 
     function getPlannerSearchWeek(job) {
+        if (job?.coll_datetime) return getWeekOffsetFromNow(job.coll_datetime);
         const slot = String(job?.assigned_slot || '');
         const plannerMatch = slot.match(/planner-w(\d+)/);
-        if (plannerMatch) return Math.max(0, Math.min(3, parseInt(plannerMatch[1], 10)));
+        if (plannerMatch) return parseInt(plannerMatch[1], 10) || 0;
         const maintMatch = slot.match(/maintenance-pool-zone-w(\d+)/);
-        if (maintMatch) return Math.max(0, Math.min(3, parseInt(maintMatch[1], 10)));
-        const offset = getWeekOffsetFromNow(job?.coll_datetime);
-        if (offset < 0) return 0;
-        if (offset > 3) return 3;
-        return offset;
+        if (maintMatch) return parseInt(maintMatch[1], 10) || 0;
+        return 0;
     }
 
     function getPlannerSearchRoute(job) {
@@ -5195,7 +5193,7 @@ Are you sure you want to place it here?`);
         const jobs = await loadPlannerSearchRows(forceRefresh);
 
         if (!query) {
-            countBox.innerText = `${jobs.length} cards loaded across the four-week planner`;
+            countBox.innerText = `${jobs.length} cards loaded across planner history`;
             resultBox.innerHTML = `<div style="padding:18px; color:#666; font-size:0.86rem;">Enter a search term above.</div>`;
             return;
         }
@@ -5241,12 +5239,15 @@ Are you sure you want to place it here?`);
         const type = getPlannerSearchType(job);
         if (type === 'maintenance' && !showMaintenanceCards) toggleMaintenanceCards();
 
-        const week = getPlannerSearchWeek(job);
+        const selectedWeekOffset = getPlannerSearchWeek(job);
         closePlannerSearch();
-        switchView(week);
+        plannerWeekStartOffset = selectedWeekOffset;
+        currentWeekOffset = 0;
+        activePlannerView = 0;
+        switchView(0);
 
         const slot = String(job.assigned_slot || '');
-        const isPool = slot.startsWith('pool-zone') && !isMaintenancePoolSlot(slot);
+        const isPool = (!slot || slot.startsWith('pool-zone')) && !isMaintenancePoolSlot(slot);
         const isMaintPool = isMaintenancePoolSlot(slot);
         if (isPool) {
             const sidebar = document.getElementById('unassigned-sidebar');
@@ -5266,13 +5267,12 @@ Are you sure you want to place it here?`);
             return true;
         };
 
-        setTimeout(async () => {
+        await loadAll();
+        for (let attempt = 0; attempt < 30; attempt++) {
             if (highlightCard()) return;
-            if (!loadAllInProgress) {
-                await loadAll();
-                setTimeout(highlightCard, 150);
-            }
-        }, 250);
+            await new Promise(resolve => setTimeout(resolve, 150));
+        }
+        alert('The correct planner week loaded, but the card could not be highlighted. It may be in the Unassigned or Maintenance pool.');
     }
 
     function openModal(id) { 
@@ -5742,4 +5742,3 @@ Are you sure you want to place it here?`);
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDOPkYduNBvti4HWX2izIhCrrQ02uk5SL0&libraries=places&callback=initGooglePlacesAutocomplete"></script>
 </body>
 </html>
- 
