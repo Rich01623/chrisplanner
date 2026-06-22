@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FROST Transport Planner - V5.6 (Complete Restore)</title>
+    <title>FROST Transport Planner - Recovered Latest</title>
     
     <!-- EXTERNAL LIBRARIES -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -37,39 +37,36 @@
            2. HEADER & NAVIGATION
            ========================================== */
         header { background: #2c3e50; padding: 0; border-bottom: 3px solid var(--frost-red); display: flex; align-items: stretch; justify-content: space-between; flex-shrink: 0; z-index: 100; box-shadow: none; }
-        .logo-container { display:flex; align-items:center; padding: 0 14px; background:#2c3e50; }
+        .logo-container { display:flex; align-items:center; padding:0 14px; background:#2c3e50; }
         .logo-container img { height: 50px; display:block; }
         
         .grand-total-box { background: var(--frost-black); color: white; padding: 5px 15px; border-radius: 0; border-left: 4px solid var(--price-green); display:flex; align-items:center; }
         .grand-total-value { font-size: 1.1rem; font-weight: bold; color: var(--whatsapp-green); }
         .week-info-box { background: #233241; color: white; padding: 5px 12px; border-radius: 0; border: none; border-left: 1px solid rgba(255,255,255,0.18); font-size: 0.85rem; font-weight: bold; display:flex; align-items:center; }
-        .week-info-box select { margin: 0 6px; background: #fff; color: #1a1a1a; border: none; border-radius: 3px; padding: 3px 6px; font-size: 0.82rem; font-weight: 900; cursor: pointer; }
-        .week-info-box span { white-space: nowrap; }
-        .driver-notification-ticker { flex-shrink: 0; height: 30px; display: flex; align-items: center; background: #0f172a; color: #fff; border-bottom: 2px solid var(--frost-red); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.18); }
-        .driver-ticker-label { align-self: stretch; display: flex; align-items: center; gap: 8px; padding: 0 10px 0 12px; background: var(--frost-red); font-size: 0.68rem; font-weight: 900; letter-spacing: 0.4px; white-space: nowrap; }
-        .driver-ticker-toggle { border: 1px solid rgba(255,255,255,0.55); background: rgba(255,255,255,0.16); color: white; border-radius: 3px; padding: 2px 6px; font-size: 0.62rem; font-weight: 900; cursor: pointer; line-height: 1.1; }
-        .driver-ticker-toggle:hover { background: rgba(255,255,255,0.28); }
-        .driver-ticker-window { flex: 1; overflow: hidden; min-width: 0; }
-        .driver-ticker-track { display: inline-flex; align-items: center; gap: 36px; white-space: nowrap; padding-left: 100%; animation: driverTickerScroll 55s linear infinite; font-size: 0.78rem; font-weight: 800; }
-        .driver-ticker-track:hover { animation-play-state: paused; }
-        .driver-ticker-item { display: inline-flex; align-items: center; gap: 7px; }
-        .driver-ticker-time { color: var(--whatsapp-green); font-weight: 900; }
-        .driver-notification-ticker.disabled { background: var(--frost-red); }
-        .driver-notification-ticker.disabled .driver-ticker-window { display: none; }
-        @keyframes driverTickerScroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+        .week-info-box select { margin:0 6px; background:#fff; color:#1a1a1a; border:0; border-radius:3px; padding:3px 6px; font-size:0.82rem; font-weight:900; cursor:pointer; }
+        .week-info-box span { white-space:nowrap; }
 
         .header-actions-wrapper { display:flex; gap:0; align-items:stretch; justify-content:flex-end; min-width:0; flex:1; background:#2c3e50; }
-        .header-menu-stack { display:flex; flex-direction:column; min-width:0; flex:1; border:none; border-radius:0; overflow:hidden; background:#2c3e50; box-shadow:none; }
-        .header-menu-bar { display:flex; align-items:stretch; gap:0; border:none; border-radius:0; overflow:hidden; background:#2c3e50; box-shadow:none; flex-wrap:nowrap; width:100%; }
-        .header-menu-bar + .header-menu-bar { border-top:none; }
+        .header-menu-stack { display:flex; flex-direction:column; min-width:0; flex:1; overflow:hidden; background:#2c3e50; }
+        .header-menu-bar { display:flex; align-items:stretch; gap:0; overflow:hidden; background:#2c3e50; flex-wrap:nowrap; width:100%; }
         .header-menu-row-secondary .menu-group:last-child { margin-left:auto; }
-        .header-menu-bar .week-btn { border-radius:0 !important; margin:0; border-right:none; box-shadow:none; white-space:nowrap; background:#2c3e50 !important; color:white !important; }
-        .header-menu-bar .week-btn:last-child { border-right:none; }
+        .header-menu-bar .week-btn { border-radius:0 !important; margin:0; border:0; box-shadow:none; white-space:nowrap; background:#2c3e50 !important; color:white !important; }
         .header-menu-bar .week-btn:hover { transform:none; background:#243342 !important; }
 
-        .menu-group { display: flex; gap: 0; align-items: center; flex-wrap: nowrap; }
-        .menu-group + .menu-group { margin-left:0; }
-        .week-btn { padding: 8px 18px; border: none; background: #555; color: white; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 0.8rem; transition: background 0.2s, transform 0.1s; white-space:nowrap; }
+        .driver-notification-ticker { flex-shrink:0; height:30px; display:flex; align-items:center; background:#0f172a; color:#fff; border-bottom:2px solid var(--frost-red); overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.18); }
+        .driver-ticker-label { align-self:stretch; display:flex; align-items:center; gap:8px; padding:0 10px 0 12px; background:var(--frost-red); font-size:0.68rem; font-weight:900; letter-spacing:0; white-space:nowrap; }
+        .driver-ticker-toggle { border:1px solid rgba(255,255,255,0.55); background:rgba(255,255,255,0.16); color:white; border-radius:3px; padding:2px 6px; font-size:0.62rem; font-weight:900; cursor:pointer; line-height:1.1; }
+        .driver-ticker-toggle:hover { background:rgba(255,255,255,0.28); }
+        .driver-ticker-window { flex:1; overflow:hidden; min-width:0; }
+        .driver-ticker-track { display:inline-flex; align-items:center; gap:36px; white-space:nowrap; padding-left:100%; animation:driverTickerScroll 55s linear infinite; font-size:0.78rem; font-weight:800; }
+        .driver-ticker-track:hover { animation-play-state:paused; }
+        .driver-ticker-item { display:inline-flex; align-items:center; gap:7px; }
+        .driver-notification-ticker.disabled { background:var(--frost-red); }
+        .driver-notification-ticker.disabled .driver-ticker-window { display:none; }
+        @keyframes driverTickerScroll { from { transform:translateX(0); } to { transform:translateX(-100%); } }
+
+        .menu-group { display:flex; gap:0; align-items:center; flex-wrap:nowrap; }
+        .week-btn { padding: 8px 18px; border: none; background: #555; color: white; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 0.8rem; transition: background 0.2s, transform 0.1s; }
         .week-btn:hover { background: #666; transform: translateY(-1px); }
         .week-btn:active { transform: translateY(0); }
         .week-btn.active { background: var(--frost-red); }
@@ -99,7 +96,7 @@
         .pool-zone:hover { background: #f4f4f4; }
 
         #content-area { flex-grow: 1; overflow: hidden; padding: 10px; }
-        #planner-board, #invoicing-view, #history-view, #subbed-view, #cancelled-view, #templates-view { background: white; border-radius: 8px; height: 100%; overflow: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        #planner-board { background: white; border-radius: 8px; height: 100%; overflow: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
         /* ==========================================
            4. PLANNER GRID & CELLS
@@ -189,11 +186,9 @@
         .action-btn-small:active { transform: translateY(0); }
         
         .btn-pdf { background-color: var(--frost-red); color: white; }
-        .btn-invoice-move { background-color: #f39c12; color: white; }
         .btn-success { background-color: var(--price-green); color: white; }
         .btn-edit-invoice { background-color: var(--frost-blue); color: white; }
         .btn-send-invoice { background-color: #16a085; color: white; }
-        #invoicing-view .action-col { min-width: 330px; }
         .demurrage-chip { display:inline-block; margin-top:4px; background:#fff3cd; color:#7a4d00; border:1px solid #ffe08a; border-radius:4px; padding:2px 6px; font-size:0.65rem; font-weight:700; }
 
         /* ==========================================
@@ -423,27 +418,10 @@
         .google-address-helper small { display:block; margin-top:4px; color:#555; font-size:0.72rem; line-height:1.25; }
         .pac-container { z-index: 5000 !important; font-family: Arial, sans-serif; }
         .quick-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-        .time-period-btn-row { display: flex; gap: 6px; margin-top: 6px; }
-        .time-period-btn { flex: 1; border: 1px solid #cbd5e1; background: #f8fafc; color: #334155; border-radius: 5px; padding: 6px 8px; font-size: 0.72rem; font-weight: 900; cursor: pointer; transition: all 0.15s ease; }
-        .time-period-btn:hover { background: #eef2ff; border-color: var(--frost-blue); color: var(--frost-blue); }
-        .time-period-btn.active { background: var(--frost-blue); border-color: var(--frost-blue); color: #fff; box-shadow: 0 2px 6px rgba(0,86,179,0.22); }
-        .time-period-btn-row.delivery .time-period-btn.active { background: var(--price-green); border-color: var(--price-green); box-shadow: 0 2px 6px rgba(46,125,50,0.22); }
-        .time-period-help { display: block; margin-top: 4px; color: #666; font-size: 0.68rem; line-height: 1.2; }
         .quick-card-warning { background: #fff1f2; border: 1px solid #fecdd3; color: #991b1b; border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; font-weight: 700; margin: 12px 0; }
         .job-card.quick-card-incomplete { background: #fff1f2 !important; border-left-color: #dc2626 !important; box-shadow: 0 0 0 2px rgba(220,38,38,0.12), 0 2px 4px rgba(0,0,0,0.12) !important; }
         .job-card.quick-card-incomplete:hover { background: #ffe4e6 !important; }
         .quick-card-badge { display:inline-block; font-size:0.58rem; color:#991b1b; border:1px solid #dc2626; padding:1px 5px; border-radius:999px; background:#fff; margin-left:5px; font-weight:900; letter-spacing:0.3px; }
-        .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
-        .template-card { background: #fff; border: 1px solid #d7dee8; border-left: 4px solid var(--frost-blue); border-radius: 6px; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.08); cursor: pointer; transition: box-shadow 0.15s ease, transform 0.15s ease; }
-        .template-card:hover { box-shadow: 0 4px 10px rgba(0,0,0,0.14); transform: translateY(-1px); }
-        .template-card-title { font-weight: 900; color: var(--frost-black); font-size: 0.9rem; margin-bottom: 8px; }
-        .template-card-route { display: flex; align-items: center; gap: 6px; color: var(--frost-blue); font-size: 0.78rem; font-weight: 800; margin-bottom: 8px; }
-        .template-card-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
-        .template-empty-state { border: 1px dashed #b9c4d2; border-radius: 8px; padding: 28px; text-align: center; color: #64748b; font-weight: 800; background: #f8fafc; }
-        .template-delete-btn { border: none; background: #c1272d; color: white; border-radius: 4px; padding: 5px 8px; font-size: 0.68rem; font-weight: 900; cursor: pointer; }
-        .template-delete-btn:hover { background: #a02025; }
-        #create-template-btn { background: var(--frost-blue); color: white; border: none; padding: 12px; font-weight: bold; cursor: pointer; border-radius: 4px; transition: background 0.2s; }
-        #create-template-btn:hover { background: #004494; }
         @media (max-width: 700px) { .quick-card-grid { grid-template-columns: 1fr; } }
 
 </style>
@@ -458,31 +436,27 @@
     <div class="header-actions-wrapper">
         <div class="header-menu-stack">
             <div class="header-menu-bar">
-                <button class="week-btn planner-search-btn" onclick="openPlannerSearch()">🔎 SEARCH</button>
-                <button class="week-btn instruction-btn" onclick="openInstructionModal()">➡️ INSTRUCTION</button>
-                <button class="week-btn quick-card-btn" onclick="openQuickCardModal()">⚡ QUICK CARD</button>
-                <button class="week-btn templates-btn" id="btn-templates" onclick="switchView('templates')">📋 TEMPLATES</button>
-                <button class="week-btn nav-blue" id="btn-hist" onclick="switchView('history')">HISTORY</button>
-                <button class="week-btn nav-blue" id="btn-invoice" onclick="switchView('invoice')">INVOICE</button>
-                <button class="week-btn nav-blue" id="btn-accounting-csv" onclick="exportAccountingCsv()" style="background:#16a085; color:white;">CSV EXPORT</button>
-                <button class="week-btn nav-blue" onclick="openPostcodeSearch()" style="background:#2c3e50;">📍 POSTCODE</button>
-                <button class="week-btn" id="btn-toggle-maintenance" onclick="toggleMaintenanceCards()" style="background:#f58220; color:white;">🔧 HIDE MAINTENANCE</button>
-                <button class="week-btn" id="btn-toggle-header" onclick="toggleHeaderView()" style="background:#34495e; color:white;">🔄 TOWNS</button>
+                <button class="week-btn planner-search-btn" onclick="openPlannerSearch()">SEARCH</button>
+                <button class="week-btn instruction-btn" onclick="openInstructionModal()">INSTRUCTION</button>
+                <button class="week-btn quick-card-btn" onclick="openQuickCardModal()">QUICK CARD</button>
+                <button class="week-btn" onclick="openPostcodeSearch()">POSTCODE</button>
+                <button class="week-btn" id="btn-toggle-maintenance" onclick="toggleMaintenanceCards()">HIDE MAINTENANCE</button>
+                <button class="week-btn" id="btn-toggle-header" onclick="toggleHeaderView()">TOWNS</button>
                 <button class="week-btn" onclick="syncMaintenanceAndLoadAll()">SYNC</button>
             </div>
             <div class="header-menu-bar header-menu-row-secondary">
                 <div class="menu-group">
-                    <button class="week-btn nav-blue" onclick="toggleUnassigned()">UNASSIGNED</button>
-                    <button class="week-btn nav-blue" onclick="toggleMaintenancePool()" style="background:#f58220; color:white;">MAINTENANCE POOL</button>
-                    <button class="week-btn nav-blue" onclick="resetForm(); openModal('modal-add')">+ NEW JOB</button>
-                    <button class="week-btn" onclick="openNoteModal()" style="background:#f39c12; color:white;">📝 NOTES</button>
+                    <button class="week-btn" onclick="toggleUnassigned()">UNASSIGNED</button>
+                    <button class="week-btn" onclick="toggleMaintenancePool()">MAINTENANCE POOL</button>
+                    <button class="week-btn" onclick="resetForm(); openModal('modal-add')">+ NEW JOB</button>
+                    <button class="week-btn" onclick="openNoteModal()">NOTES</button>
                 </div>
                 <div class="menu-group">
                     <button class="week-btn active" id="btn-w0" onclick="switchView(0)">WEEK 1</button>
                     <button class="week-btn" id="btn-w1" onclick="switchView(1)">WEEK 2</button>
                     <button class="week-btn" id="btn-w2" onclick="switchView(2)">WEEK 3</button>
                     <button class="week-btn" id="btn-w3" onclick="switchView(3)">WEEK 4</button>
-                    <button class="week-btn" style="background:#888;" onclick="toggleWeekend()">W/E</button>
+                    <button class="week-btn" onclick="toggleWeekend()">W/E</button>
                 </div>
             </div>
         </div>
@@ -577,106 +551,7 @@
         <!-- Planner Boards -->
         <section id="planner-board"></section>
 
-        <!-- Templates View -->
-        <section id="templates-view" style="display:none; padding:20px; overflow-y:auto;">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:15px; flex-wrap:wrap;">
-                <h2 style="margin:0; color:#0056b3;">Job Templates</h2>
-                <button class="week-btn nav-blue" onclick="resetForm(); openModal('modal-add')">+ NEW JOB</button>
             </div>
-            <div id="templates-list" class="template-grid"></div>
-        </section>
-
-        <!-- Invoice View -->
-        <section id="invoicing-view" style="display:none; padding:20px; overflow-y:auto;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h2 style="margin:0; color:#0056b3;">Invoice Queue</h2>
-                <button class="week-btn" style="background:var(--price-green);" onclick="billSelectedInvoices()">MARK SELECTED AS BILLED</button>
-            </div>
-            <div style="border: 1px solid #ccc; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th style="width:30px;"><input type="checkbox" onclick="toggleAllInvoices(this)"></th>
-                            <th>Date</th>
-                            <th>Customer Name</th>
-                            <th>Route</th>
-                            <th>FTS Invoice</th>
-                            <th>Customer Invoice</th>
-                            <th>Ref Number</th>
-                            <th>Price</th>
-                            <th style="text-align:right;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="invoice-list-body"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- History View -->
-        <section id="history-view" style="display:none; padding:20px; overflow-y:auto;">
-            <div class="search-container" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h2 style="margin:0; color:#34495e;">Historical Archive</h2>
-                <input type="text" id="history-search" placeholder="Search customer, postcode, town or ref..." onkeyup="filterHistory()" style="max-width:300px;">
-            </div>
-            <div style="border: 1px solid #ccc; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Customer Name</th>
-                            <th>Route</th>
-                            <th>FTS Invoice</th>
-                            <th>Customer Invoice</th>
-                            <th>Ref Number</th>
-                            <th>Price</th>
-                            <th style="text-align:right;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-list-body"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- Subbed View -->
-        <section id="subbed-view" style="display:none; padding:20px; overflow-y:auto;">
-            <h2 style="margin-top:0; color:#34495e; margin-bottom:15px;">Subbed to Contractor</h2>
-            <div style="border: 1px solid #ccc; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Customer Name</th>
-                            <th>Route</th>
-                            <th>Ref Number</th>
-                            <th>Price</th>
-                            <th style="text-align:right;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="subbed-list-body"></tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- Cancelled View -->
-        <section id="cancelled-view" style="display:none; padding:20px; overflow-y:auto;">
-            <h2 style="margin-top:0; color:var(--frost-red); margin-bottom:15px;">Cancelled Jobs</h2>
-            <div style="border: 1px solid #ccc; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Customer Name</th>
-                            <th>Route</th>
-                            <th>Ref Number</th>
-                            <th>Price</th>
-                            <th style="text-align:right;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="cancelled-list-body"></tbody>
-                </table>
-            </div>
-        </section>
-    </div>
 </main>
 
 <!-- ==========================================
@@ -776,14 +651,14 @@
                     <h4 style="margin:0 0 10px 0; color:#0056b3;">CUSTOMER INFO</h4>
                     
                     <div class="form-group" style="position: relative;">
-                        <label>Booking Customer Name</label>
-                        <input type="text" id="n_cust_name" oninput="showCustomerSuggestions()" autocomplete="off" placeholder="Start typing booking customer...">
+                        <label>Booking Customer Name *</label>
+                        <input type="text" id="n_cust_name" oninput="showCustomerSuggestions()" autocomplete="off" placeholder="Start typing booking customer..." required>
                         <div id="cust-suggestions" class="autocomplete-suggestions"></div>
                     </div>
                     
                     <div style="display:flex; gap:5px;">
-                        <div class="form-group" style="flex:1;"><label>Telephone</label><input type="text" id="n_cust_phone"></div>
-                        <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_cust_email"></div>
+                        <div class="form-group" style="flex:1;"><label>Telephone *</label><input type="text" id="n_cust_phone" required></div>
+                        <div class="form-group" style="flex:1;"><label>Email *</label><input type="email" id="n_cust_email" required></div>
                     </div>
                     
                     <hr class="section-divider">
@@ -806,16 +681,7 @@
                         <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_coll_email"></div>
                     </div>
                     <div class="form-group"><label>Ref</label><input type="text" id="n_coll_ref"></div>
-                    <div class="form-group">
-                        <label>Date & Time</label>
-                        <input type="datetime-local" id="n_coll_dt">
-                        <input type="hidden" id="n_coll_time_period">
-                        <div class="time-period-btn-row">
-                            <button type="button" class="time-period-btn" id="n_coll_time_period_am" onclick="toggleTimePeriod('coll', 'AM')">AM</button>
-                            <button type="button" class="time-period-btn" id="n_coll_time_period_pm" onclick="toggleTimePeriod('coll', 'PM')">PM</button>
-                        </div>
-                        <small class="time-period-help">Use AM/PM when there is no exact collection booking time. Click the active button again to go back to the exact time.</small>
-                    </div>
+                    <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_coll_dt"></div>
                 </div>
                 
                 <div style="flex: 1;">
@@ -845,16 +711,7 @@
                         <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_del_email"></div>
                     </div>
                     <div class="form-group"><label>Ref</label><input type="text" id="n_10"></div>
-                    <div class="form-group">
-                        <label>Date & Time</label>
-                        <input type="datetime-local" id="n_del_dt">
-                        <input type="hidden" id="n_del_time_period">
-                        <div class="time-period-btn-row delivery">
-                            <button type="button" class="time-period-btn" id="n_del_time_period_am" onclick="toggleTimePeriod('del', 'AM')">AM</button>
-                            <button type="button" class="time-period-btn" id="n_del_time_period_pm" onclick="toggleTimePeriod('del', 'PM')">PM</button>
-                        </div>
-                        <small class="time-period-help">Use AM/PM when there is no exact delivery booking time. Click the active button again to go back to the exact time.</small>
-                    </div>
+                    <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_del_dt"></div>
                 </div>
             </div>
         </div>
@@ -896,14 +753,47 @@
             <div class="form-group" style="flex:1;"><label>Vehicle Required</label><select id="n_veh_type"><option>Artic</option><option>Rigid</option><option>7.5t</option><option>Van</option></select></div>
             <div class="form-group" style="flex:1;"><label>Total Pallets</label><input type="number" id="n_total_pallets" placeholder="e.g. 14"></div>
             <div class="form-group" style="flex:1;"><label>Total Weight (kg)</label><input type="number" id="n_total_weight" placeholder="e.g. 12500"></div>
-            <div class="form-group" style="flex:1;"><label>Agreed Price (£)</label><input type="text" id="n_price" placeholder="0.00"></div>
+            <div class="form-group" style="flex:1;"><label>Agreed Price (£) *</label><input type="text" id="n_price" placeholder="0.00" required></div>
             
             <div style="flex:2.2; display:flex; gap:10px;">
                 <button type="button" class="week-btn" onclick="closeModal('modal-add')" style="flex: 1; background:#ddd; color:#333; padding: 10px; font-weight: bold; border-radius: 4px; height: 37px; margin-bottom: 10px;">Cancel</button>
-                <button type="button" id="create-template-btn" onclick="saveCurrentJobAsTemplate()" style="flex: 1.4; height: 37px; margin-bottom: 10px; border-radius: 4px;">Create Template</button>
                 <button type="button" id="add-job-btn" onclick="saveJob()" style="flex: 2; height: 37px; margin-bottom: 10px; border-radius: 4px;">Save Changes</button>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Missing Booking Customer / Create Profile Modal -->
+<div id="modal-booking-customer-profile" class="modal-overlay">
+    <div class="modal-content" style="width:460px; max-width:94vw;" onclick="event.stopPropagation();">
+        <div id="booking-customer-missing-prompt">
+            <h3 style="margin-top:0; color:var(--frost-red);">Booking customer not found</h3>
+            <p style="font-size:0.9rem; color:#333; margin-bottom:18px;">Booking customer not found, would you like to create new profile?</p>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" class="week-btn" onclick="declineNewBookingCustomer()" style="background:#ddd; color:#333; min-width:90px;">No</button>
+                <button type="button" class="week-btn" onclick="showNewBookingCustomerForm()" style="background:var(--frost-red); color:white; min-width:90px;">Yes</button>
+            </div>
+        </div>
+
+        <form id="booking-customer-create-form" style="display:none;" onsubmit="saveNewBookingCustomerProfile(event)">
+            <h3 style="margin-top:0; color:var(--frost-blue);">Create Booking Customer</h3>
+            <div class="form-group">
+                <label>Booking Customer Name *</label>
+                <input type="text" id="new_booking_customer_name" required>
+            </div>
+            <div class="form-group">
+                <label>Customer Email Address *</label>
+                <input type="email" id="new_booking_customer_email" required>
+            </div>
+            <div class="form-group">
+                <label>Customer Phone Number *</label>
+                <input type="text" id="new_booking_customer_phone" required>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:18px;">
+                <button type="button" class="week-btn" onclick="showMissingBookingCustomerPrompt()" style="flex:1; background:#ddd; color:#333;">Back</button>
+                <button type="submit" id="save-booking-customer-btn" class="week-btn" style="flex:2; background:var(--frost-blue); color:white;">Submit</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -935,36 +825,6 @@
     </div>
 </div>
 
-<!-- Invoice Adjustment Modal -->
-<div id="modal-invoice-edit" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-invoice-edit')">
-    <div class="modal-content" style="width: 430px; max-width: 95vw;" onclick="event.stopPropagation();">
-        <h3 style="margin-top:0; color:var(--frost-blue);">Invoice Adjustments</h3>
-        <p style="font-size:0.8rem; color:#666; margin-bottom:14px;">Add extra invoice charges without changing the original job price. Demurrage will be shown clearly as a separate line on the invoice PDF.</p>
-        <input type="hidden" id="invoice_edit_job_id">
-        <div class="form-group">
-            <label>Job / Customer</label>
-            <input type="text" id="invoice_edit_job_summary" readonly style="background:#f8fafc; font-weight:bold;">
-        </div>
-        <div style="display:flex; gap:10px;">
-            <div class="form-group" style="flex:1;">
-                <label>Base Job Price (£)</label>
-                <input type="text" id="invoice_edit_base_price" readonly style="background:#f8fafc;">
-            </div>
-            <div class="form-group" style="flex:1;">
-                <label>Demurrage (£)</label>
-                <input type="number" step="0.01" min="0" id="invoice_edit_demurrage_amount" placeholder="0.00">
-            </div>
-        </div>
-        <div class="form-group">
-            <label>Demurrage Notes</label>
-            <textarea id="invoice_edit_demurrage_notes" rows="3" placeholder="e.g. 2 hours waiting time at collection / delivery"></textarea>
-        </div>
-        <div style="display:flex; gap:10px; margin-top:15px;">
-            <button type="button" class="week-btn" onclick="closeModal('modal-invoice-edit')" style="flex:1; background:#ddd; color:#333;">Cancel</button>
-            <button type="button" class="week-btn" onclick="saveInvoiceAdjustments()" style="flex:2; background:var(--frost-blue); color:white;">Save Invoice Extras</button>
-        </div>
-    </div>
-</div>
 
 
 <!-- Larger Job Detail Modal -->
@@ -1123,8 +983,8 @@ function escapeHtml(value) {
     const drivers = [
         { name: "Unassigned", phone: "" },
         { name: "Andy Elston", phone: "447999811320" },
-        { name: "Agency One", phone: "447701238558" },
-        { name: "Agency Two", phone: "" },
+        { name: "Agency One", phone: "447701238562" },
+        { name: "Agency Two", phone: "447701238558" },
         { name: "Andy West", phone: "447734369810" },
         { name: "Callum Lee", phone: "447359390140" },
         { name: "Chris Frost", phone: "447701238561" },
@@ -1133,12 +993,10 @@ function escapeHtml(value) {
         { name: "Lee Woodcock", phone: "447701238577" },
         { name: "Marc Wickham", phone: "447725566632" },
         { name: "Marco Marco", phone: "447701238566" },
-        { name: "Myke Trowbridge", phone: "" },
+        { name: "Myke Trowbridge", phone: "447701238567" },
         { name: "Neil Woods", phone: "447701238567" },
-        { name: "Rhys Hill", phone: "447701238562" },
         { name: "Ricardo Morais", phone: "447746509636" },
         { name: "Richard Spence", phone: "447701238570" },
-        { name: "Roy Taylor", phone: "447701238562" },
         { name: "Sean Walton", phone: "447701238572" },
         { name: "Svagunas Butnorius", phone: "447701238576" }
     ];
@@ -1328,312 +1186,15 @@ function escapeHtml(value) {
         return hasPOD || isCompletedWithinPreviousWeeks(job, 2);
     }
 
-    const JOB_TEMPLATE_STORAGE_KEY = 'frost_job_templates_v1';
-    const JOB_TEMPLATE_FIELD_IDS = [
-        'n_cust_name', 'n_cust_phone', 'n_cust_email', 'n_job_notes',
-        'n_coll_address_search', 'n_coll_name', 'n_coll_phone', 'n_coll_email', 'n_coll_pc', 'n_coll_street', 'n_coll_town', 'n_coll_county', 'n_coll_ref', 'n_coll_dt', 'n_coll_time_period',
-        'n_coll_pc_2', 'n_coll_town_2',
-        'n_del_address_search', 'n_del_name', 'n_del_phone', 'n_del_email', 'n_del_pc', 'n_del_street', 'n_8', 'n_9', 'n_10', 'n_del_dt', 'n_del_time_period',
-        'n_del_pc_2', 'n_del_town_2',
-        'n_price', 'n_total_pallets', 'n_total_weight', 'n_veh_type',
-        'n_customers_own_invoice_number', 'n_cx_number', 'n_job_contract_type'
-    ];
 
-    let jobTemplatesCache = [];
-
-    function loadLocalJobTemplates() {
-        try {
-            const parsed = JSON.parse(localStorage.getItem(JOB_TEMPLATE_STORAGE_KEY) || '[]');
-            return Array.isArray(parsed) ? parsed : [];
-        } catch (err) {
-            console.warn('Could not read saved job templates.', err);
-            return [];
-        }
-    }
-
-    function saveJobTemplates(templates) {
-        localStorage.setItem(JOB_TEMPLATE_STORAGE_KEY, JSON.stringify(templates || []));
-    }
-
-    function quoteRowToTemplateValues(row = {}) {
-        return {
-            n_cust_name: row.customer_name || '',
-            n_cust_phone: row.customer_phone || '',
-            n_cust_email: row.customer_email || '',
-            n_job_notes: row.job_notes || '',
-            n_coll_name: row.coll_cust_name || '',
-            n_coll_phone: row.coll_phone || '',
-            n_coll_email: row.coll_email || '',
-            n_coll_pc: row.coll_postcode || '',
-            n_coll_street: row.coll_street || '',
-            n_coll_town: row.coll_town || '',
-            n_coll_county: row.coll_county || '',
-            n_coll_ref: row.coll_ref || '',
-            n_coll_dt: row.coll_datetime || '',
-            n_coll_time_period: row.coll_time_period || '',
-            n_coll_pc_2: row.coll_postcode_2 || '',
-            n_coll_town_2: row.coll_town_2 || '',
-            n_del_name: row.del_cust_name || '',
-            n_del_phone: row.del_phone || '',
-            n_del_email: row.del_email || '',
-            n_del_pc: row.del_postcode || '',
-            n_del_street: row.del_street || '',
-            n_8: row.del_town || '',
-            n_9: row.del_county || '',
-            n_10: row.del_ref || '',
-            n_del_dt: row.del_datetime || '',
-            n_del_time_period: row.del_time_period || '',
-            n_del_pc_2: row.del_postcode_2 || '',
-            n_del_town_2: row.del_town_2 || '',
-            n_price: row.total_price || '',
-            n_total_pallets: row.total_pallets || '',
-            n_total_weight: row.total_weight || '',
-            n_veh_type: row.vehicle_type || 'Artic',
-            n_customers_own_invoice_number: row.customers_own_invoice_number || '',
-            n_cx_number: row.cx_number || '',
-            n_job_contract_type: row.job_contract_type || row.contract_type || ''
-        };
-    }
-
-    function templateValuesToQuotePayload(values = {}) {
-        const payload = {
-            status: 'template',
-            dispatch_status: 'unsent',
-            assigned_slot: null,
-            assigned_driver: null,
-            customer_name: values.n_cust_name || 'Untitled Template',
-            customer_phone: values.n_cust_phone || '',
-            customer_email: values.n_cust_email || '',
-            job_notes: values.n_job_notes || '',
-            coll_cust_name: values.n_coll_name || '',
-            coll_phone: values.n_coll_phone || '',
-            coll_email: values.n_coll_email || '',
-            coll_postcode: values.n_coll_pc || '',
-            coll_street: values.n_coll_street || '',
-            coll_town: values.n_coll_town || '',
-            coll_county: values.n_coll_county || '',
-            coll_ref: values.n_coll_ref || '',
-            coll_datetime: values.n_coll_dt || null,
-            del_postcode: values.n_del_pc || '',
-            del_cust_name: values.n_del_name || '',
-            del_phone: values.n_del_phone || '',
-            del_email: values.n_del_email || '',
-            del_street: values.n_del_street || '',
-            del_town: values.n_8 || '',
-            del_county: values.n_9 || '',
-            del_ref: values.n_10 || '',
-            del_datetime: values.n_del_dt || null,
-            del_postcode_2: values.n_del_pc_2 || '',
-            del_town_2: values.n_del_town_2 || '',
-            total_price: values.n_price || '0',
-            total_pallets: values.n_total_pallets || '',
-            total_weight: values.n_total_weight || '',
-            vehicle_type: values.n_veh_type || 'Artic',
-            customers_own_invoice_number: values.n_customers_own_invoice_number || '',
-            cx_number: values.n_cx_number || '',
-            fts_invoice_number: '',
-            job_contract_type: values.n_job_contract_type || ''
-        };
-
-        if (values.n_coll_pc_2) payload.coll_postcode_2 = values.n_coll_pc_2;
-        if (values.n_coll_town_2) payload.coll_town_2 = values.n_coll_town_2;
-        if (values.n_coll_time_period) payload.coll_time_period = normaliseTimePeriodValue(values.n_coll_time_period);
-        if (values.n_del_time_period) payload.del_time_period = normaliseTimePeriodValue(values.n_del_time_period);
-        return payload;
-    }
-
-    function quoteRowToJobTemplate(row = {}) {
-        const values = quoteRowToTemplateValues(row);
-        return {
-            id: String(row.id),
-            source: 'database',
-            name: getTemplateDisplayName(values),
-            values,
-            createdAt: row.created_at || ''
-        };
-    }
-
-    async function fetchJobTemplates() {
-        const localTemplates = loadLocalJobTemplates().map(template => ({ ...template, source: 'local' }));
-        try {
-            const { data, error } = await sb.from('quotes')
-                .select('*')
-                .eq('status', 'template')
-                .order('created_at', { ascending: false });
-            if (error) throw error;
-
-            jobTemplatesCache = [...(data || []).map(quoteRowToJobTemplate), ...localTemplates];
-        } catch (err) {
-            console.error('Could not load database templates, using browser templates only.', err);
-            jobTemplatesCache = localTemplates;
-        }
-        return jobTemplatesCache;
-    }
-
-    function getTemplateFormValues() {
-        const values = {};
-        JOB_TEMPLATE_FIELD_IDS.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) values[id] = el.value || '';
-        });
-        return values;
-    }
-
-    function getTemplateDisplayName(values) {
-        const customer = String(values.n_cust_name || '').trim() || 'Untitled Template';
-        const from = String(values.n_coll_town || values.n_coll_pc || '').trim();
-        const to = String(values.n_8 || values.n_del_pc || '').trim();
-        if (from || to) return `${customer} | ${from || 'Collection'} > ${to || 'Delivery'}`;
-        return customer;
-    }
-
-    async function saveCurrentJobAsTemplate() {
-        const values = getTemplateFormValues();
-        const btn = document.getElementById('create-template-btn');
-        const originalText = btn ? btn.innerText : '';
-        if (btn) {
-            btn.innerText = 'Saving...';
-            btn.disabled = true;
-        }
-
-        try {
-            const payload = templateValuesToQuotePayload(values);
-            const { error } = await sb.from('quotes').insert([payload]);
-            if (error) throw error;
-
-            await renderTemplatesView();
-            if (btn) btn.innerText = 'Template Saved';
-            setTimeout(() => {
-                if (btn) {
-                    btn.innerText = originalText;
-                    btn.disabled = false;
-                }
-            }, 1400);
-        } catch (err) {
-            console.error('Could not save template to database.', err);
-            if (btn) {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
-            alert('Could not save the template to the database. Error: ' + (err.message || err));
-        }
-    }
-
-    function applyTemplateValuesToForm(values = {}) {
-        resetForm();
-        JOB_TEMPLATE_FIELD_IDS.forEach(id => {
-            if (id === 'n_job_contract_type') return;
-            const el = document.getElementById(id);
-            if (el) el.value = values[id] || '';
-        });
-
-        const mode = values.n_job_contract_type || '';
-        if (mode) setJobBookingMode(mode);
-        else setJobBookingMode('');
-
-        const collPeriodField = document.getElementById('n_coll_time_period');
-        const delPeriodField = document.getElementById('n_del_time_period');
-        if (collPeriodField) collPeriodField.value = normaliseTimePeriodValue(values.n_coll_time_period || '');
-        if (delPeriodField) delPeriodField.value = normaliseTimePeriodValue(values.n_del_time_period || '');
-        updateTimePeriodButtons('coll');
-        updateTimePeriodButtons('del');
-
-        document.getElementById('sys_job_id').value = '';
-        const ftsField = document.getElementById('n_fts_invoice_number');
-        if (ftsField) ftsField.value = '';
-        if (isPalletforceJobType(mode)) {
-            ftsInvoicePrefillToken++;
-        } else {
-            prefillNextFtsInvoiceNumber();
-        }
-
-        switchFormTab('leg1');
-    }
-
-    async function loadTemplateIntoJobForm(templateId) {
-        let template = jobTemplatesCache.find(item => String(item.id) === String(templateId));
-        if (!template) {
-            const templates = await fetchJobTemplates();
-            template = templates.find(item => String(item.id) === String(templateId));
-        }
-        if (!template) return alert('Could not find that template.');
-        applyTemplateValuesToForm(template.values || {});
-        openModal('modal-add');
-    }
-
-    async function deleteJobTemplate(event, templateId, source = 'database') {
-        if (event) event.stopPropagation();
-        if (!confirm('Delete this template?')) return;
-        try {
-            if (source === 'local') {
-                const templates = loadLocalJobTemplates().filter(item => String(item.id) !== String(templateId));
-                saveJobTemplates(templates);
-            } else {
-                const { error } = await sb.from('quotes').delete().eq('id', templateId).eq('status', 'template');
-                if (error) throw error;
-            }
-            await renderTemplatesView();
-        } catch (err) {
-            console.error('Could not delete template.', err);
-            alert('Could not delete this template. Error: ' + (err.message || err));
-        }
-    }
-
-    async function renderTemplatesView() {
-        const list = document.getElementById('templates-list');
-        if (!list) return;
-        if (!jobTemplatesCache.length) {
-            list.innerHTML = '<div class="template-empty-state">Loading templates...</div>';
-        }
-        const templates = await fetchJobTemplates();
-
-        if (!templates.length) {
-            list.innerHTML = '<div class="template-empty-state">No templates saved yet. Open + New Job, fill in the regular job details, then press Create Template.</div>';
-            return;
-        }
-
-        list.innerHTML = '';
-        templates.forEach(template => {
-            const values = template.values || {};
-            const card = document.createElement('div');
-            card.className = 'template-card';
-            card.onclick = () => loadTemplateIntoJobForm(template.id);
-
-            const from = values.n_coll_town || values.n_coll_pc || 'Collection';
-            const to = values.n_8 || values.n_del_pc || 'Delivery';
-            const vehicle = values.n_veh_type || 'Vehicle';
-            const pallets = values.n_total_pallets ? `${values.n_total_pallets} Plt` : '';
-            const weight = values.n_total_weight ? `${values.n_total_weight}kg` : '';
-            const price = values.n_price ? `&pound;${escapeHtml(values.n_price)}` : '';
-
-            card.innerHTML = `
-                <div class="template-card-title">${escapeHtml(template.name || getTemplateDisplayName(values))}</div>
-                <div class="template-card-route"><span>${escapeHtml(from)}</span><span>&gt;</span><span>${escapeHtml(to)}</span></div>
-                <div class="template-card-meta">
-                    <span class="vehicle-tag">${escapeHtml(vehicle)}</span>
-                    ${pallets ? `<span class="vehicle-tag" style="background:#d68910;">${escapeHtml(pallets)}</span>` : ''}
-                    ${weight ? `<span class="vehicle-tag" style="background:#666;">${escapeHtml(weight)}</span>` : ''}
-                    ${price ? `<span class="price-tag">${price}</span>` : ''}
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; border-top:1px solid #eef2f7; padding-top:8px;">
-                    <span style="font-size:0.68rem; color:#64748b; font-weight:800;">Click to use template</span>
-                    <button type="button" class="template-delete-btn" onclick="deleteJobTemplate(event, '${escapeInlineArg(template.id)}', '${escapeInlineArg(template.source || 'database')}')">Delete</button>
-                </div>`;
-            list.appendChild(card);
-        });
-    }
-
-    // EGRESS SAVER: History / Invoice / Subbed / Cancelled rows are not loaded with the
-    // main planner board anymore. They are fetched only when someone opens that view.
+    // Subbed and cancelled list rows are loaded only if those legacy views are opened.
     const dataViewStatusMap = {
-        invoice: ['completed'],
-        history: ['billed', 'archived'],
         subbed: ['subbed'],
         cancelled: ['cancelled']
     };
-    const dataViewLoaded = { invoice: false, history: false, subbed: false, cancelled: false };
-    const dataViewLoading = { invoice: false, history: false, subbed: false, cancelled: false };
-    const LAZY_DATA_VIEW_KEYS = ['invoice', 'history', 'subbed', 'cancelled', 'templates'];
+    const dataViewLoaded = { subbed: false, cancelled: false };
+    const dataViewLoading = { subbed: false, cancelled: false };
+    const LAZY_DATA_VIEW_KEYS = ['subbed', 'cancelled'];
     let boardRefreshNeededAfterDataView = false;
 
     function isLazyDataView(view = activePlannerView) {
@@ -1919,77 +1480,6 @@ function escapeHtml(value) {
         loadAll(); 
     }
 
-
-    function normaliseTimePeriodValue(value) {
-        const period = String(value || '').trim().toUpperCase();
-        return (period === 'AM' || period === 'PM') ? period : '';
-    }
-
-    function updateTimePeriodButtons(type) {
-        const cleanType = type === 'del' ? 'del' : 'coll';
-        const hidden = document.getElementById(`n_${cleanType}_time_period`);
-        const selected = normaliseTimePeriodValue(hidden ? hidden.value : '');
-
-        ['AM', 'PM'].forEach(period => {
-            const btn = document.getElementById(`n_${cleanType}_time_period_${period.toLowerCase()}`);
-            if (btn) btn.classList.toggle('active', selected === period);
-        });
-    }
-
-    function setTimePeriodValue(type, value) {
-        const cleanType = type === 'del' ? 'del' : 'coll';
-        const hidden = document.getElementById(`n_${cleanType}_time_period`);
-        if (!hidden) return;
-
-        hidden.value = normaliseTimePeriodValue(value);
-        updateTimePeriodButtons(cleanType);
-    }
-
-    function toggleTimePeriod(type, period) {
-        const cleanType = type === 'del' ? 'del' : 'coll';
-        const hidden = document.getElementById(`n_${cleanType}_time_period`);
-        if (!hidden) return;
-
-        const current = normaliseTimePeriodValue(hidden.value);
-        const next = normaliseTimePeriodValue(period);
-
-        hidden.value = current === next ? '' : next;
-        updateTimePeriodButtons(cleanType);
-    }
-
-    function getStoredTimePeriod(type) {
-        const cleanType = type === 'del' ? 'del' : 'coll';
-        const hidden = document.getElementById(`n_${cleanType}_time_period`);
-        return normaliseTimePeriodValue(hidden ? hidden.value : '');
-    }
-
-    function buildCardTimeLabel(iso, period) {
-        const selectedPeriod = normaliseTimePeriodValue(period);
-        const label = selectedPeriod || (iso ? new Date(iso).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}) : '');
-        if (!label) return '';
-
-        const isPeriod = selectedPeriod ? ' letter-spacing:0.4px;' : '';
-        return `<span style="display:block; font-size:0.65rem; color:#000; font-weight:800; line-height:1.05; padding-top:2px;${isPeriod}">${escapeHtml(label)}</span>`;
-    }
-
-    function detailDateTimeWithPeriod(value, period) {
-        const selectedPeriod = normaliseTimePeriodValue(period);
-        if (!value) return selectedPeriod || '-';
-
-        const d = new Date(value);
-        if (isNaN(d)) return selectedPeriod ? `${detailDisplayValue(value)} ${selectedPeriod}` : detailDisplayValue(value);
-
-        const datePart = d.toLocaleDateString('en-GB');
-        if (selectedPeriod) return `${datePart} ${selectedPeriod}`;
-
-        return datePart + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
-    }
-
-    function fullDetailDateTimePeriodRow(label, value, period) {
-        return `<div class="full-detail-row"><b>${escapeHtml(label)}:</b><span>${escapeHtml(detailDateTimeWithPeriod(value, period))}</span></div>`;
-    }
-
-
     function switchFormTab(tabId) {
         document.querySelectorAll('.tab-content-zone').forEach(el => el.classList.remove('active'));
         document.getElementById('tab-content-' + tabId).classList.add('active');
@@ -2017,6 +1507,7 @@ function escapeHtml(value) {
         const customerInv = document.getElementById('n_customers_own_invoice_number');
         const cxNumber = document.getElementById('n_cx_number');
         const ftsInv = document.getElementById('n_fts_invoice_number');
+        const priceField = document.getElementById('n_price');
         const isSameMode = hidden && hidden.value === mode;
         const newMode = isSameMode ? '' : (mode || '');
         const isPFMode = isPalletforceJobType(newMode);
@@ -2068,21 +1559,6 @@ function escapeHtml(value) {
         const collRef = String((job && job.coll_ref) || '').trim().toUpperCase();
         const customerName = String((job && job.customer_name) || '').trim().toUpperCase();
         return contractType === 'instruction' || collRef.startsWith('INSTRUCTION - EMPTY') || customerName.includes('EMPTY MOVEMENT INSTRUCTION');
-    }
-
-    function isNoteJob(job) {
-        if (!job) return false;
-
-        const customerName = String(job.customer_name || '').trim();
-        const contractType = String(job.job_contract_type || job.contract_type || '').trim().toLowerCase();
-        const collPostcode = String(job.coll_postcode || '').trim().toUpperCase();
-        const delPostcode = String(job.del_postcode || '').trim().toUpperCase();
-
-        return (
-            customerName === '📝 PLANNER NOTE' ||
-            contractType === 'note' ||
-            (collPostcode === 'NOTE' && delPostcode === 'NOTE')
-        );
     }
 
     function openInstructionModal() {
@@ -2226,14 +1702,10 @@ function escapeHtml(value) {
 
         const driverPhone = selectedDriver.phone;
 
-        const formatDt = (iso, period = '') => {
-            const selectedPeriod = normaliseTimePeriodValue(period);
-            if (!iso) return selectedPeriod || 'TBA';
+        const formatDt = (iso) => {
+            if (!iso) return 'TBA';
             const d = new Date(iso);
-            if (isNaN(d)) return selectedPeriod ? `${String(iso).replace('T', ' ')} ${selectedPeriod}` : String(iso).replace('T', ' ');
-            const datePart = d.toLocaleDateString('en-GB');
-            if (selectedPeriod) return `${datePart} ${selectedPeriod}`;
-            return datePart + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
+            return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
         };
 
         let msg = `🚚 *FROST TRANSPORT - NEW JOB*\n\n`;
@@ -2244,7 +1716,7 @@ function escapeHtml(value) {
         if(j.coll_town) msg += `${j.coll_town}\n`;
         if(j.coll_county) msg += `${j.coll_county}\n`;
         msg += `*Postcode:* ${j.coll_postcode || 'TBA'}\n`;
-        msg += `*Time:* ${formatDt(j.coll_datetime, j.coll_time_period)}\n`;
+        msg += `*Time:* ${formatDt(j.coll_datetime)}\n`;
         msg += `*Ref:* ${j.coll_ref || 'N/A'}\n\n`;
 
         msg += `🔴 *DELIVERY:*\n`;
@@ -2253,7 +1725,7 @@ function escapeHtml(value) {
         if(j.del_town) msg += `${j.del_town}\n`;
         if(j.del_county) msg += `${j.del_county}\n`;
         msg += `*Postcode:* ${j.del_postcode || 'TBA'}\n`;
-        msg += `*Time:* ${formatDt(j.del_datetime, j.del_time_period)}\n`;
+        msg += `*Time:* ${formatDt(j.del_datetime)}\n`;
         msg += `*Ref:* ${j.del_ref || 'N/A'}\n\n`;
 
         msg += `📦 *GOODS:*\n`;
@@ -2681,6 +2153,38 @@ function escapeHtml(value) {
     // ==========================================
     // O/N DROP REASSIGNMENT ENGINE
     // ==========================================
+    function normaliseTrailerNumber(value) {
+        return String(value || '').replace(/^\s*(?:Trl:|Trailer:)\s*/i, '').replace(/^\[|\]$/g, '').trim();
+    }
+
+    function getCollectionTrailerForJob(job) {
+        if (!job) return '';
+
+        const driver = String(job.assigned_driver || '').trim().toLowerCase();
+        const collectionDate = job.coll_datetime ? String(job.coll_datetime).split('T')[0] : '';
+        if (driver && collectionDate) {
+            const cachedTrailer = historicalTrailers[`${driver}_${collectionDate}`];
+            if (cachedTrailer) return normaliseTrailerNumber(cachedTrailer);
+        }
+
+        const slot = String(job.assigned_slot || '');
+        if (slot.startsWith('planner-w')) {
+            const cellId = slot.split('-s')[0];
+            const trailerBadge = document.getElementById(`trl-${cellId}`);
+            if (trailerBadge && trailerBadge.textContent) return normaliseTrailerNumber(trailerBadge.textContent);
+        }
+
+        return '';
+    }
+
+    function getSplitDeliveryTrailer(job) {
+        const savedMatch = String(job && job.coll_ref || '').match(/Trailer:\s*([^|]+)/i);
+        if (savedMatch) return normaliseTrailerNumber(savedMatch[1]);
+
+        const linkedLeg1 = getLinkedJobs(job && job.id).find(linkedJob => /\(Leg 1\)\s*$/i.test(String(linkedJob.customer_name || '')));
+        return getCollectionTrailerForJob(linkedLeg1);
+    }
+
     async function reassignONJob(e, id) {
         if (e && e.stopPropagation) e.stopPropagation();
         
@@ -2727,6 +2231,13 @@ function escapeHtml(value) {
                 if(assignedDriver === 'unassigned') assignedDriver = null;
             }
         }
+        if (priceField) {
+            priceField.required = !isPFMode;
+            priceField.readOnly = isPFMode;
+            if (isPFMode) priceField.value = 'PFJ';
+            else if (priceField.value === 'PFJ') priceField.value = '';
+            priceField.placeholder = isPFMode ? 'PFJ' : '0.00';
+        }
 
         let p1 = {
             customer_name: j.customer_name + " (Leg 1)",
@@ -2737,10 +2248,6 @@ function escapeHtml(value) {
             del_postcode_2: "",
             del_town_2: ""
         };
-
-        if (Object.prototype.hasOwnProperty.call(j, 'del_time_period')) {
-            p1.del_time_period = "";
-        }
 
         if (j.coll_datetime) {
             let d = new Date(j.coll_datetime);
@@ -2757,10 +2264,11 @@ function escapeHtml(value) {
         p2.coll_postcode = "YARD";
         p2.coll_town = "YARD";
         p2.coll_street = "FROST YARD";
-        p2.coll_ref = "From Storage";
-        if (Object.prototype.hasOwnProperty.call(j, 'coll_time_period')) {
-            p2.coll_time_period = "";
+        let collectionTrailer = getCollectionTrailerForJob(j);
+        if (!collectionTrailer) {
+            collectionTrailer = normaliseTrailerNumber(prompt('No trailer number was found for the original collection. Enter the trailer number for Leg 2, or leave blank if no trailer was used:') || '');
         }
+        p2.coll_ref = collectionTrailer ? `From Storage | Trailer: ${collectionTrailer}` : "From Storage";
         delete p2.coll_postcode_2;
         delete p2.coll_town_2;
         
@@ -2943,22 +2451,9 @@ function escapeHtml(value) {
             }
 
             if (plannerWeekStartOffset === 0 && (maxWeek < 0 || hasStaleCancelledProof)) {
-                if (['completed', 'subbed', 'cancelled'].includes(status)) {
-                    if (q.assigned_slot) {
-                        q.assigned_slot = null;
-                        const rolloverPayload = status === 'completed'
-                            ? { status: 'completed', assigned_slot: null }
-                            : { assigned_slot: null };
-                        sb.from('quotes').update(rolloverPayload).eq('id', q.id);
-                    }
-                    return;
-                }
-
-                if (['archived', 'billed'].includes(status)) return;
-
-                q.status = 'archived';
-                q.assigned_slot = null;
-                sb.from('quotes').update({ status: 'archived', assigned_slot: null }).eq('id', q.id);
+                // Past cards stay in Supabase exactly where they were planned. They are
+                // hidden from the current week by date, then shown again when that ISO
+                // week is selected.
                 return;
             }
 
@@ -3350,8 +2845,8 @@ function escapeHtml(value) {
     function buildFullJobDetailsHtml(job, isGhost = false) {
         const knownFields = new Set([
             'id', 'created_at', 'customer_name', 'customer_phone', 'customer_email', 'job_notes', 'customers_own_invoice_number', 'cx_number', 'fts_invoice_number',
-            'coll_cust_name', 'coll_phone', 'coll_email', 'coll_postcode', 'coll_street', 'coll_town', 'coll_county', 'coll_ref', 'coll_datetime', 'coll_time_period', 'coll_postcode_2', 'coll_town_2',
-            'del_postcode', 'del_cust_name', 'del_phone', 'del_email', 'del_street', 'del_town', 'del_county', 'del_ref', 'del_datetime', 'del_time_period', 'del_postcode_2', 'del_town_2',
+            'coll_cust_name', 'coll_phone', 'coll_email', 'coll_postcode', 'coll_street', 'coll_town', 'coll_county', 'coll_ref', 'coll_datetime', 'coll_postcode_2', 'coll_town_2',
+            'del_postcode', 'del_cust_name', 'del_phone', 'del_email', 'del_street', 'del_town', 'del_county', 'del_ref', 'del_datetime', 'del_postcode_2', 'del_town_2',
             'total_price', 'total_pallets', 'total_weight', 'vehicle_type', 'status', 'dispatch_status', 'dispatch_release_date', 'dispatch_sequence', 'dispatch_scheduled_at', 'released_at', 'assigned_slot', 'assigned_driver', 'driver_phone',
             'ack_timestamp', 'ack_gps', 'arrived_timestamp', 'arrived_gps', 'loaded_timestamp', 'del_arrived_timestamp', 'tipped_timestamp', 'tipped_gps', 'pod_url'
         ]);
@@ -3385,7 +2880,7 @@ function escapeHtml(value) {
             fullDetailRow('County', job.coll_county),
             fullDetailRow('Postcode', job.coll_postcode),
             fullDetailRow('Collection ref / booking no', job.coll_ref),
-            fullDetailDateTimePeriodRow('Date & time', job.coll_datetime, job.coll_time_period),
+            fullDetailRow('Date & time', job.coll_datetime, true),
             fullDetailRow('Second collection postcode', job.coll_postcode_2),
             fullDetailRow('Second collection town', job.coll_town_2)
         ];
@@ -3399,7 +2894,7 @@ function escapeHtml(value) {
             fullDetailRow('County', job.del_county),
             fullDetailRow('Postcode', job.del_postcode),
             fullDetailRow('Delivery ref / booking no', job.del_ref),
-            fullDetailDateTimePeriodRow('Date & time', job.del_datetime, job.del_time_period),
+            fullDetailRow('Date & time', job.del_datetime, true),
             fullDetailRow('Second delivery postcode', job.del_postcode_2),
             fullDetailRow('Second delivery town', job.del_town_2)
         ];
@@ -3588,7 +3083,14 @@ function escapeHtml(value) {
         if (job.customer_name === MAINTENANCE_CUSTOMER_NAME && (!job.assigned_slot || isMaintenancePoolSlot(job.assigned_slot) || String(job.assigned_slot).includes('pool-zone'))) {
             return getMaintenancePoolSlotForDate(job.coll_datetime);
         }
-        if (job.assigned_slot) return String(job.assigned_slot);
+        if (job.assigned_slot) {
+            const savedSlot = String(job.assigned_slot);
+            if (savedSlot.startsWith('planner-w') && job.coll_datetime) {
+                const displayWeek = getPlannerBoardWeekIndex(job.coll_datetime);
+                return savedSlot.replace(/^planner-w\d+/, `planner-w${displayWeek}`);
+            }
+            return savedSlot;
+        }
         if (job.coll_datetime) {
             const d = new Date(job.coll_datetime);
             if (!isNaN(d)) return `pool-zone-${d.getDay()}`;
@@ -3699,8 +3201,6 @@ function escapeHtml(value) {
         const isLeg1 = q.customer_name && q.customer_name.endsWith('(Leg 1)');
         const isLeg2 = q.customer_name && q.customer_name.endsWith('(Leg 2)');
         
-        const isLockedLeg1 = isLeg1 && q.assigned_slot && !q.assigned_slot.includes('pool');
-        
         let dispatchClass = "";
         if (q.dispatch_status === 'scheduled') dispatchClass = " status-scheduled";
         if (q.dispatch_status === 'sent') dispatchClass = " status-sent";
@@ -3717,13 +3217,13 @@ function escapeHtml(value) {
         if (isInstruction) card.classList.add('instruction-card');
         if (shouldShowPODReceivedStamp(q)) card.classList.add('pod-received-card');
         
-        if (isCompleted || isLockedLeg1) card.classList.add('completed-grey');
+        if (isCompleted) card.classList.add('completed-grey');
         if (isLeg2 && !isCompleted && !isGhost) card.classList.add('reassigned-orange');
         if (isGhost) card.classList.add('ghost-card');
         
         card.id = isGhost ? `ghost-${q.id}` : q.id; 
         
-        card.draggable = (!isCompleted && !isGhost && !isLockedLeg1); 
+        card.draggable = (!isCompleted && !isGhost); 
         
         card.ondragstart = (e) => { 
             if (e.target && e.target.closest && e.target.closest('.card-reorder-handle')) return;
@@ -3743,10 +3243,10 @@ function escapeHtml(value) {
         const dtFormat = (str) => str ? str.replace('T', ' ') : '-';
         const tOnly = (iso) => iso ? new Date(iso).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}) : '--:--';
 
-        let collTime = buildCardTimeLabel(q.coll_datetime, q.coll_time_period);
-        let delTime = buildCardTimeLabel(q.del_datetime, q.del_time_period);
+        let collTime = q.coll_datetime ? `<span style="display:block; font-size:0.65rem; color:#000; font-weight:800; line-height:1.05; padding-top:2px;">${new Date(q.coll_datetime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}</span>` : '';
+        let delTime = q.del_datetime ? `<span style="display:block; font-size:0.65rem; color:#000; font-weight:800; line-height:1.05; padding-top:2px;">${new Date(q.del_datetime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}</span>` : '';
 
-        let targetWeek = getWeekOffsetFromNow(q.coll_datetime);
+        let targetWeek = getPlannerBoardWeekIndex(q.coll_datetime);
         card.dataset.targetWeek = targetWeek;
 
         let pcHeader = "";
@@ -3898,7 +3398,7 @@ function escapeHtml(value) {
             </div>`
             : '';
         let actionsHtml = '';
-        const reorderHandleHtml = (!isGhost && !isCompleted && !isLockedLeg1)
+        const reorderHandleHtml = (!isGhost && !isCompleted)
             ? `<div class="card-reorder-handle" draggable="true" title="Rearrange this card within this grid space" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()" ondragstart="startCardReorderDrag(event, '${q.id}')" ondragend="endCardReorderDrag(event)">☰</div>`
             : '';
         
@@ -4036,6 +3536,12 @@ function escapeHtml(value) {
             let contractBadge = isPalletforceJob ? `<span class="palletforce-job-badge">${jobContractType}</span>` : '';
             if (isQuickCard) contractBadge += `<span class="quick-card-badge">QUICK CARD - COMPLETE</span>`;
             let podDownloadButton = q.pod_url ? `<button type="button" class="pod-download-card-btn" onclick="downloadPODPdf(event, '${escapeInlineArg(q.id)}')">DOWNLOAD POD PDF</button>` : '';
+            const priceValue = String(q.total_price ?? '').trim();
+            const priceDisplay = priceValue.toUpperCase() === 'PFJ' ? 'PFJ' : `£${priceValue || '0'}`;
+            const splitTrailer = isLeg2 ? getSplitDeliveryTrailer(q) : '';
+            const splitTrailerHtml = splitTrailer
+                ? `<div style="margin:4px 0 6px; color:#0056b3; font-size:0.7rem; font-weight:900;">TRAILER: ${escapeHtml(splitTrailer)}</div>`
+                : '';
 
             let extraActions = isGhost ? '' : `
                 <div style="display:flex; gap:5px; margin-top:10px; padding-top:8px; border-top: 1px solid #eee;">
@@ -4051,11 +3557,12 @@ function escapeHtml(value) {
                 <div class="card-body">
                     ${actionsHtml}
                     <div style="font-weight:bold; color:black; font-size: 0.8rem; margin-bottom: 5px;">${q.customer_name} ${contractBadge} ${dispatchBadge}</div>
+                    ${splitTrailerHtml}
                     <div style="display:flex; gap:5px; margin:5px 0;">
                         <span class="vehicle-tag">${q.vehicle_type}</span>
                         ${palletTag}
                         ${weightTag}
-                        <span class="price-tag">£<span class="data-price">${q.total_price}</span></span>
+                        <span class="price-tag"><span class="data-price">${priceDisplay}</span></span>
                     </div>
                     
                     <!-- Duplicate live timestamps and compact collection/delivery rows removed from the top modal card.
@@ -4075,6 +3582,34 @@ function escapeHtml(value) {
     
     let customerSuggestionTimer = null;
     let customerSuggestionRequestId = 0;
+    let pendingBookingCustomerName = '';
+
+    function escapeSupabaseLikeValue(value) {
+        return String(value || '').replace(/[\\%_]/g, '\\$&');
+    }
+
+    async function findBookingCustomerProfile(customerName) {
+        const name = String(customerName || '').trim();
+        if (!name) return null;
+
+        const { data, error } = await sb
+            .from('customer_invoice_emails')
+            .select('customer_name, accounts_email, accounts_tel')
+            .ilike('customer_name', escapeSupabaseLikeValue(name))
+            .limit(1);
+
+        if (error) throw error;
+        return data && data.length ? data[0] : null;
+    }
+
+    function applyBookingCustomerProfile(profile) {
+        if (!profile) return;
+        document.getElementById('n_cust_name').value = String(profile.customer_name || '').trim();
+        document.getElementById('n_cust_phone').value = String(profile.accounts_tel || '').trim();
+        document.getElementById('n_cust_email').value = String(profile.accounts_email || '').trim();
+        const box = document.getElementById('cust-suggestions');
+        if (box) box.style.display = 'none';
+    }
 
     function showCustomerSuggestions() {
         const input = document.getElementById('n_cust_name');
@@ -4099,11 +3634,10 @@ function escapeHtml(value) {
         const box = document.getElementById('cust-suggestions');
         if (!input || !box) return;
 
-        const escapedSearchTerm = searchTerm.replace(/[\\%_]/g, '\\$&');
         const { data, error } = await sb
             .from('customer_invoice_emails')
             .select('customer_name, accounts_email, accounts_tel')
-            .ilike('customer_name', `%${escapedSearchTerm}%`)
+            .ilike('customer_name', `%${escapeSupabaseLikeValue(searchTerm)}%`)
             .order('customer_name', { ascending: true })
             .limit(15);
 
@@ -4117,49 +3651,147 @@ function escapeHtml(value) {
             return;
         }
 
-        const customersByName = new Map();
-        (data || []).forEach(row => {
-            const name = String(row.customer_name || '').trim();
-            if (!name) return;
-            const key = name.toLowerCase();
-            if (!customersByName.has(key)) {
-                customersByName.set(key, {
-                    name,
-                    phone: String(row.accounts_tel || '').trim(),
-                    email: String(row.accounts_email || '').trim()
-                });
-            }
+        const uniqueProfiles = new Map();
+        (data || []).forEach(profile => {
+            const name = String(profile.customer_name || '').trim();
+            if (name && !uniqueProfiles.has(name.toLowerCase())) uniqueProfiles.set(name.toLowerCase(), profile);
         });
 
-        const customers = Array.from(customersByName.values());
-        if (!customers.length) {
+        const profiles = Array.from(uniqueProfiles.values());
+        if (!profiles.length) {
             box.style.display = 'none';
             return;
         }
 
-        customers.forEach(customer => {
+        profiles.forEach(profile => {
             const item = document.createElement('div');
             item.className = 'autocomplete-item';
 
             const name = document.createElement('span');
             name.className = 'ac-name';
-            name.textContent = customer.name;
+            name.textContent = profile.customer_name || '';
 
             const details = document.createElement('span');
             details.className = 'ac-details';
-            details.textContent = [customer.phone, customer.email].filter(Boolean).join(' | ');
+            details.textContent = [profile.accounts_tel, profile.accounts_email].filter(Boolean).join(' | ');
 
             item.append(name, details);
-            item.onclick = () => {
-                document.getElementById('n_cust_name').value = customer.name;
-                document.getElementById('n_cust_phone').value = customer.phone;
-                document.getElementById('n_cust_email').value = customer.email;
-                box.style.display = 'none';
-            };
+            item.onclick = () => applyBookingCustomerProfile(profile);
             box.appendChild(item);
         });
 
         box.style.display = 'block';
+    }
+
+    function openMissingBookingCustomerPrompt(customerName) {
+        pendingBookingCustomerName = String(customerName || '').trim();
+        showMissingBookingCustomerPrompt();
+        openModal('modal-booking-customer-profile');
+    }
+
+    function showMissingBookingCustomerPrompt() {
+        document.getElementById('booking-customer-missing-prompt').style.display = 'block';
+        document.getElementById('booking-customer-create-form').style.display = 'none';
+    }
+
+    function showNewBookingCustomerForm() {
+        document.getElementById('booking-customer-missing-prompt').style.display = 'none';
+        document.getElementById('booking-customer-create-form').style.display = 'block';
+        document.getElementById('new_booking_customer_name').value = pendingBookingCustomerName;
+        document.getElementById('new_booking_customer_email').value = document.getElementById('n_cust_email').value.trim();
+        document.getElementById('new_booking_customer_phone').value = document.getElementById('n_cust_phone').value.trim();
+        document.getElementById('new_booking_customer_name').focus();
+    }
+
+    function declineNewBookingCustomer() {
+        closeModal('modal-booking-customer-profile');
+        closeModal('modal-add');
+        resetForm();
+        pendingBookingCustomerName = '';
+    }
+
+    async function saveNewBookingCustomerProfile(event) {
+        event.preventDefault();
+        const name = document.getElementById('new_booking_customer_name').value.trim();
+        const email = document.getElementById('new_booking_customer_email').value.trim();
+        const phone = document.getElementById('new_booking_customer_phone').value.trim();
+        const submitButton = document.getElementById('save-booking-customer-btn');
+
+        if (!name || !email || !phone) {
+            alert('Booking customer name, email address and phone number are mandatory.');
+            return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving...';
+
+        try {
+            const existing = await findBookingCustomerProfile(name);
+            if (existing) {
+                applyBookingCustomerProfile(existing);
+                closeModal('modal-booking-customer-profile');
+                alert('This booking customer already exists and has been selected.');
+                return;
+            }
+
+            const { data, error } = await sb
+                .from('customer_invoice_emails')
+                .insert([{ customer_name: name, accounts_email: email, accounts_tel: phone }])
+                .select('customer_name, accounts_email, accounts_tel')
+                .single();
+
+            if (error) throw error;
+
+            applyBookingCustomerProfile(data || { customer_name: name, accounts_email: email, accounts_tel: phone });
+            pendingBookingCustomerName = '';
+            closeModal('modal-booking-customer-profile');
+            alert('New Booking Customer Successfully saved');
+        } catch (error) {
+            console.error('Could not create booking customer profile:', error);
+            alert('The booking customer profile could not be saved: ' + (error.message || error));
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Submit';
+        }
+    }
+
+    async function validateBookingCustomerBeforeSave() {
+        const nameField = document.getElementById('n_cust_name');
+        const phoneField = document.getElementById('n_cust_phone');
+        const emailField = document.getElementById('n_cust_email');
+        const name = nameField.value.trim();
+        const hasLegLabel = /\(Leg\s*\d+\)\s*$/i.test(name);
+        const lookupName = name.replace(/\s*\(Leg\s*\d+\)\s*$/i, '').trim();
+
+        if (!name) {
+            alert('Booking Customer Name is mandatory.');
+            nameField.focus();
+            return false;
+        }
+
+        try {
+            const profile = await findBookingCustomerProfile(lookupName);
+            if (!profile) {
+                openMissingBookingCustomerPrompt(lookupName);
+                return false;
+            }
+
+            if (!hasLegLabel) nameField.value = String(profile.customer_name || name).trim();
+            if (!phoneField.value.trim()) phoneField.value = String(profile.accounts_tel || '').trim();
+            if (!emailField.value.trim()) emailField.value = String(profile.accounts_email || '').trim();
+
+            if (!phoneField.value.trim() || !emailField.value.trim()) {
+                alert('Booking customer telephone and email are mandatory. Please complete both fields before saving.');
+                (!phoneField.value.trim() ? phoneField : emailField).focus();
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Could not validate booking customer:', error);
+            alert('The booking customer could not be checked. Please try again.');
+            return false;
+        }
     }
 
     document.addEventListener('click', function(e) {
@@ -4205,6 +3837,19 @@ function escapeHtml(value) {
     }
 
     async function saveJob() {
+        const bookingMode = getCurrentJobBookingMode();
+        const priceField = document.getElementById('n_price');
+        if (isPalletforceJobType(bookingMode)) {
+            priceField.value = 'PFJ';
+        } else if (!String(priceField.value || '').trim()) {
+            alert('Agreed Price is mandatory for this job.');
+            priceField.focus();
+            return;
+        }
+
+        const bookingCustomerValid = await validateBookingCustomerBeforeSave();
+        if (!bookingCustomerValid) return;
+
         const id = document.getElementById('sys_job_id').value;
         
         const payload = {
@@ -4235,29 +3880,15 @@ function escapeHtml(value) {
             
             del_postcode_2: document.getElementById('n_del_pc_2').value,
             
-            total_price: document.getElementById('n_price').value || "0",
+            total_price: document.getElementById('n_price').value.trim(),
             total_pallets: document.getElementById('n_total_pallets').value,
             total_weight: document.getElementById('n_total_weight').value,
             vehicle_type: document.getElementById('n_veh_type').value,
-            customers_own_invoice_number: isPalletforceJobType(getCurrentJobBookingMode()) ? '' : document.getElementById('n_customers_own_invoice_number').value,
-            cx_number: isPalletforceJobType(getCurrentJobBookingMode()) ? '' : document.getElementById('n_cx_number').value,
-            fts_invoice_number: isPalletforceJobType(getCurrentJobBookingMode()) ? '' : document.getElementById('n_fts_invoice_number').value,
-            job_contract_type: isQuickCardJobType(getCurrentJobBookingMode()) ? '' : getCurrentJobBookingMode()
+            customers_own_invoice_number: isPalletforceJobType(bookingMode) ? '' : document.getElementById('n_customers_own_invoice_number').value,
+            cx_number: isPalletforceJobType(bookingMode) ? '' : document.getElementById('n_cx_number').value,
+            fts_invoice_number: isPalletforceJobType(bookingMode) ? '' : document.getElementById('n_fts_invoice_number').value,
+            job_contract_type: isQuickCardJobType(bookingMode) ? '' : bookingMode
         };
-
-        const collTimePeriodField = document.getElementById('n_coll_time_period');
-        const delTimePeriodField = document.getElementById('n_del_time_period');
-        const collTimePeriod = getStoredTimePeriod('coll');
-        const delTimePeriod = getStoredTimePeriod('del');
-
-        // Only send these optional fields when they are being used or cleared from an existing value.
-        // This protects older Supabase tables until the two new columns are added.
-        if (collTimePeriod || (collTimePeriodField && collTimePeriodField.dataset.original)) {
-            payload.coll_time_period = collTimePeriod;
-        }
-        if (delTimePeriod || (delTimePeriodField && delTimePeriodField.dataset.original)) {
-            payload.del_time_period = delTimePeriod;
-        }
 
         if (isQuickCardJobType(getCurrentJobBookingMode()) && String(payload.coll_ref || '').toUpperCase().startsWith('QUICK CARD')) {
             payload.coll_ref = '';
@@ -4295,9 +3926,6 @@ function escapeHtml(value) {
                 p1.del_cust_name = "FROST YARD";
                 p1.del_street = "Storage";
                 p1.del_datetime = addHoursLocal(payload.coll_datetime, 2); 
-                if (Object.prototype.hasOwnProperty.call(payload, 'del_time_period')) {
-                    p1.del_time_period = '';
-                }
                 p1.del_postcode_2 = "";
                 delete p1.del_town_2; 
                 p1.status = 'pending';
@@ -4312,9 +3940,6 @@ function escapeHtml(value) {
                 p2.coll_street = "FROST YARD";
                 p2.coll_ref = "From Storage";
                 p2.coll_datetime = addHoursLocal(payload.del_datetime, -2); 
-                if (Object.prototype.hasOwnProperty.call(payload, 'coll_time_period')) {
-                    p2.coll_time_period = '';
-                }
                 delete p2.coll_postcode_2; 
                 delete p2.coll_town_2;
                 p2.status = 'pending';
@@ -4406,12 +4031,6 @@ Standard jobs without extra legs will continue to save normally.`);
         document.getElementById('n_coll_county').value = j.coll_county || '';
         document.getElementById('n_coll_ref').value = j.coll_ref || '';
         document.getElementById('n_coll_dt').value = j.coll_datetime || '';
-        const collPeriodField = document.getElementById('n_coll_time_period');
-        if (collPeriodField) {
-            collPeriodField.value = normaliseTimePeriodValue(j.coll_time_period);
-            collPeriodField.dataset.original = collPeriodField.value;
-            updateTimePeriodButtons('coll');
-        }
 
         document.getElementById('n_coll_pc_2').value = j.coll_postcode_2 || '';
         document.getElementById('n_coll_town_2').value = j.coll_town_2 || '';
@@ -4425,17 +4044,11 @@ Standard jobs without extra legs will continue to save normally.`);
         document.getElementById('n_9').value = j.del_county || '';
         document.getElementById('n_10').value = j.del_ref || '';
         document.getElementById('n_del_dt').value = j.del_datetime || '';
-        const delPeriodField = document.getElementById('n_del_time_period');
-        if (delPeriodField) {
-            delPeriodField.value = normaliseTimePeriodValue(j.del_time_period);
-            delPeriodField.dataset.original = delPeriodField.value;
-            updateTimePeriodButtons('del');
-        }
 
         document.getElementById('n_del_pc_2').value = j.del_postcode_2 || '';
         document.getElementById('n_del_town_2').value = j.del_town_2 || '';
         
-        document.getElementById('n_price').value = j.total_price || '0';
+        document.getElementById('n_price').value = isPalletforceJobType(getCurrentJobBookingMode()) ? 'PFJ' : (j.total_price || '0');
         document.getElementById('n_total_pallets').value = j.total_pallets || '';
         document.getElementById('n_total_weight').value = j.total_weight || '';
         document.getElementById('n_veh_type').value = j.vehicle_type || 'Artic';
@@ -5004,7 +4617,7 @@ No phone notification has been sent yet because this job is for a future date.`;
     }
     async function markPODReceived(e, id) {
         e.stopPropagation();
-        if(confirm("Move to Invoicing?" + linkedActionLabel(id))) {
+        if(confirm("Mark this job as completed?" + linkedActionLabel(id))) {
             const linkedJobs = getLinkedJobs(id);
             const updatePayload = { status: 'completed' };
             if (linkedJobs.some(job => !job.tipped_timestamp)) updatePayload.tipped_timestamp = new Date().toISOString();
@@ -5188,749 +4801,6 @@ Are you sure you want to place it here?`);
     }
 
     // ==========================================
-    // 8. DATA LIST VIEWS & BULK ACTIONS
-    // ==========================================
-    function toggleAllInvoices(source) {
-        const checkboxes = document.querySelectorAll('.invoice-check');
-        for(let i=0; i<checkboxes.length; i++) {
-            checkboxes[i].checked = source.checked;
-        }
-    }
-
-    async function billSelectedInvoices() {
-        const checkedBoxes = document.querySelectorAll('.invoice-check:checked');
-        if(checkedBoxes.length === 0) return alert("Please select at least one job to mark as billed.");
-        
-        const linkedIds = new Set();
-        checkedBoxes.forEach(box => getLinkedJobIds(box.value).forEach(id => linkedIds.add(id)));
-
-        if(confirm(`Are you sure you want to mark ${linkedIds.size} linked job record(s) as billed? They will be moved to the Historical Archive.`)) {
-            const { error } = await sb.from('quotes').update({ status: 'billed' }).in('id', Array.from(linkedIds));
-            if (error) return alert("Error marking invoices as billed: " + error.message);
-            dataViewLoaded.invoice = false;
-            dataViewLoaded.history = false;
-            loadAll();
-        }
-    }
-
-    async function markAsBilled(e, id) { 
-        e.stopPropagation(); 
-        await updateLinkedJobs(id, { status: 'billed' }); 
-        dataViewLoaded.invoice = false;
-        dataViewLoaded.history = false;
-        loadAll(); 
-    }
-
-    async function moveToInvoicing(e, id) {
-        e.stopPropagation();
-        if(confirm("Move this archived job back to the Invoicing queue?" + linkedActionLabel(id))) {
-            await updateLinkedJobs(id, { status: 'completed' });
-            dataViewLoaded.invoice = false;
-            dataViewLoaded.history = false;
-            loadAll();
-        }
-    }
-
-    function parseCurrencyValue(v) {
-        if (v === null || v === undefined) return 0;
-        const cleaned = String(v).replace(/£/g, '').replace(/,/g, '').trim();
-        const n = Number(cleaned);
-        return isNaN(n) ? 0 : n;
-    }
-
-    function formatCurrencyValue(v) {
-        return `£${parseCurrencyValue(v).toFixed(2)}`;
-    }
-
-    function getDemurrageAmount(job) {
-        return parseCurrencyValue(job && job.demurrage_amount);
-    }
-
-    function getInvoiceTotal(job) {
-        return parseCurrencyValue(job && job.total_price) + getDemurrageAmount(job);
-    }
-
-    function invoiceTextValue(v, fallback = 'N/A') {
-        if (v === null || v === undefined) return fallback;
-        const str = String(v).trim();
-        return str ? str : fallback;
-    }
-
-    function formatInvoiceDateTime(v, period = '') {
-        const selectedPeriod = normaliseTimePeriodValue(period);
-        if (!v) return selectedPeriod || 'N/A';
-        const d = new Date(v);
-        if (isNaN(d)) {
-            const fallback = String(v).replace('T', ' ');
-            return selectedPeriod ? `${fallback} ${selectedPeriod}` : fallback;
-        }
-        const datePart = d.toLocaleDateString('en-GB');
-        if (selectedPeriod) return `${datePart} ${selectedPeriod}`;
-        return datePart + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    }
-
-    function invoiceAddressLine(...parts) {
-        return parts
-            .map(p => invoiceTextValue(p, ''))
-            .filter(Boolean)
-            .join(', ') || 'N/A';
-    }
-
-    function buildDeliveryGpsUrl(gpsValue) {
-        if (!gpsValue) return '';
-        const raw = String(gpsValue).trim();
-        if (!raw || raw === 'GPS Not Available') return '';
-        if (/^https?:\/\//i.test(raw)) return raw;
-
-        const coords = raw.match(/(-?\d{1,3}(?:\.\d+)?)\s*[, ]\s*(-?\d{1,3}(?:\.\d+)?)/);
-        if (coords) return `https://www.google.com/maps?q=${coords[1]},${coords[2]}`;
-
-        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(raw)}`;
-    }
-
-    function getInvoiceRecipientEmail(job) {
-        return invoiceTextValue(job.customer_email || job.cust_email || job.email || job.del_email, '').trim();
-    }
-
-    const INVOICE_PDF_BUCKET = 'invoice_pdfs';
-
-    function safeInvoiceFilePart(value) {
-        return invoiceTextValue(value, 'FROST-INVOICE')
-            .replace(/[^a-z0-9_-]+/gi, '_')
-            .replace(/^_+|_+$/g, '') || 'FROST-INVOICE';
-    }
-
-    function invoicePdfViewButton(job) {
-        const url = invoiceTextValue(job && job.invoice_pdf_url, '');
-        if (!url) return '';
-        return `<a class="action-btn-small btn-send-invoice" href="${escapeHtml(url)}" target="_blank" onclick="event.stopPropagation();" style="text-decoration:none; display:inline-block;">🔗 VIEW PDF</a>`;
-    }
-
-    async function saveInvoicePdfBlobToSupabase(job, pdfBlob, fileName) {
-        if (!job || !job.id || !pdfBlob) return '';
-
-        const invoiceNo = safeInvoiceFilePart(job.fts_invoice_number || `JOB-${String(job.id).slice(0, 8).toUpperCase()}`);
-        const customer = safeInvoiceFilePart(job.customer_name || 'Customer');
-        const jobId = safeInvoiceFilePart(String(job.id));
-        const year = new Date().getFullYear();
-        const storagePath = `${year}/${invoiceNo}_${customer}_${jobId}.pdf`;
-
-        const { error: uploadError } = await sb.storage
-            .from(INVOICE_PDF_BUCKET)
-            .upload(storagePath, pdfBlob, {
-                contentType: 'application/pdf',
-                cacheControl: '3600',
-                upsert: true
-            });
-
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = sb.storage.from(INVOICE_PDF_BUCKET).getPublicUrl(storagePath);
-        const publicUrl = urlData && urlData.publicUrl ? urlData.publicUrl : '';
-        if (!publicUrl) throw new Error('PDF uploaded but no public URL was returned.');
-
-        const generatedAt = new Date().toISOString();
-        const { error: updateError } = await sb
-            .from('quotes')
-            .update({
-                invoice_pdf_url: publicUrl,
-                invoice_pdf_path: storagePath,
-                invoice_pdf_generated_at: generatedAt
-            })
-            .eq('id', job.id);
-
-        if (updateError) throw updateError;
-
-        job.invoice_pdf_url = publicUrl;
-        job.invoice_pdf_path = storagePath;
-        job.invoice_pdf_generated_at = generatedAt;
-        mergeJobsIntoAllJobsRaw([job]);
-
-        return publicUrl;
-    }
-
-    async function sendInvoiceEmail(event, id) {
-        event.stopPropagation();
-        const j = allJobsRaw.find(x => x.id == id);
-        if (!j) return alert('Could not find this job to send the invoice.');
-
-        let recipient = getInvoiceRecipientEmail(j);
-        if (!recipient) {
-            recipient = prompt('No booking customer email is saved on this job. Enter the client email address to send this invoice:') || '';
-            recipient = recipient.trim();
-        }
-        if (!recipient) return;
-
-        const ftsInvoice = invoiceTextValue(j.fts_invoice_number, `JOB-${String(j.id).slice(0, 8).toUpperCase()}`);
-        const customerInvoice = invoiceTextValue(j.customers_own_invoice_number, '');
-        const baseCharge = parseCurrencyValue(j.total_price);
-        const demurrageCharge = getDemurrageAmount(j);
-        const invoiceTotal = getInvoiceTotal(j);
-        const completedAt = j.tipped_timestamp || j.completed_at || j.completed_timestamp || j.del_arrived_timestamp || '';
-        const podUrl = invoiceTextValue(j.pod_url, '');
-        const gpsUrl = buildDeliveryGpsUrl(j.tipped_gps);
-
-        const subject = `Invoice ${ftsInvoice} - Frost Transport Solutions`;
-        const bodyLines = [
-            'Hello,',
-            '',
-            `Please find attached invoice ${ftsInvoice} for the transport job below.`,
-            customerInvoice ? `Customer invoice / reference number: ${customerInvoice}` : '',
-            '',
-            `Booking customer: ${invoiceTextValue(j.customer_name)}`,
-            `Collection: ${invoiceAddressLine(j.coll_street, j.coll_town, j.coll_county, j.coll_postcode)}`,
-            `Collection date/time: ${formatInvoiceDateTime(j.coll_datetime, j.coll_time_period)}`,
-            `Collection reference: ${invoiceTextValue(j.coll_ref)}`,
-            '',
-            `Delivery: ${invoiceAddressLine(j.del_cust_name, j.del_street, j.del_town, j.del_county, j.del_postcode)}`,
-            `Delivery date/time: ${formatInvoiceDateTime(j.del_datetime, j.del_time_period)}`,
-            `Delivery reference: ${invoiceTextValue(j.del_ref)}`,
-            `Completed: ${completedAt ? formatInvoiceDateTime(completedAt) : 'Not recorded'}`,
-            '',
-            `Haulage charge: ${formatCurrencyValue(baseCharge)}`,
-            demurrageCharge > 0 ? `Demurrage: ${formatCurrencyValue(demurrageCharge)}${j.demurrage_notes ? ' - ' + j.demurrage_notes : ''}` : '',
-            `Invoice total: ${formatCurrencyValue(invoiceTotal)}`,
-            podUrl ? `POD: ${podUrl}` : '',
-            gpsUrl ? `Delivery GPS location: ${gpsUrl}` : '',
-            '',
-            'Kind regards,',
-            'Frost Transport Solutions'
-        ].filter(line => line !== '').join('\n');
-
-        const proceed = confirm('This will download the invoice PDF and then open your email app with the client email, subject and invoice details filled in.\n\nPlease attach the downloaded PDF before sending.');
-        if (!proceed) return;
-
-        await generatePDF({ stopPropagation: function(){} }, id);
-
-        const mailtoUrl = `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines)}`;
-        window.location.href = mailtoUrl;
-    }
-
-    function openInvoiceEdit(e, id) {
-        e.stopPropagation();
-        const j = allJobsRaw.find(x => x.id == id);
-        if (!j) return alert('Could not find this job to edit invoice extras.');
-
-        document.getElementById('invoice_edit_job_id').value = j.id;
-        document.getElementById('invoice_edit_job_summary').value = `${j.fts_invoice_number || 'No FTS invoice'} | ${j.customer_name || 'Unknown customer'}`;
-        document.getElementById('invoice_edit_base_price').value = formatCurrencyValue(j.total_price);
-        document.getElementById('invoice_edit_demurrage_amount').value = getDemurrageAmount(j) ? getDemurrageAmount(j).toFixed(2) : '';
-        document.getElementById('invoice_edit_demurrage_notes').value = j.demurrage_notes || '';
-        openModal('modal-invoice-edit');
-    }
-
-    async function saveInvoiceAdjustments() {
-        const id = document.getElementById('invoice_edit_job_id').value;
-        if (!id) return alert('No job selected.');
-
-        const rawAmount = document.getElementById('invoice_edit_demurrage_amount').value;
-        const demurrageAmount = rawAmount === '' ? null : parseCurrencyValue(rawAmount);
-        const demurrageNotes = document.getElementById('invoice_edit_demurrage_notes').value.trim();
-
-        try {
-            const { error } = await sb.from('quotes').update({
-                demurrage_amount: demurrageAmount,
-                demurrage_notes: demurrageNotes
-            }).eq('id', id);
-
-            if (error) throw error;
-
-            closeModal('modal-invoice-edit');
-            dataViewLoaded.invoice = false;
-            if (activePlannerView === 'invoice') await renderInvoiceList(true);
-            else await loadAll();
-        } catch (err) {
-            alert('Could not save invoice extras. Make sure the quotes table has columns named demurrage_amount and demurrage_notes. Error: ' + (err.message || err));
-        }
-    }
-
-    function mergeJobsIntoAllJobsRaw(rows) {
-        const merged = new Map((allJobsRaw || []).map(j => [String(j.id), j]));
-        (rows || []).forEach(row => {
-            if (row && row.id !== undefined && row.id !== null) merged.set(String(row.id), row);
-        });
-        allJobsRaw = Array.from(merged.values());
-    }
-
-    async function ensureDataViewRows(view, force = false) {
-        const statuses = dataViewStatusMap[view];
-        if (!statuses) return [];
-
-        if (!force && dataViewLoaded[view]) {
-            return getDataViewRowsFromCache(view);
-        }
-
-        // If another render has already started loading this view, wait for it instead of
-        // rendering the smaller cached set. This prevents the table flashing all rows, then
-        // only a few rows, then all rows again.
-        if (dataViewLoading[view]) {
-            for (let i = 0; i < 60 && dataViewLoading[view]; i++) {
-                await sleep(100);
-            }
-            return getDataViewRowsFromCache(view);
-        }
-
-        dataViewLoading[view] = true;
-        try {
-            const { data, error } = await sb
-                .from('quotes')
-                .select('*')
-                .in('status', statuses)
-                .order('coll_datetime', { ascending: false });
-
-            if (error) throw error;
-            mergeJobsIntoAllJobsRaw(data || []);
-            dataViewLoaded[view] = true;
-            return getDataViewRowsFromCache(view);
-        } catch (err) {
-            console.error(`Could not lazy-load ${view} view:`, err);
-            return getDataViewRowsFromCache(view);
-        } finally {
-            dataViewLoading[view] = false;
-        }
-    }
-
-    function setDataViewLoadingRow(tbodyId, colSpan, label) {
-        const body = document.getElementById(tbodyId);
-        if (body) body.innerHTML = `<tr><td colspan="${colSpan}" style="padding:18px; color:#666; text-align:center;">Loading ${label}...</td></tr>`;
-    }
-
-    function renderInvoiceRows(rows) {
-        const body = document.getElementById('invoice-list-body');
-        if (!body) return; body.innerHTML = "";
-        (rows || []).filter(j => j.status === 'completed').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
-            let coll = j.coll_town || j.coll_postcode || 'TBA';
-            let del = j.del_town || j.del_postcode || 'TBA';
-            body.innerHTML += `<tr onclick="editJob(event, '${j.id}')">
-                <td onclick="event.stopPropagation();"><input type="checkbox" class="invoice-check" value="${j.id}"></td>
-                <td class="col-date">${formatUKDate(j.coll_datetime)}</td>
-                <td><b>${j.customer_name || '-'}</b></td>
-                <td class="col-route">${coll} ➔ ${del}</td>
-                <td><b>${j.fts_invoice_number || '-'}</b></td>
-                <td>${j.customers_own_invoice_number || '-'}</td>
-                <td>${j.coll_ref || '-'}</td>
-                <td class="col-price">
-                    ${formatCurrencyValue(getInvoiceTotal(j))}
-                    ${getDemurrageAmount(j) ? `<br><span class="demurrage-chip">+ Demurrage ${formatCurrencyValue(getDemurrageAmount(j))}</span>` : ''}
-                </td>
-                <td class="action-col">
-                    <button class="action-btn-small btn-pdf" onclick="generatePDF(event, '${j.id}')">📄 PDF</button>
-                    ${invoicePdfViewButton(j)}
-                    <button class="action-btn-small btn-edit-invoice" onclick="openInvoiceEdit(event, '${j.id}')">✏️ EDIT</button>
-                    <button class="action-btn-small btn-send-invoice" onclick="sendInvoiceEmail(event, '${j.id}')">✉️ SEND</button>
-                    <button class="action-btn-small btn-success" onclick="markAsBilled(event, '${j.id}')">MARK BILLED</button>
-                </td>
-            </tr>`;
-        });
-    }
-
-    async function renderInvoiceList(force = false) {
-        if (!dataViewLoaded.invoice || force) setDataViewLoadingRow('invoice-list-body', 9, 'invoice queue');
-        const rows = await ensureDataViewRows('invoice', force);
-        renderInvoiceRows(rows);
-    }
-
-    function renderHistoryRows(rows) {
-        const body = document.getElementById('history-list-body');
-        if (!body) return; body.innerHTML = "";
-        (rows || []).filter(j => j.status === 'billed' || j.status === 'archived').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
-            let coll = j.coll_town || j.coll_postcode || 'TBA';
-            let del = j.del_town || j.del_postcode || 'TBA';
-            body.innerHTML += `<tr onclick="editJob(event, '${j.id}')">
-                <td class="col-date">${formatUKDate(j.coll_datetime)}</td>
-                <td><b>${j.customer_name || '-'}</b></td>
-                <td class="col-route">${coll} ➔ ${del}</td>
-                <td><b>${j.fts_invoice_number || '-'}</b></td>
-                <td>${j.customers_own_invoice_number || '-'}</td>
-                <td>${j.coll_ref || '-'}</td>
-                <td class="col-price">£${j.total_price || '0.00'}</td>
-                <td class="action-col">
-                    <button class="action-btn-small btn-pdf" onclick="generatePDF(event, '${j.id}')">📄 PDF</button>
-                    ${invoicePdfViewButton(j)}
-                    <button class="action-btn-small btn-invoice-move" onclick="moveToInvoicing(event, '${j.id}')">TO INVOICING</button>
-                </td>
-            </tr>`;
-        });
-    }
-
-    async function renderHistoryList(force = false) {
-        if (!dataViewLoaded.history || force) setDataViewLoadingRow('history-list-body', 8, 'history');
-        const rows = await ensureDataViewRows('history', force);
-        renderHistoryRows(rows);
-    }
-
-    function renderSubbedRows(rows) {
-        const body = document.getElementById('subbed-list-body');
-        if (!body) return; body.innerHTML = "";
-        (rows || []).filter(j => j.status === 'subbed').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
-            let coll = j.coll_town || j.coll_postcode || 'TBA';
-            let del = j.del_town || j.del_postcode || 'TBA';
-            body.innerHTML += `<tr onclick="editJob(event, '${j.id}')">
-                <td class="col-date">${formatUKDate(j.coll_datetime)}</td>
-                <td><b>${j.customer_name || '-'}</b></td>
-                <td class="col-route">${coll} ➔ ${del}</td>
-                <td>${j.coll_ref || '-'}</td>
-                <td class="col-price">£${j.total_price || '0.00'}</td>
-                <td class="action-col">
-                    <button class="action-btn-small btn-pdf" onclick="generatePDF(event, '${j.id}')">📄 PDF</button>
-                    ${invoicePdfViewButton(j)}
-                </td>
-            </tr>`;
-        });
-    }
-
-    async function renderSubbedList(force = false) {
-        if (!dataViewLoaded.subbed || force) setDataViewLoadingRow('subbed-list-body', 6, 'subbed jobs');
-        const rows = await ensureDataViewRows('subbed', force);
-        renderSubbedRows(rows);
-    }
-
-    function renderCancelledRows(rows) {
-        const body = document.getElementById('cancelled-list-body');
-        if (!body) return; body.innerHTML = "";
-        (rows || []).filter(j => j.status === 'cancelled').sort((a,b) => new Date(b.coll_datetime) - new Date(a.coll_datetime)).forEach(j => {
-            let coll = j.coll_town || j.coll_postcode || 'TBA';
-            let del = j.del_town || j.del_postcode || 'TBA';
-            body.innerHTML += `<tr onclick="editJob(event, '${j.id}')">
-                <td class="col-date">${formatUKDate(j.coll_datetime)}</td>
-                <td><b>${j.customer_name || '-'}</b></td>
-                <td class="col-route">${coll} ➔ ${del}</td>
-                <td>${j.coll_ref || '-'}</td>
-                <td class="col-price">£${j.total_price || '0.00'}</td>
-                <td class="action-col">
-                    <button class="action-btn-small btn-pdf" onclick="generatePDF(event, '${j.id}')">📄 PDF</button>
-                    ${invoicePdfViewButton(j)}
-                </td>
-            </tr>`;
-        });
-    }
-
-    async function renderCancelledList(force = false) {
-        if (!dataViewLoaded.cancelled || force) setDataViewLoadingRow('cancelled-list-body', 6, 'cancelled jobs');
-        const rows = await ensureDataViewRows('cancelled', force);
-        renderCancelledRows(rows);
-    }
-
-    async function generatePDF(event, id) {
-        if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
-        const j = allJobsRaw.find(x => x.id == id);
-        if (!j) return alert("Could not find this job to generate the invoice PDF.");
-
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-        const pageW = doc.internal.pageSize.getWidth();
-        const pageH = doc.internal.pageSize.getHeight();
-        const margin = 14;
-        const frostRed = [193, 39, 45];
-        const frostBlack = [26, 26, 26];
-        const frostBlue = [0, 86, 179];
-        const frostGreen = [46, 125, 50];
-        const softGrey = [245, 247, 250];
-        const lineGrey = [220, 224, 230];
-
-        const value = (v, fallback = 'N/A') => {
-            if (v === null || v === undefined) return fallback;
-            const str = String(v).trim();
-            return str ? str : fallback;
-        };
-
-        const money = (v) => {
-            const str = value(v, '0.00').replace('£', '').trim();
-            const n = Number(str);
-            return isNaN(n) ? `£${str}` : `£${n.toFixed(2)}`;
-        };
-
-        const fmtDateTime = (v) => {
-            if (!v) return 'N/A';
-            const d = new Date(v);
-            if (isNaN(d)) return String(v).replace('T', ' ');
-            return d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-        };
-
-        const safeFile = (v) => value(v, 'FROST-INVOICE').replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '');
-
-        const addressBlock = (...parts) => parts
-            .map(p => value(p, ''))
-            .filter(Boolean)
-            .join('\n') || 'N/A';
-
-        const completedAt = j.tipped_timestamp || j.completed_at || j.completed_timestamp || j.del_arrived_timestamp || '';
-        const completionText = completedAt ? fmtDateTime(completedAt) : 'Not recorded on this job row';
-        const ftsInvoice = value(j.fts_invoice_number, `JOB-${String(j.id).slice(0, 8).toUpperCase()}`);
-        const customerInvoice = value(j.customers_own_invoice_number, 'Not supplied');
-        const podUrl = value(j.pod_url, '');
-        const tippedGpsRaw = value(j.tipped_gps, '');
-        const getGpsUrl = (gpsValue) => {
-            if (!gpsValue) return '';
-            const raw = String(gpsValue).trim();
-            if (!raw) return '';
-            if (/^https?:\/\//i.test(raw)) return raw;
-
-            // Supports common formats such as "53.12345,-1.23456", "53.12345 -1.23456",
-            // or text saved by the driver app containing latitude/longitude values.
-            const coords = raw.match(/(-?\d{1,3}(?:\.\d+)?)\s*[, ]\s*(-?\d{1,3}(?:\.\d+)?)/);
-            if (coords) return `https://www.google.com/maps?q=${coords[1]},${coords[2]}`;
-
-            return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(raw)}`;
-        };
-        const gpsUrl = getGpsUrl(tippedGpsRaw);
-        const gpsDisplay = gpsUrl ? (tippedGpsRaw || 'Open delivery GPS location') : 'No delivery GPS saved against this job';
-        const baseCharge = parseCurrencyValue(j.total_price);
-        const demurrageCharge = getDemurrageAmount(j);
-        const invoiceTotal = baseCharge + demurrageCharge;
-        const demurrageNotes = value(j.demurrage_notes, 'Waiting time / demurrage charge');
-        const moneyFromNumber = (n) => `£${Number(n || 0).toFixed(2)}`;
-
-        function addPageHeader() {
-            doc.setFillColor(...frostBlack);
-            doc.rect(0, 0, pageW, 22, 'F');
-            doc.setFillColor(...frostRed);
-            doc.rect(0, 22, pageW, 2.5, 'F');
-
-            doc.setTextColor(255, 255, 255);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(18);
-            doc.text('FROST TRANSPORT SOLUTIONS', margin, 14);
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8.5);
-            doc.text('Professional Transport Invoice / Job Summary', margin, 19);
-
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(13);
-            doc.text('INVOICE', pageW - margin, 14, { align: 'right' });
-            doc.setFontSize(8.5);
-            doc.setFont('helvetica', 'normal');
-            doc.text(ftsInvoice, pageW - margin, 19, { align: 'right' });
-        }
-
-        function addFooter() {
-            const pages = doc.internal.getNumberOfPages();
-            for (let i = 1; i <= pages; i++) {
-                doc.setPage(i);
-                doc.setDrawColor(...lineGrey);
-                doc.line(margin, pageH - 14, pageW - margin, pageH - 14);
-                doc.setFontSize(8);
-                doc.setTextColor(120, 120, 120);
-                doc.text(`Generated ${fmtDateTime(new Date().toISOString())}`, margin, pageH - 8);
-                doc.text(`Page ${i} of ${pages}`, pageW - margin, pageH - 8, { align: 'right' });
-            }
-        }
-
-        function sectionTitle(title, y, rgb = frostBlack) {
-            if (y > pageH - 40) {
-                doc.addPage();
-                addPageHeader();
-                y = 34;
-            }
-            doc.setFillColor(...rgb);
-            doc.roundedRect(margin, y, pageW - (margin * 2), 7, 1.5, 1.5, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(9);
-            doc.text(title.toUpperCase(), margin + 3, y + 5);
-            return y + 10;
-        }
-
-        function infoTable(startY, body, options = {}) {
-            doc.autoTable({
-                startY,
-                theme: 'plain',
-                margin: { left: margin, right: margin },
-                styles: {
-                    font: 'helvetica',
-                    fontSize: 8.5,
-                    cellPadding: { top: 2.2, right: 2.5, bottom: 2.2, left: 2.5 },
-                    lineColor: lineGrey,
-                    lineWidth: 0.1,
-                    valign: 'top'
-                },
-                columnStyles: {
-                    0: { fontStyle: 'bold', textColor: [80, 80, 80], cellWidth: options.labelWidth || 42, fillColor: softGrey },
-                    1: { textColor: [20, 20, 20] },
-                    2: { fontStyle: 'bold', textColor: [80, 80, 80], cellWidth: options.labelWidth || 42, fillColor: softGrey },
-                    3: { textColor: [20, 20, 20] }
-                },
-                body
-            });
-            return doc.lastAutoTable.finalY + 6;
-        }
-
-        addPageHeader();
-
-        let y = 34;
-
-        doc.setFillColor(250, 250, 250);
-        doc.roundedRect(margin, y, pageW - (margin * 2), 28, 2, 2, 'F');
-        doc.setDrawColor(...lineGrey);
-        doc.roundedRect(margin, y, pageW - (margin * 2), 28, 2, 2, 'S');
-
-        doc.setTextColor(...frostBlack);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
-        doc.text('Booking Customer', margin + 4, y + 7);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.text(value(j.customer_name), margin + 4, y + 13);
-        doc.setFontSize(8.5);
-        doc.text(`Tel: ${value(j.customer_phone)}`, margin + 4, y + 19);
-        doc.text(`Email: ${value(j.customer_email)}`, margin + 4, y + 24);
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.text('FTS Invoice No', pageW - margin - 4, y + 7, { align: 'right' });
-        doc.setTextColor(...frostRed);
-        doc.setFontSize(13);
-        doc.text(ftsInvoice, pageW - margin - 4, y + 14, { align: 'right' });
-        doc.setTextColor(...frostBlack);
-        doc.setFontSize(8.5);
-        doc.text(`Customer Invoice No: ${customerInvoice}`, pageW - margin - 4, y + 21, { align: 'right' });
-        doc.text(`Job ID: ${String(j.id).slice(0, 8).toUpperCase()}`, pageW - margin - 4, y + 25.5, { align: 'right' });
-
-        y += 36;
-
-        y = sectionTitle('Job Summary', y, frostBlack);
-        y = infoTable(y, [
-            ['FTS invoice number', ftsInvoice, 'Customer invoice number', customerInvoice],
-            ['Booking customer', value(j.customer_name), 'Job status', value(j.status)],
-            ['Vehicle required', value(j.vehicle_type), 'Base job price', moneyFromNumber(baseCharge)],
-            ['Demurrage', demurrageCharge ? moneyFromNumber(demurrageCharge) : 'None', 'Invoice total', moneyFromNumber(invoiceTotal)],
-            ['Total pallets', value(j.total_pallets), 'Total weight', j.total_weight ? `${j.total_weight} kg` : 'N/A'],
-            ['Planner slot', value(j.assigned_slot), 'Assigned driver', value(j.assigned_driver)],
-            ['Created', fmtDateTime(j.created_at), 'Completed / tipped', completionText]
-        ]);
-
-        y = sectionTitle('Collection Details', y, frostBlue);
-        y = infoTable(y, [
-            ['Collection company', value(j.coll_cust_name || j.customer_name), 'Collection ref', value(j.coll_ref)],
-            ['Telephone', value(j.coll_phone || j.customer_phone), 'Email', value(j.coll_email || j.customer_email)],
-            ['Address', addressBlock(j.coll_street, j.coll_town, j.coll_county, j.coll_postcode), 'Date & time', fmtDateTime(j.coll_datetime)],
-            ['Second collection postcode', value(j.coll_postcode_2), 'Second collection town', value(j.coll_town_2)]
-        ]);
-
-        y = sectionTitle('Delivery Details', y, frostGreen);
-        y = infoTable(y, [
-            ['Delivery company', value(j.del_cust_name), 'Delivery ref', value(j.del_ref)],
-            ['Telephone', value(j.del_phone), 'Email', value(j.del_email)],
-            ['Address', addressBlock(j.del_street, j.del_town, j.del_county, j.del_postcode), 'Date & time', fmtDateTime(j.del_datetime)],
-            ['Second delivery postcode', value(j.del_postcode_2), 'Second delivery town', value(j.del_town_2)]
-        ]);
-
-        y = sectionTitle('Driver App Milestones', y, [80, 80, 80]);
-        y = infoTable(y, [
-            ['Acknowledged', fmtDateTime(j.ack_timestamp), 'Arrived collection', fmtDateTime(j.arrived_timestamp)],
-            ['Loaded', fmtDateTime(j.loaded_timestamp), 'Arrived delivery', fmtDateTime(j.del_arrived_timestamp)],
-            ['Completed / tipped', completionText, 'POD status', podUrl ? 'POD link available' : 'No POD URL saved']
-        ]);
-
-        y = sectionTitle('References & Proof of Delivery', y, frostRed);
-        y = infoTable(y, [
-            ['Collection reference', value(j.coll_ref), 'Delivery reference', value(j.del_ref)],
-            ['FTS invoice number', ftsInvoice, 'Customer invoice number', customerInvoice],
-            ['POD URL', podUrl || 'No POD URL saved against this job', 'GPS Location', gpsDisplay]
-        ], { labelWidth: 38 });
-
-        if (podUrl) {
-            if (y > pageH - 25) {
-                doc.addPage();
-                addPageHeader();
-                y = 34;
-            }
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(10);
-            doc.setTextColor(...frostRed);
-            doc.textWithLink('Click here to open the POD image', margin, y, { url: podUrl });
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8);
-            doc.setTextColor(90, 90, 90);
-            doc.text('If the link does not open from your PDF viewer, copy the POD URL shown above.', margin, y + 5);
-            y += 12;
-        }
-
-        if (gpsUrl) {
-            if (y > pageH - 25) {
-                doc.addPage();
-                addPageHeader();
-                y = 34;
-            }
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(10);
-            doc.setTextColor(...frostBlue);
-            doc.textWithLink('Click here to open the delivery GPS location', margin, y, { url: gpsUrl });
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8);
-            doc.setTextColor(90, 90, 90);
-            doc.text('This opens the GPS point saved when the driver completed the delivery.', margin, y + 5);
-            y += 12;
-        }
-
-        if (y > pageH - 60) {
-            doc.addPage();
-            addPageHeader();
-            y = 34;
-        }
-
-        y = sectionTitle('Invoice Charges', y, frostBlack);
-        const chargeRows = [
-            ['Haulage charge', `${value(j.coll_postcode)} to ${value(j.del_postcode)}`, moneyFromNumber(baseCharge)]
-        ];
-        if (demurrageCharge > 0) {
-            chargeRows.push(['Demurrage', demurrageNotes, moneyFromNumber(demurrageCharge)]);
-        }
-        doc.autoTable({
-            startY: y,
-            theme: 'grid',
-            margin: { left: margin, right: margin },
-            head: [['Item', 'Details', 'Amount']],
-            body: chargeRows,
-            styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2.5, lineColor: lineGrey, lineWidth: 0.1 },
-            headStyles: { fillColor: frostBlack, textColor: [255,255,255], fontStyle: 'bold' },
-            columnStyles: {
-                0: { cellWidth: 40, fontStyle: 'bold' },
-                2: { cellWidth: 32, halign: 'right', fontStyle: 'bold' }
-            }
-        });
-        y = doc.lastAutoTable.finalY + 8;
-
-        doc.setDrawColor(...lineGrey);
-        doc.line(margin, y, pageW - margin, y);
-        y += 8;
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.setTextColor(...frostBlack);
-        doc.text('Invoice Total', pageW - margin - 45, y);
-        doc.setFontSize(16);
-        doc.setTextColor(...frostGreen);
-        doc.text(moneyFromNumber(invoiceTotal), pageW - margin, y, { align: 'right' });
-        y += 8;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8.5);
-        doc.setTextColor(100, 100, 100);
-        doc.text('Thank you for choosing Frost Transport Solutions.', margin, y);
-
-        addFooter();
-        const invoiceFileName = `${safeFile(ftsInvoice)}_${safeFile(j.customer_name)}.pdf`;
-        const invoicePdfBlob = doc.output('blob');
-        doc.save(invoiceFileName);
-
-        try {
-            await saveInvoicePdfBlobToSupabase(j, invoicePdfBlob, invoiceFileName);
-            if (activePlannerView === 'invoice') renderInvoiceRows(getDataViewRowsFromCache('invoice'));
-            if (activePlannerView === 'history') renderHistoryRows(getDataViewRowsFromCache('history'));
-        } catch (err) {
-            console.error('Invoice PDF downloaded but could not be saved to Supabase:', err);
-            alert('The invoice PDF downloaded, but it could not be saved to Supabase Storage. Please run the invoice PDF SQL setup file, then try again. Supabase error: ' + (err.message || err));
-        }
-    }
-
-    function filterHistory() {
-        const q = document.getElementById('history-search').value.toLowerCase();
-        document.querySelectorAll('#history-list-body tr, #subbed-list-body tr, #cancelled-list-body tr').forEach(r => { 
-            r.style.display = r.innerText.toLowerCase().includes(q) ? "" : "none"; 
-        });
-    }
-
-    // ==========================================
     // 10. UI UPDATERS & UTILS
     // ==========================================
     function updateCalculations() {
@@ -5964,180 +4834,13 @@ Are you sure you want to place it here?`);
         document.getElementById('grand-total').innerText = "£" + grand.toFixed(2);
     }
 
-    async function renderActiveDataView(view = activePlannerView, force = false) {
-        if (view === 'invoice') await renderInvoiceList(force);
-        else if (view === 'history') await renderHistoryList(force);
-        else if (view === 'subbed') await renderSubbedList(force);
-        else if (view === 'cancelled') await renderCancelledList(force);
-    }
-
-
-    function cleanCsvValue(value) {
-        const text = String(value ?? '').replace(/\r?\n|\r/g, ' ').trim();
-        if (/[",\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
-        return text;
-    }
-
-    function parsePlannerDateForCsv(value) {
-        if (!value) return null;
-        if (value instanceof Date && !isNaN(value)) return value;
-        const raw = String(value).trim();
-        if (!raw) return null;
-        let parsed = new Date(raw);
-        if (!isNaN(parsed)) return parsed;
-
-        const ukMatch = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:\s+(\d{1,2}):(\d{2}))?/);
-        if (ukMatch) {
-            const day = Number(ukMatch[1]);
-            const month = Number(ukMatch[2]) - 1;
-            let year = Number(ukMatch[3]);
-            if (year < 100) year += 2000;
-            const hour = Number(ukMatch[4] || 0);
-            const minute = Number(ukMatch[5] || 0);
-            parsed = new Date(year, month, day, hour, minute);
-            if (!isNaN(parsed)) return parsed;
-        }
-        return null;
-    }
-
-    function formatCsvDate(value) {
-        const d = parsePlannerDateForCsv(value);
-        if (!d) return '';
-        return d.toLocaleDateString('en-GB');
-    }
-
-    function formatCsvDueDate(invoiceDateValue) {
-        const d = parsePlannerDateForCsv(invoiceDateValue);
-        if (!d) return '';
-        d.setDate(d.getDate() + 30);
-        return d.toLocaleDateString('en-GB');
-    }
-
-    function normaliseCsvAmount(value) {
-        const cleaned = String(value ?? '0').replace(/[^0-9.\-]/g, '');
-        const num = Number(cleaned || 0);
-        return Number.isFinite(num) ? num.toFixed(2) : '0.00';
-    }
-
-    async function exportAccountingCsv() {
-        try {
-            const exportBtn = document.getElementById('btn-accounting-csv');
-            const originalText = exportBtn ? exportBtn.innerText : '';
-            if (exportBtn) {
-                exportBtn.disabled = true;
-                exportBtn.innerText = 'EXPORTING...';
-            }
-
-            const { data, error } = await sb
-                .from('quotes')
-                .select('customer_name,fts_invoice_number,del_datetime,total_price,status')
-                .in('status', ['completed', 'billed', 'archived'])
-                .not('fts_invoice_number', 'is', null);
-
-            if (error) throw error;
-
-            const rows = (data || [])
-                .filter(row => String(row.fts_invoice_number || '').trim() && String(row.customer_name || '').trim())
-                .sort((a, b) => {
-                    const da = parsePlannerDateForCsv(a.del_datetime);
-                    const db = parsePlannerDateForCsv(b.del_datetime);
-                    return (db ? db.getTime() : 0) - (da ? da.getTime() : 0);
-                });
-
-            if (!rows.length) {
-                alert('No completed/billed invoice rows with an FTS invoice number were found to export.');
-                return;
-            }
-
-            const headers = [
-                'ContactName',
-                'InvoiceNumber',
-                'InvoiceDate',
-                'DueDate',
-                'Description',
-                'Quantity',
-                'UnitAmount',
-                'AccountCode',
-                'TaxType'
-            ];
-
-            const csvLines = [headers.join(',')];
-            rows.forEach(row => {
-                csvLines.push([
-                    row.customer_name || '',
-                    row.fts_invoice_number || '',
-                    formatCsvDate(row.del_datetime),
-                    formatCsvDueDate(row.del_datetime),
-                    'Invoice',
-                    '1',
-                    normaliseCsvAmount(row.total_price),
-                    '4000',
-                    '20%'
-                ].map(cleanCsvValue).join(','));
-            });
-
-            const csvContent = '\ufeff' + csvLines.join('\r\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            const stamp = new Date().toISOString().slice(0, 10);
-            link.href = url;
-            link.download = `FTS_Invoice_Export_${stamp}.csv`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        } catch (err) {
-            console.error('CSV export failed:', err);
-            alert('CSV export failed: ' + (err?.message || err));
-        } finally {
-            const exportBtn = document.getElementById('btn-accounting-csv');
-            if (exportBtn) {
-                exportBtn.disabled = false;
-                exportBtn.innerText = 'CSV EXPORT';
-            }
-        }
-    }
-
     function switchView(view) {
         const previousPlannerView = activePlannerView;
         activePlannerView = view;
         document.querySelectorAll('.week-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('planner-board').style.display = 'none';
-        document.getElementById('invoicing-view').style.display = 'none';
-        document.getElementById('history-view').style.display = 'none';
-        document.getElementById('subbed-view').style.display = 'none';
-        document.getElementById('cancelled-view').style.display = 'none';
-        document.getElementById('templates-view').style.display = 'none';
-
-        if (view === 'templates') {
-            document.getElementById('templates-view').style.display = 'block';
-            const templatesButton = document.getElementById('btn-templates');
-            if (templatesButton) templatesButton.classList.add('active');
-            renderTemplatesView();
-        }
-        else if (view === 'invoice') {
-            document.getElementById('invoicing-view').style.display = 'block';
-            document.getElementById('btn-invoice').classList.add('active');
-        }
-        else if (view === 'history') {
-            document.getElementById('history-view').style.display = 'block';
-            document.getElementById('btn-hist').classList.add('active');
-        }
-        else if (view === 'subbed') {
-            document.getElementById('subbed-view').style.display = 'block';
-            const subbedButton = document.getElementById('btn-subbed');
-            if (subbedButton) subbedButton.classList.add('active');
-        }
-        else if (view === 'cancelled') {
-            document.getElementById('cancelled-view').style.display = 'block';
-            const cancelledButton = document.getElementById('btn-cancelled');
-            if (cancelledButton) cancelledButton.classList.add('active');
-        }
-        else {
-            currentWeekOffset = view;
-            document.getElementById('planner-board').style.display = 'block';
-            document.getElementById(`btn-w${view}`).classList.add('active');
+        currentWeekOffset = view;
+        document.getElementById('planner-board').style.display = 'block';
+        document.getElementById(`btn-w${view}`).classList.add('active');
             
             [0,1,2,3].forEach(i => {
                 const tbl = document.getElementById(`table-w${i}`);
@@ -6166,15 +4869,6 @@ Are you sure you want to place it here?`);
                     card.style.display = 'none';
                 }
             });
-        }
-
-        const renderPromise = renderActiveDataView(view);
-        if (renderPromise && typeof renderPromise.catch === 'function') {
-            renderPromise.catch(err => {
-                console.error('Could not open planner view:', view, err);
-                alert('Could not open this planner view. Please refresh and try again. Error: ' + (err.message || err));
-            });
-        }
     }
 
     function getISOWeekYear(dateValue) {
@@ -6313,12 +5007,6 @@ Are you sure you want to place it here?`);
     function resetForm() {
         document.getElementById('sys_job_id').value = '';
         ['n_cust_name','n_coll_address_search','n_del_address_search','n_coll_name','n_coll_phone','n_coll_email','n_cust_phone', 'n_cust_email','n_job_notes','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2', 'n_customers_own_invoice_number', 'n_cx_number', 'n_fts_invoice_number', 'n_job_contract_type', 'n_coll_time_period', 'n_del_time_period'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
-        ['n_coll_time_period', 'n_del_time_period'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) delete el.dataset.original;
-        });
-        updateTimePeriodButtons('coll');
-        updateTimePeriodButtons('del');
         setJobBookingMode('');
         prefillNextFtsInvoiceNumber();
         switchFormTab('leg1');
@@ -6554,16 +5242,10 @@ Are you sure you want to place it here?`);
         const slot = String(job.assigned_slot || '');
         const isPool = slot.startsWith('pool-zone') && !isMaintenancePoolSlot(slot);
         const isMaintPool = isMaintenancePoolSlot(slot);
-
-        // Jobs / notes / instructions with no assigned_slot are rendered in the Unassigned pool
-        // based on their collection date, so open the sidebar before trying to scroll to them.
-        const shouldOpenUnassigned = isPool || (!slot && type !== 'maintenance');
-
-        if (shouldOpenUnassigned) {
+        if (isPool) {
             const sidebar = document.getElementById('unassigned-sidebar');
             if (sidebar && !sidebar.classList.contains('open')) toggleUnassigned();
         }
-
         if (isMaintPool) {
             const sidebar = document.getElementById('maintenance-sidebar');
             if (sidebar && !sidebar.classList.contains('open')) toggleMaintenancePool();
