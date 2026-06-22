@@ -4812,17 +4812,23 @@ Are you sure you want to place it here?`);
             if (el) el.innerText = `Week: £0.00`;
         });
 
-        // Use source data, not DOM scraping
+        // Use the real collection week plus the vehicle column. Saved slot week numbers
+        // are relative and may belong to an older planner window after Monday rollover.
         let vehicleTotals = {};
         allJobsRaw.forEach(q => {
-            if(q.assigned_slot && q.assigned_slot.includes(`planner-w${currentWeekOffset}`) && q.status !== 'archived') {
-                let price = parseFloat(q.total_price) || 0;
-                let match = q.assigned_slot.match(/dr(\d+)/);
-                if(match) {
-                    let vIdx = match[1];
-                    vehicleTotals[vIdx] = (vehicleTotals[vIdx] || 0) + price;
-                }
-            }
+            if (!q || !q.coll_datetime || !q.assigned_slot) return;
+            if (getPlannerBoardWeekIndex(q.coll_datetime) !== currentWeekOffset) return;
+
+            const status = String(q.status || '').toLowerCase();
+            if (['driver_config', 'template', 'cancelled', 'subbed'].includes(status)) return;
+
+            const match = String(q.assigned_slot).match(/dr(\d+)/);
+            if (!match) return;
+
+            const cleanPrice = String(q.total_price ?? '').replace(/[^0-9.-]/g, '');
+            const price = Number(cleanPrice) || 0;
+            const vIdx = match[1];
+            vehicleTotals[vIdx] = (vehicleTotals[vIdx] || 0) + price;
         });
 
         for(let vIdx in vehicleTotals) {
