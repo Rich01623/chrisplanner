@@ -196,7 +196,7 @@
            ========================================== */
         .job-card { background: white; color: black; border: 1px solid var(--border-color); border-left: 4px solid var(--frost-red); padding: 8px; margin-bottom: 6px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: grab; font-size: 0.72rem; position: relative; transition: all 0.2s; z-index: 2; }
         .job-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-        .job-card.pod-received-card::after { content: 'POD RECEIVED'; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-16deg); z-index: 7; pointer-events: none; border: 3px solid rgba(46, 125, 50, 0.82); color: rgba(46, 125, 50, 0.9); background: rgba(255,255,255,0.72); border-radius: 5px; padding: 5px 10px; font-size: 1rem; font-weight: 1000; letter-spacing: 1px; text-transform: uppercase; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+        .job-card.pod-received-card::after { content: 'POD RECEIVED'; position: absolute; left: 63%; top: 50%; transform: translate(-50%, -50%) rotate(0deg); z-index: 7; pointer-events: none; border: 3px solid rgba(46, 125, 50, 0.82); color: rgba(46, 125, 50, 0.9); background: rgba(255,255,255,0.72); border-radius: 5px; padding: 5px 10px; font-size: 1rem; font-weight: 1000; letter-spacing: 1px; text-transform: uppercase; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
         .job-card.pod-received-card .card-reorder-handle { z-index: 9; }
         .modal-job-card-copy.pod-received-card::after { display: none; }
         .card-reorder-handle { position: absolute; top: 4px; right: 5px; width: 18px; height: 18px; border: 1px solid rgba(15, 23, 42, 0.18); border-radius: 4px; background: rgba(255,255,255,0.92); color: #64748b; font-size: 13px; font-weight: 900; line-height: 16px; display: inline-flex; align-items: center; justify-content: center; cursor: ns-resize; user-select: none; z-index: 8; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
@@ -230,6 +230,11 @@
         .job-card.status-load { background: #f5eef8; border-left-color: #8e44ad; }
         .job-card.status-del-arr { background: #fef9e7; border-left-color: #f1c40f; }
         .job-card.status-tipped { background: #e8f8f5; border-left-color: #1abc9c; }
+        .dispatch-route-marker { display: inline-flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px; min-width: 13px; padding: 0 2px; line-height: 1; }
+        .dispatch-route-dot { width: 9px; height: 9px; border-radius: 50%; display: block; box-shadow: 0 0 0 1px rgba(0,0,0,0.14); }
+        .dispatch-route-dot.sent { background: #c1272d; }
+        .dispatch-route-dot.ack { background: #2e7d32; }
+        .fts-card-header { margin: -2px 22px 6px 0; padding: 3px 6px; background: #1a1a1a; color: #fff; border-radius: 3px; font-size: 0.66rem; font-weight: 900; letter-spacing: 0.2px; text-align: center; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .job-card.palletforce-job-card { background: #fff3e6 !important; border-left-color: #f58220 !important; }
         .job-card.palletforce-job-card:hover { background: #ffe8cf !important; }
         .job-card.palletforce-job-card .postcode-header { background: rgba(245,130,32,0.10); border-radius: 4px; padding: 4px; }
@@ -1219,9 +1224,13 @@ function escapeHtml(value) {
     const MODAL_REFRESH_DELAY_MS = 900;
 
     // Realtime quota guardrails.
-    // Keep one live-sync subscription only, and pause it when the planner tab is hidden.
+    // Keep Supabase Realtime off by default. Polling uses normal reads instead of the
+    // Realtime Messages allowance, which protects the Supabase quota during busy days.
+    const ENABLE_SUPABASE_REALTIME = false;
+    const PLANNER_POLL_REFRESH_MS = 10000;
     let plannerRealtimeChannel = null;
     let plannerRealtimeStarted = false;
+    let plannerPollingTimer = null;
     let maintenanceRealtimeTimer = null;
     let cardOrderSaveInProgress = false;
     let cardOrderSaveRefreshPending = false;
@@ -2243,50 +2252,16 @@ function escapeHtml(value) {
             }
         }
         let p1 = {
-            customer_name: j.customer_name + " (Leg 1)",
-            del_postcode: "YARD",
-            del_town: "YARD",
-            del_cust_name: "FROST YARD",
-            del_street: "Storage",
-            del_postcode_2: "",
-            del_town_2: ""
+            customer_name: j.customer_name + " (Leg 1)"
         };
 
-        if (j.coll_datetime) {
-            let d = new Date(j.coll_datetime);
-            d.setHours(d.getHours() + 2);
-            let pad = n => n.toString().padStart(2, '0');
-            p1.del_datetime = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-        }
-
-        let p2 = { ...j };
-        delete p2.id;
-        delete p2.created_at;
-        delete p2.updated_at;
+        let p2 = buildCopiedJobPayload(j);
         p2.customer_name = j.customer_name + " (Leg 2)";
-        p2.coll_postcode = "YARD";
-        p2.coll_town = "YARD";
-        p2.coll_street = "FROST YARD";
-        let collectionTrailer = getCollectionTrailerForJob(j);
-        if (!collectionTrailer) {
-            collectionTrailer = normaliseTrailerNumber(prompt('No trailer number was found for the original collection. Enter the trailer number for Leg 2, or leave blank if no trailer was used:') || '');
-        }
-        p2.coll_ref = collectionTrailer ? `From Storage | Trailer: ${collectionTrailer}` : "From Storage";
-        delete p2.coll_postcode_2;
-        delete p2.coll_town_2;
         
         p2.status = ghostSlotId && ghostSlotId.includes('planner') ? 'assigned' : 'pending';
         p2.assigned_slot = ghostSlotId;
         p2.assigned_driver = assignedDriver;
-        p2.dispatch_status = 'unsent';
-        p2.total_price = "0";
-        
-        if (j.del_datetime) {
-            let d = new Date(j.del_datetime);
-            d.setHours(d.getHours() - 2);
-            let pad = n => n.toString().padStart(2, '0');
-            p2.coll_datetime = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-        }
+        p2.driver_phone = null;
 
         try {
             const linkedGroup = await ensureLinkedGroupForJob(j.id);
@@ -2389,6 +2364,8 @@ function escapeHtml(value) {
         });
         const boardJobs = Array.from(boardJobsById.values());
         boardJobs.sort(comparePlannerCardsForDisplay);
+
+        boardJobs.forEach(job => handleDriverTimestampUpdate(job));
 
         // Keep lazy-loaded invoice/history/subbed/cancelled rows in memory while the
         // live planner board refreshes. Previously every board refresh wiped these
@@ -3253,8 +3230,16 @@ function escapeHtml(value) {
         card.dataset.targetWeek = targetWeek;
 
         let pcHeader = "";
-        let headerAlignment = "center"; 
-        let arrow = isON ? '<span style="font-size:0.7rem; font-weight:bold; color:#1a1a1a; padding:0 2px;">O/N</span>' : '<span style="padding:0 2px;">➔</span>';
+        let headerAlignment = "center";
+        const dispatchStatus = String(q.dispatch_status || '').toLowerCase();
+        const hasDispatchAck = !!q.ack_timestamp || ['acknowledged', 'arrived', 'loaded', 'del_arrived', 'tipped'].includes(dispatchStatus);
+        const hasDispatchSent = hasDispatchAck || !!q.dispatch_scheduled_at || ['scheduled', 'sent'].includes(dispatchStatus);
+        const dispatchDotHtml = hasDispatchSent
+            ? `<span class="dispatch-route-dot ${hasDispatchAck ? 'ack' : 'sent'}" title="${hasDispatchAck ? 'Driver has acknowledged this job' : 'Job has been sent to the driver'}"></span>`
+            : '';
+        let arrow = isON
+            ? `<span class="dispatch-route-marker"><span style="font-size:0.7rem; font-weight:bold; color:#1a1a1a;">O/N</span>${dispatchDotHtml}</span>`
+            : `<span class="dispatch-route-marker"><span>➔</span>${dispatchDotHtml}</span>`;
 
         if (isMaintenance || isNote || isInstruction) {
             if (isMaintenance) {
@@ -3539,6 +3524,7 @@ function escapeHtml(value) {
             let contractBadge = isPalletforceJob ? `<span class="palletforce-job-badge">${jobContractType}</span>` : '';
             if (isQuickCard) contractBadge += `<span class="quick-card-badge">QUICK CARD - COMPLETE</span>`;
             let podDownloadButton = q.pod_url ? `<button type="button" class="pod-download-card-btn" onclick="downloadPODPdf(event, '${escapeInlineArg(q.id)}')">DOWNLOAD POD PDF</button>` : '';
+            const ftsCardHeader = q.fts_invoice_number ? `<div class="fts-card-header">${escapeHtml(q.fts_invoice_number)}</div>` : '';
             const priceValue = String(q.total_price ?? '').trim();
             const priceDisplay = priceValue.toUpperCase() === 'PFJ' ? 'PFJ' : `£${priceValue || '0'}`;
             const splitTrailer = isLeg2 ? getSplitDeliveryTrailer(q) : '';
@@ -3555,6 +3541,7 @@ function escapeHtml(value) {
             card.innerHTML = `
                 ${ghostBanner}
                 ${reorderHandleHtml}
+                ${ftsCardHeader}
                 <div class="postcode-header" style="align-items: ${headerAlignment};">${pcHeader}</div>
                 ${onUnlockHtml}
                 <div class="card-body">
@@ -3923,31 +3910,12 @@ function escapeHtml(value) {
 
             if (!id && diffHours > 24) {
                 let p1 = { ...payload };
-                p1.customer_name = payload.customer_name + " (Leg 1)"; 
-                p1.del_postcode = "YARD";
-                p1.del_town = "YARD";
-                p1.del_cust_name = "FROST YARD";
-                p1.del_street = "Storage";
-                p1.del_datetime = addHoursLocal(payload.coll_datetime, 2); 
-                p1.del_postcode_2 = "";
-                delete p1.del_town_2; 
+                p1.customer_name = payload.customer_name + " (Leg 1)";
                 p1.status = 'pending';
 
                 let p2 = { ...payload };
                 p2.customer_name = payload.customer_name + " (Leg 2)";
-                p2.coll_cust_name = "FROST YARD";
-                p2.coll_phone = '';
-                p2.coll_email = '';
-                p2.coll_postcode = "YARD";
-                p2.coll_town = "YARD";
-                p2.coll_street = "FROST YARD";
-                p2.coll_ref = "From Storage";
-                p2.coll_datetime = addHoursLocal(payload.del_datetime, -2); 
-                delete p2.coll_postcode_2; 
-                delete p2.coll_town_2;
                 p2.status = 'pending';
-                p2.total_price = "0";
-                p2.fts_invoice_number = isPalletforceJobType(payload.job_contract_type) ? '' : getNextFtsInvoiceNumberAfter(p1.fts_invoice_number);
 
                 const { error } = await sb.from('quotes').insert([p1, p2]);
                 errorObj = error;
@@ -4500,7 +4468,6 @@ No phone notification has been sent yet because this job is for a future date.`;
         // mirror across the split job. This is separate from the normal Duplicate button.
         const linkedGroup = await ensureLinkedGroupForJob(id);
         const j = buildCopiedJobPayload(source);
-        j.fts_invoice_number = await getNextFtsInvoiceNumber();
         await insertQuoteWithOptionalLinkedGroup(j, linkedGroup);
         loadAll();
     }
@@ -5457,7 +5424,14 @@ Are you sure you want to place it here?`);
     }
 
     async function stopPlannerRealtime() {
-        if (!plannerRealtimeChannel) return;
+        if (plannerPollingTimer) {
+            clearInterval(plannerPollingTimer);
+            plannerPollingTimer = null;
+        }
+        if (!plannerRealtimeChannel) {
+            plannerRealtimeStarted = false;
+            return;
+        }
         try {
             await sb.removeChannel(plannerRealtimeChannel);
         } catch (err) {
@@ -5470,6 +5444,16 @@ Are you sure you want to place it here?`);
     function setupPlannerRealtimeOnce() {
         if (plannerRealtimeStarted || plannerRealtimeChannel) return;
         plannerRealtimeStarted = true;
+
+        if (!ENABLE_SUPABASE_REALTIME) {
+            if (!plannerPollingTimer) {
+                plannerPollingTimer = setInterval(() => {
+                    if (!document.hidden && !isDragging) schedulePlannerRefresh(250);
+                }, PLANNER_POLL_REFRESH_MS);
+            }
+            console.log('Frost Planner Realtime disabled; using quiet polling to protect Supabase Realtime quota.');
+            return;
+        }
 
         plannerRealtimeChannel = sb.channel('frost-planner-live-sync-v3')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, payload => {
@@ -5537,6 +5521,7 @@ Are you sure you want to place it here?`);
     });
 
     window.addEventListener('beforeunload', () => {
+        if (plannerPollingTimer) clearInterval(plannerPollingTimer);
         if (plannerRealtimeChannel) {
             try { sb.removeChannel(plannerRealtimeChannel); } catch (err) {}
         }
