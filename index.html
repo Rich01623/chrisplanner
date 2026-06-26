@@ -216,6 +216,9 @@
         .on-unlock-wrap { display: flex; justify-content: center; margin: -2px 0 7px; }
         .on-unlock-btn { border: 1px solid #e67e22; background: #fff7ed; color: #9a3412; border-radius: 4px; padding: 3px 7px; font-size: 0.68rem; font-weight: 900; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; line-height: 1; font-family: inherit; }
         .on-unlock-btn:hover { background: #e67e22; border-color: #e67e22; color: white; }
+        .release-card-wrap { display:flex; justify-content:center; margin: 0 0 7px; }
+        .release-card-btn { border: 1px solid #c1272d; background: #c1272d; color: #fff !important; border-radius: 4px; padding: 4px 12px; font-size: 0.7rem; font-weight: 900; cursor: pointer; line-height: 1; font-family: inherit; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+        .release-card-btn:hover { background: #9f1f25; border-color: #9f1f25; }
         .maintenance-card { background: #fffaf4 !important; border-left-color: #f58220 !important; }
         .maintenance-card.vehicle-maintenance { border-left-color: #8e44ad !important; }
         .maintenance-card.trailer-maintenance { border-left-color: #f58220 !important; }
@@ -3385,6 +3388,11 @@ function escapeHtml(value) {
                 </button>
             </div>`
             : '';
+        const releaseButtonHtml = (!isGhost && isCompleted)
+            ? `<div class="release-card-wrap">
+                <button type="button" class="release-card-btn" title="Release this completed card so it can be planned again" onclick="releaseCompletedCard(event, '${q.id}')">Release</button>
+            </div>`
+            : '';
         let actionsHtml = '';
         const reorderHandleHtml = (!isGhost && !isCompleted)
             ? `<div class="card-reorder-handle" draggable="true" title="Rearrange this card within this grid space" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()" ondragstart="startCardReorderDrag(event, '${q.id}')" ondragend="endCardReorderDrag(event)">☰</div>`
@@ -3419,6 +3427,7 @@ function escapeHtml(value) {
             card.innerHTML = `
                 ${ghostBanner}
                 ${reorderHandleHtml}
+                ${releaseButtonHtml}
                 <div class="postcode-header" style="align-items: ${headerAlignment};">${pcHeader}</div>
                 <div class="card-body">
                     <div class="card-actions" style="justify-content: flex-end; padding-bottom:0; border:none; margin-bottom:5px;">
@@ -3438,6 +3447,7 @@ function escapeHtml(value) {
             
             card.innerHTML = `
                 ${reorderHandleHtml}
+                ${releaseButtonHtml}
                 <div class="postcode-header" style="color:#d68910; align-items: ${headerAlignment};">${pcHeader}</div>
                 <div class="card-body">
                     <div class="card-actions" style="justify-content: flex-end; padding-bottom:0; border:none; margin-bottom:5px;">
@@ -3485,6 +3495,7 @@ function escapeHtml(value) {
             card.innerHTML = `
                 ${ghostBanner}
                 ${reorderHandleHtml}
+                ${releaseButtonHtml}
                 <div class="postcode-header" style="color:${titleColor}; align-items: ${headerAlignment};">${pcHeader}</div>
                 <div class="card-body">
                     <div class="card-actions" style="justify-content: flex-end; padding-bottom:0; border:none; margin-bottom:5px;">
@@ -3542,6 +3553,7 @@ function escapeHtml(value) {
                 ${ghostBanner}
                 ${reorderHandleHtml}
                 ${ftsCardHeader}
+                ${releaseButtonHtml}
                 <div class="postcode-header" style="align-items: ${headerAlignment};">${pcHeader}</div>
                 ${onUnlockHtml}
                 <div class="card-body">
@@ -4595,6 +4607,41 @@ No phone notification has been sent yet because this job is for a future date.`;
             loadAll();
         }
     }
+
+    async function releaseCompletedCard(e, id) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const job = getJobById(id);
+        if (!job) return;
+
+        if (!confirm("Release this card so it can be planned again? This only releases this selected card and clears its driver-app completion progress.")) return;
+
+        const nextStatus = job.assigned_slot && String(job.assigned_slot).startsWith('planner-w') ? 'assigned' : 'pending';
+        const updatePayload = {
+            status: nextStatus,
+            dispatch_status: 'unsent',
+            dispatch_release_date: null,
+            dispatch_sequence: null,
+            dispatch_scheduled_at: null,
+            released_at: null,
+            ack_timestamp: null,
+            ack_gps: null,
+            arrived_timestamp: null,
+            arrived_gps: null,
+            loaded_timestamp: null,
+            del_arrived_timestamp: null,
+            tipped_timestamp: null,
+            tipped_gps: null
+        };
+
+        try {
+            const { error } = await sb.from('quotes').update(updatePayload).eq('id', id);
+            if (error) throw error;
+            loadAll();
+        } catch (err) {
+            alert("Error releasing card: " + (err && err.message ? err.message : err));
+        }
+    }
+
     async function deleteJob(id) {
         const job = getJobById(id);
         if (job && job.customer_name === MAINTENANCE_CUSTOMER_NAME) {
