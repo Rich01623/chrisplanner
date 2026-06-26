@@ -2411,7 +2411,9 @@ function escapeHtml(value) {
                 if (cD !== dD) isON = true;
             }
 
-            const plannerAnchorDate = q.coll_datetime || (isDriverAppCompleted ? q.tipped_timestamp : null);
+            const isSplitLeg2 = isSplitLeg2Job(q);
+            const plannerCardDate = getPlannerDateForCard(q);
+            const plannerAnchorDate = plannerCardDate || (isDriverAppCompleted ? q.tipped_timestamp : null);
             let absoluteTargetWeek = getWeekOffsetFromNow(plannerAnchorDate);
             let absoluteDelTargetWeek = q.del_datetime ? getWeekOffsetFromNow(q.del_datetime) : absoluteTargetWeek;
             let targetWeek = absoluteTargetWeek - plannerWeekStartOffset;
@@ -2446,10 +2448,17 @@ function escapeHtml(value) {
 
             if (q.assigned_slot && q.assigned_slot.startsWith('planner-w')) {
                 let savedWeekMatch = q.assigned_slot.match(/w(\d+)/);
+                let savedDayMatch = q.assigned_slot.match(/-s(\d+)/);
+                const plannerCardDateObj = plannerCardDate ? new Date(plannerCardDate) : null;
+                const targetDayIndex = plannerCardDateObj && !isNaN(plannerCardDateObj) ? (plannerCardDateObj.getDay() + 6) % 7 : null;
                 if (savedWeekMatch) {
                     let savedWeek = parseInt(savedWeekMatch[1]);
-                    if (savedWeek !== targetWeek && targetWeek >= 0 && targetWeek <= 3) {
+                    let savedDay = savedDayMatch ? parseInt(savedDayMatch[1]) : null;
+                    const needsWeekMove = savedWeek !== targetWeek;
+                    const needsDayMove = targetDayIndex !== null && savedDay !== null && savedDay !== targetDayIndex;
+                    if ((needsWeekMove || needsDayMove) && targetWeek >= 0 && targetWeek <= 3) {
                         let newSlot = q.assigned_slot.replace(`w${savedWeek}`, `w${targetWeek}`);
+                        if (needsDayMove) newSlot = newSlot.replace(/-s\d+$/, `-s${targetDayIndex}`);
                         q.assigned_slot = newSlot; 
                         if (plannerWeekStartOffset === 0) {
                             sb.from('quotes').update({ assigned_slot: newSlot }).eq('id', q.id); 
@@ -2488,7 +2497,7 @@ function escapeHtml(value) {
                 slot.appendChild(card);
             }
 
-            if (isON && q.assigned_slot && !q.assigned_slot.includes('pool')) {
+            if (isON && !isSplitLeg2 && q.assigned_slot && !q.assigned_slot.includes('pool')) {
                 let delDateObj = new Date(q.del_datetime);
                 let delDayIndex = (delDateObj.getDay() + 6) % 7; 
                 
@@ -4735,22 +4744,32 @@ No phone notification has been sent yet because this job is for a future date.`;
         return `${yyyy}-${mm}-${dd}`;
     }
 
+    function isSplitLeg2Job(job) {
+        return /\(Leg 2\)\s*$/i.test(String(job && job.customer_name || ''));
+    }
+
+    function getPlannerDateForCard(job) {
+        return isSplitLeg2Job(job) && job && job.del_datetime ? job.del_datetime : (job && job.coll_datetime);
+    }
+
     function confirmWrongDateMoveIfNeeded(job, finalTarget) {
-        if (!job || !job.coll_datetime) return true;
+        const plannerDate = getPlannerDateForCard(job);
+        if (!job || !plannerDate) return true;
 
         const targetInfo = getDropTargetDate(finalTarget);
         if (!targetInfo || !targetInfo.date) return true;
 
-        const jobDateKey = normaliseLocalDateKey(job.coll_datetime);
+        const jobDateKey = normaliseLocalDateKey(plannerDate);
         const targetDateKey = normaliseLocalDateKey(targetInfo.date);
         if (!jobDateKey || !targetDateKey || jobDateKey === targetDateKey) return true;
 
-        const jobDateStr = new Date(job.coll_datetime).toLocaleDateString('en-GB');
+        const jobDateStr = new Date(plannerDate).toLocaleDateString('en-GB');
         const targetDateStr = targetInfo.date.toLocaleDateString('en-GB');
+        const dateLabel = isSplitLeg2Job(job) ? 'delivery date' : 'collection date';
 
         return confirm(`⚠️ WARNING: Date Mismatch!
 
-The collection date for this job is ${jobDateStr}, but you are placing it on ${targetDateStr}.
+The ${dateLabel} for this job is ${jobDateStr}, but you are placing it on ${targetDateStr}.
 
 Are you sure you want to place it here?`);
     }
@@ -4813,6 +4832,25 @@ Are you sure you want to place it here?`);
             updatePayload.driver_phone = null;
         }
 
+        const driverChanged = draggedJob && !isPool && !statusLaneStatus &&
+            String(assignedDriver || '').trim().toLowerCase() !== String(draggedJob.assigned_driver || '').trim().toLowerCase();
+        if (driverChanged) {
+            updatePayload.dispatch_status = 'unsent';
+            updatePayload.dispatch_release_date = null;
+            updatePayload.dispatch_sequence = null;
+            updatePayload.dispatch_scheduled_at = null;
+            updatePayload.released_at = null;
+            updatePayload.driver_phone = null;
+            updatePayload.ack_timestamp = null;
+            updatePayload.ack_gps = null;
+            updatePayload.arrived_timestamp = null;
+            updatePayload.arrived_gps = null;
+            updatePayload.loaded_timestamp = null;
+            updatePayload.del_arrived_timestamp = null;
+            updatePayload.tipped_timestamp = null;
+            updatePayload.tipped_gps = null;
+        }
+
         await sb.from('quotes').update(updatePayload).eq('id', id);
         loadAll();
     }
@@ -4829,12 +4867,14 @@ Are you sure you want to place it here?`);
             if (el) el.innerText = `Week: £0.00`;
         });
 
-        // Use the real collection week plus the vehicle column. Saved slot week numbers
+        // Use the planner date plus the vehicle column. Leg 2 delivery cards are planned
+        // by delivery date, while normal cards are planned by collection date.
         // are relative and may belong to an older planner window after Monday rollover.
         let vehicleTotals = {};
         allJobsRaw.forEach(q => {
-            if (!q || !q.coll_datetime || !q.assigned_slot) return;
-            if (getPlannerBoardWeekIndex(q.coll_datetime) !== currentWeekOffset) return;
+            const plannerDate = getPlannerDateForCard(q);
+            if (!q || !plannerDate || !q.assigned_slot) return;
+            if (getPlannerBoardWeekIndex(plannerDate) !== currentWeekOffset) return;
 
             const status = String(q.status || '').toLowerCase();
             if (['driver_config', 'template', 'cancelled', 'subbed'].includes(status)) return;
