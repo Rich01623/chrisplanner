@@ -110,7 +110,10 @@
         .vehicle-col-header.palletforce-header .driver-weekly-total { color: rgba(255,255,255,0.85); }
         .vehicle-col-header.palletforce-header .trailer-tag { background: rgba(0,0,0,0.28); color: white; }
         .status-col-header { position: sticky; top: 0; z-index: 20; background: #34495e; color: white; border-right: 1px solid var(--border-color); border-bottom: 3px solid var(--frost-red); padding: 10px; min-width: 240px; vertical-align: middle; text-align: center; font-size: 0.9rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3px; }
+        .status-col-header.booking_requests-header { background: #0056b3; }
         .status-col-header.cancelled-header { background: #8a1c20; }
+        table.planner-table td.status-booking_requests-cell { background: #f4f9ff !important; }
+        table.planner-table td.status-booking_requests-cell:hover { background: #e9f3ff !important; }
         table.planner-table td.status-lane-cell { background: #f8fafc; }
         table.planner-table td.status-subbed-cell { background: #f1f5f9; }
         table.planner-table td.status-subbed-cell:hover { background: #e8eef6; }
@@ -240,6 +243,13 @@
         .fts-card-header { margin: -2px 22px 6px 0; padding: 3px 6px; background: #1a1a1a; color: #fff; border-radius: 3px; font-size: 0.66rem; font-weight: 900; letter-spacing: 0.2px; text-align: center; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .job-card.palletforce-job-card { background: #fff3e6 !important; border-left-color: #f58220 !important; }
         .job-card.palletforce-job-card:hover { background: #ffe8cf !important; }
+        .job-card.booking-request-card { border-left-color: #0056b3 !important; background: #f4f9ff !important; cursor: pointer; }
+        .booking-request-badge { display:inline-block; font-size:0.58rem; color:#0056b3; border:1px solid #0056b3; padding:1px 5px; border-radius:999px; background:#fff; margin-left:4px; font-weight:900; letter-spacing:0.2px; }
+        .booking-request-actions { display:flex; gap:6px; margin-top:10px; padding-top:8px; border-top:1px solid #d7e7fa; }
+        .booking-request-actions button { flex:1; padding:7px 6px; font-size:0.7rem; color:white; border:none; border-radius:3px; font-weight:900; cursor:pointer; }
+        .booking-request-actions .accept { background:#2e7d32; }
+        .booking-request-actions .reject { background:#c1272d; }
+        .booking-request-actions button:disabled { opacity:0.6; cursor:wait; }
         .job-card.palletforce-job-card .postcode-header { background: rgba(245,130,32,0.10); border-radius: 4px; padding: 4px; }
         .palletforce-job-badge { display:inline-block; font-size:0.58rem; color:#9a4d00; border:1px solid #f58220; padding:1px 5px; border-radius:999px; background:#fff7ed; margin-left:4px; font-weight:800; letter-spacing:0.2px; }
         #add-job-modal-content.palletforce-job-form { background: #fff3e6; border: 2px solid #f58220; }
@@ -1094,6 +1104,7 @@ function escapeHtml(value) {
     }
 
     let allJobsRaw = [];
+    let bookingRequestsRaw = [];
     let plannerSearchRows = [];
     let plannerSearchCacheAt = 0;
     let plannerSearchLoadPromise = null;
@@ -1110,6 +1121,7 @@ function escapeHtml(value) {
     let isDragging = false;
     const expandedPastPlannerDays = new Set();
     const PLANNER_STATUS_LANES = [
+        { key: 'booking_requests', label: 'Booking Requests', acceptsDrop: false },
         { key: 'subbed', label: 'Subbed to Contractor' },
         { key: 'cancelled', label: 'Cancelled Jobs' }
     ];
@@ -1816,7 +1828,8 @@ function escapeHtml(value) {
                 row.innerHTML += `<td id="planner-w${week}-dr${veh}-s${day}" class="${isPalletforceVehicle(reg) ? 'palletforce-cell' : ''}" ondrop="drop(event)" ondragover="allowDrop(event)"></td>`;
             }
             PLANNER_STATUS_LANES.forEach(lane => {
-                row.innerHTML += `<td id="planner-w${week}-status-${lane.key}-s${day}" class="status-lane-cell status-${lane.key}-cell" ondrop="drop(event)" ondragover="allowDrop(event)"></td>`;
+                const dropHandlers = lane.acceptsDrop === false ? '' : ' ondrop="drop(event)" ondragover="allowDrop(event)"';
+                row.innerHTML += `<td id="planner-w${week}-status-${lane.key}-s${day}" class="status-lane-cell status-${lane.key}-cell"${dropHandlers}></td>`;
             });
             tbody.appendChild(row);
         }
@@ -2310,11 +2323,16 @@ function escapeHtml(value) {
             .in('status', ['subbed', 'cancelled'])
             .not('assigned_slot', 'is', null)
             .like('assigned_slot', 'planner-w%');
+        const bookingRequestsQuery = sb.from('booking_requests')
+            .select('*')
+            .eq('request_status', 'new')
+            .order('created_at', { ascending: true });
 
-        const [jobsRes, visibleWindowRes, statusLaneRes, jccRes, vehRes, trailersRes] = await Promise.all([
+        const [jobsRes, visibleWindowRes, statusLaneRes, bookingRequestsRes, jccRes, vehRes, trailersRes] = await Promise.all([
             boardJobsQuery,
             visibleWindowJobsQuery,
             statusLaneJobsQuery,
+            bookingRequestsQuery,
             sb.from('jcc_bookings').select('*'),
             sb.from('vehicles').select('registration_number, is_vor'),
             sb.from('daily_trailer_checks').select('driver_name, trailer_number, created_at').order('created_at', { ascending: false }).limit(2000)
@@ -2395,6 +2413,12 @@ function escapeHtml(value) {
         });
 
         allJccBookings = jccRes.data || [];
+        if (bookingRequestsRes && bookingRequestsRes.error) {
+            console.warn('Booking requests could not be loaded. Check the booking_requests table and RLS policies.', bookingRequestsRes.error);
+            bookingRequestsRaw = [];
+        } else {
+            bookingRequestsRaw = bookingRequestsRes.data || [];
+        }
         const currentPlannerMonday = getCurrentPlannerMondayDate();
 
         boardJobs.forEach(q => {
@@ -2515,6 +2539,8 @@ function escapeHtml(value) {
                 }
             }
         });
+
+        renderBookingRequests();
         
         updateCalculations();
         restoreDrivers(allJobsRaw);
@@ -2955,6 +2981,99 @@ function escapeHtml(value) {
                     ${fullDetailSection('Maintenance Due', rows, 'system')}
                 </div>
             </div>`;
+    }
+
+    function buildBookingRequestDetailsHtml(request) {
+        const bookingRows = [
+            fullDetailRow('Booking request ID', request.id),
+            fullDetailRow('Submitted', request.created_at || request.submitted_at, true),
+            fullDetailRow('Request status', request.request_status),
+            fullDetailRow('Booking customer', request.customer_name),
+            fullDetailRow('Customer telephone', request.customer_phone),
+            fullDetailRow('Customer email', request.customer_email),
+            fullDetailRow('Customer invoice number', request.customers_own_invoice_number),
+            fullDetailRow('CX number', request.cx_number),
+            fullDetailRow('Job notes', request.job_notes)
+        ];
+
+        const collectionRows = [
+            fullDetailRow('Collection company/customer', request.coll_cust_name || request.customer_name),
+            fullDetailRow('Telephone', request.coll_phone || request.customer_phone),
+            fullDetailRow('Email', request.coll_email || request.customer_email),
+            fullDetailRow('Street', request.coll_street),
+            fullDetailRow('Town', request.coll_town),
+            fullDetailRow('County', request.coll_county),
+            fullDetailRow('Postcode', request.coll_postcode),
+            fullDetailRow('Collection ref / booking no', request.coll_ref),
+            fullDetailRow('Date & time', request.coll_datetime, true),
+            fullDetailRow('Second collection postcode', request.coll_postcode_2),
+            fullDetailRow('Second collection town', request.coll_town_2)
+        ];
+
+        const deliveryRows = [
+            fullDetailRow('Delivery company/customer', request.del_cust_name),
+            fullDetailRow('Telephone', request.del_phone),
+            fullDetailRow('Email', request.del_email),
+            fullDetailRow('Street', request.del_street),
+            fullDetailRow('Town', request.del_town),
+            fullDetailRow('County', request.del_county),
+            fullDetailRow('Postcode', request.del_postcode),
+            fullDetailRow('Delivery ref / booking no', request.del_ref),
+            fullDetailRow('Date & time', request.del_datetime, true),
+            fullDetailRow('Second delivery postcode', request.del_postcode_2),
+            fullDetailRow('Second delivery town', request.del_town_2)
+        ];
+
+        const logisticsRows = [
+            fullDetailRow('Vehicle required', request.vehicle_type),
+            fullDetailRow('Total pallets', request.total_pallets),
+            fullDetailRow('Total weight', request.total_weight ? `${request.total_weight} kg` : ''),
+            fullDetailRow('Agreed price', request.total_price ? `£${request.total_price}` : ''),
+            fullDetailRow('Job contract type', request.job_contract_type)
+        ];
+
+        return `
+            <div class="full-job-detail-panel" style="border-left:5px solid #0056b3;">
+                <h3 style="background:#0056b3; border-bottom-color:#003f82;">Booking Request Information</h3>
+                <div class="full-job-detail-grid">
+                    ${fullDetailSection('Booking / Customer', bookingRows, 'system')}
+                    ${fullDetailSection('Logistics & Price', logisticsRows, 'financial')}
+                    ${fullDetailSection('Collection Details', collectionRows, 'collection')}
+                    ${fullDetailSection('Delivery Details', deliveryRows, 'delivery')}
+                </div>
+                <div class="booking-request-actions" style="max-width:420px; margin:16px 0 0 auto;">
+                    <button type="button" class="accept" onclick="acceptBookingRequest(event, '${escapeInlineArg(request.id)}')">ACCEPT</button>
+                    <button type="button" class="reject" onclick="rejectBookingRequest(event, '${escapeInlineArg(request.id)}')">REJECT</button>
+                </div>
+            </div>`;
+    }
+
+    function openBookingRequestDetailsModal(event, id) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        if (isDragging) return;
+
+        const request = (bookingRequestsRaw || []).find(item => String(item.id) === String(id));
+        if (!request) return;
+
+        const modal = document.getElementById('modal-job-detail');
+        const title = document.getElementById('job-detail-title');
+        const body = document.getElementById('job-detail-body');
+        if (!modal || !title || !body) return;
+
+        const routeTitle = `${request.coll_postcode || request.coll_town || 'Collection'} → ${request.del_postcode || request.del_town || 'Delivery'}`;
+        title.innerText = `${request.customer_name || 'Booking Request'} | ${routeTitle}`;
+
+        body.innerHTML = buildBookingRequestDetailsHtml(request);
+        body.onclick = (ev) => {
+            if (ev.target.closest('button')) {
+                setTimeout(() => closeJobDetailsModal(), 50);
+            }
+        };
+
+        modal.style.display = 'flex';
     }
 
 
@@ -3586,6 +3705,297 @@ function escapeHtml(value) {
         }
         
         return card;
+    }
+
+    function getBookingRequestSlotId(request) {
+        const dateValue = request && request.coll_datetime;
+        const dateObj = dateValue ? new Date(dateValue) : null;
+        let weekOffset = dateObj && !isNaN(dateObj) ? getPlannerBoardWeekIndex(dateValue) : 0;
+        if (!Number.isInteger(weekOffset)) weekOffset = 0;
+        if (weekOffset < 0) weekOffset = 0;
+        if (weekOffset > 3) weekOffset = 3;
+
+        const dayIndex = dateObj && !isNaN(dateObj) ? ((dateObj.getDay() + 6) % 7) : 0;
+        return `planner-w${weekOffset}-status-booking_requests-s${dayIndex}`;
+    }
+
+    function createBookingRequestCardElement(request) {
+        const card = document.createElement('div');
+        const requestId = request && request.id;
+        card.className = 'job-card booking-request-card';
+        card.id = `booking-request-${requestId}`;
+        card.draggable = false;
+        card.onclick = (event) => {
+            if (event.target.closest('button, .action-btn, a, input, select, textarea')) return;
+            openBookingRequestDetailsModal(event, requestId);
+        };
+
+        const collPc = getVal(request.coll_postcode, request.coll_town, '??');
+        const delPc = getVal(request.del_postcode, request.del_town, '??');
+        const collTime = request.coll_datetime ? `<span style="display:block; font-size:0.65rem; color:#000; font-weight:800; line-height:1.05; padding-top:2px;">${new Date(request.coll_datetime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}</span>` : '';
+        const delTime = request.del_datetime ? `<span style="display:block; font-size:0.65rem; color:#000; font-weight:800; line-height:1.05; padding-top:2px;">${new Date(request.del_datetime).toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'})}</span>` : '';
+        const routeHeader = `
+            <div style="text-align:center; flex:1;"><span class="pc-coll" title="${escapeHtml(getVal(request.coll_cust_name, request.customer_name, 'Collection'))}">${escapeHtml(collPc)}</span>${collTime}</div>
+            <div style="margin-top:1px; padding:0 2px;"><span class="dispatch-route-marker"><span>âž”</span></span></div>
+            <div style="text-align:center; flex:1;"><span class="pc-del" title="${escapeHtml(getVal(request.del_cust_name, '', 'Delivery'))}">${escapeHtml(delPc)}</span>${delTime}</div>
+        `;
+
+        const priceValue = String(request.total_price ?? '').trim();
+        const priceDisplay = priceValue.toUpperCase() === 'PFJ' ? 'PFJ' : `Â£${priceValue || '0'}`;
+        const weightTag = request.total_weight ? `<span class="vehicle-tag" style="background:#666;">${escapeHtml(request.total_weight)}kg</span>` : '';
+        const palletTag = request.total_pallets ? `<span class="vehicle-tag" style="background:#d68910;">${escapeHtml(request.total_pallets)} Plt</span>` : '';
+        const contractBadge = request.job_contract_type ? `<span class="palletforce-job-badge">${escapeHtml(request.job_contract_type)}</span>` : '';
+        const noteHtml = request.job_notes ? `<div style="margin-top:7px; font-size:0.72rem; color:#334155; background:#fff; border:1px dashed #b8cce4; border-radius:4px; padding:6px; white-space:pre-wrap;">${escapeHtml(request.job_notes)}</div>` : '';
+        const submitted = request.created_at || request.submitted_at;
+        const submittedDate = submitted ? new Date(submitted) : null;
+        const submittedHtml = submittedDate && !isNaN(submittedDate)
+            ? `<div style="font-size:0.66rem; color:#64748b; margin-top:6px; font-weight:800;">Submitted: ${submittedDate.toLocaleDateString('en-GB')} ${submittedDate.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}</div>`
+            : '';
+
+        card.innerHTML = `
+            <div class="postcode-header" style="align-items:flex-start;">${routeHeader}</div>
+            <div class="card-body">
+                <div style="font-weight:bold; color:black; font-size:0.8rem; margin-bottom:5px;">
+                    ${escapeHtml(request.customer_name || 'Booking request')}
+                    <span class="booking-request-badge">REQUEST</span>
+                    ${contractBadge}
+                </div>
+                <div style="display:flex; gap:5px; margin:5px 0; flex-wrap:wrap;">
+                    <span class="vehicle-tag">${escapeHtml(request.vehicle_type || 'Artic')}</span>
+                    ${palletTag}
+                    ${weightTag}
+                    <span class="price-tag"><span class="data-price">${escapeHtml(priceDisplay)}</span></span>
+                </div>
+                <div class="detail-row"><b>COLL REF:</b> <span>${escapeHtml(request.coll_ref || '-')}</span></div>
+                <div class="detail-row"><b>DEL REF:</b> <span>${escapeHtml(request.del_ref || '-')}</span></div>
+                ${noteHtml}
+                ${submittedHtml}
+                <div class="booking-request-actions">
+                    <button type="button" class="accept" onclick="acceptBookingRequest(event, '${escapeInlineArg(requestId)}')">ACCEPT</button>
+                    <button type="button" class="reject" onclick="rejectBookingRequest(event, '${escapeInlineArg(requestId)}')">REJECT</button>
+                </div>
+            </div>
+        `;
+
+        return card;
+    }
+
+    function renderBookingRequests() {
+        document.querySelectorAll('.booking-request-card').forEach(card => card.remove());
+        (bookingRequestsRaw || []).forEach(request => {
+            const slot = document.getElementById(getBookingRequestSlotId(request));
+            if (!slot) return;
+            slot.appendChild(createBookingRequestCardElement(request));
+        });
+    }
+
+    function buildQuotePayloadFromBookingRequest(request) {
+        return {
+            customer_name: request.customer_name || '',
+            customer_phone: request.customer_phone || '',
+            customer_email: request.customer_email || '',
+            job_notes: request.job_notes || '',
+
+            coll_cust_name: request.coll_cust_name || '',
+            coll_phone: request.coll_phone || '',
+            coll_email: request.coll_email || '',
+            coll_postcode: request.coll_postcode || '',
+            coll_street: request.coll_street || '',
+            coll_town: request.coll_town || '',
+            coll_county: request.coll_county || '',
+            coll_ref: request.coll_ref || '',
+            coll_datetime: request.coll_datetime || '',
+
+            del_postcode: request.del_postcode || '',
+            del_cust_name: request.del_cust_name || '',
+            del_phone: request.del_phone || '',
+            del_email: request.del_email || '',
+            del_street: request.del_street || '',
+            del_town: request.del_town || '',
+            del_county: request.del_county || '',
+            del_ref: request.del_ref || '',
+            del_datetime: request.del_datetime || '',
+
+            coll_postcode_2: request.coll_postcode_2 || '',
+            coll_town_2: request.coll_town_2 || '',
+            del_postcode_2: request.del_postcode_2 || '',
+            del_town_2: request.del_town_2 || '',
+
+            total_price: request.total_price || '',
+            total_pallets: request.total_pallets || '',
+            total_weight: request.total_weight || '',
+            vehicle_type: request.vehicle_type || 'Artic',
+            customers_own_invoice_number: request.customers_own_invoice_number || '',
+            cx_number: request.cx_number || '',
+            fts_invoice_number: request.fts_invoice_number || '',
+            job_contract_type: request.job_contract_type || '',
+            status: 'pending'
+        };
+    }
+
+    const BOOKING_REQUEST_OPTIONAL_QUOTE_COLUMNS = new Set([
+        'coll_cust_name',
+        'coll_phone',
+        'coll_email',
+        'job_notes',
+        'coll_postcode_2',
+        'coll_town_2',
+        'del_postcode_2',
+        'del_town_2',
+        'customers_own_invoice_number',
+        'cx_number',
+        'fts_invoice_number',
+        'job_contract_type'
+    ]);
+
+    function getMissingSchemaColumnName(error) {
+        const msg = String(error && error.message ? error.message : error || '');
+        const quotedMatch = msg.match(/'([^']+)'\s+column/i);
+        if (quotedMatch) return quotedMatch[1];
+        const fallbackMatch = msg.match(/column\s+["']?([a-zA-Z0-9_]+)["']?/i);
+        return fallbackMatch ? fallbackMatch[1] : '';
+    }
+
+    async function insertQuoteForBookingRequest(payload) {
+        const insertPayload = { ...payload };
+        const removedColumns = [];
+
+        for (let attempt = 0; attempt < BOOKING_REQUEST_OPTIONAL_QUOTE_COLUMNS.size + 1; attempt++) {
+            const { data, error } = await sb
+                .from('quotes')
+                .insert([insertPayload])
+                .select('id')
+                .single();
+
+            if (!error) {
+                return { data, removedColumns };
+            }
+
+            const missingColumn = getMissingSchemaColumnName(error);
+            if (!missingColumn || !BOOKING_REQUEST_OPTIONAL_QUOTE_COLUMNS.has(missingColumn) || !(missingColumn in insertPayload)) {
+                throw error;
+            }
+
+            removedColumns.push(missingColumn);
+            delete insertPayload[missingColumn];
+            console.warn(`quotes.${missingColumn} is missing, retrying booking request accept without that optional field.`);
+        }
+
+        throw new Error('Could not create quote from booking request after removing unsupported optional fields.');
+    }
+
+    async function findExistingQuoteForBookingRequest(request) {
+        const customerName = String(request && request.customer_name || '').trim();
+        const collDatetime = String(request && request.coll_datetime || '').trim();
+        const delDatetime = String(request && request.del_datetime || '').trim();
+        const collPostcode = String(request && request.coll_postcode || '').trim();
+        const delPostcode = String(request && request.del_postcode || '').trim();
+
+        if (!customerName || !collDatetime || !delDatetime || !collPostcode || !delPostcode) return null;
+
+        const { data, error } = await sb
+            .from('quotes')
+            .select('id, created_at, status, customer_name, coll_datetime, del_datetime, coll_postcode, del_postcode')
+            .eq('customer_name', customerName)
+            .eq('coll_datetime', collDatetime)
+            .eq('del_datetime', delDatetime)
+            .eq('coll_postcode', collPostcode)
+            .eq('del_postcode', delPostcode)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (error) {
+            console.warn('Could not check for existing accepted quote before accepting booking request.', error);
+            return null;
+        }
+
+        return data && data.length ? data[0] : null;
+    }
+
+    async function markBookingRequestAccepted(id, quoteId) {
+        const updatePayload = {
+            request_status: 'accepted',
+            imported_at: new Date().toISOString()
+        };
+        if (quoteId !== null && quoteId !== undefined && String(quoteId).trim() !== '') {
+            updatePayload.imported_quote_id = quoteId;
+        }
+
+        let { error } = await sb
+            .from('booking_requests')
+            .update(updatePayload)
+            .eq('id', id);
+
+        if (error && updatePayload.imported_quote_id !== undefined && /bigint|invalid input syntax|imported_quote_id|schema cache|column/i.test(error.message || String(error))) {
+            delete updatePayload.imported_quote_id;
+            const retry = await sb
+                .from('booking_requests')
+                .update(updatePayload)
+                .eq('id', id);
+            error = retry.error;
+        }
+
+        if (error) throw error;
+    }
+
+    async function acceptBookingRequest(event, id) {
+        if (event) event.stopPropagation();
+        const request = (bookingRequestsRaw || []).find(item => String(item.id) === String(id));
+        if (!request) {
+            alert('Booking request not found. Refresh the planner and try again.');
+            return;
+        }
+        if (!confirm('Accept this booking request and create it as a normal planner job?')) return;
+
+        const button = event && event.target;
+        if (button) button.disabled = true;
+
+        try {
+            let quoteData = await findExistingQuoteForBookingRequest(request);
+            let removedColumns = [];
+
+            if (!quoteData) {
+                const quotePayload = buildQuotePayloadFromBookingRequest(request);
+                if (!quotePayload.fts_invoice_number && !isPalletforceJobType(quotePayload.job_contract_type)) {
+                    quotePayload.fts_invoice_number = await getNextFtsInvoiceNumber();
+                }
+
+                const insertResult = await insertQuoteForBookingRequest(quotePayload);
+                quoteData = insertResult.data;
+                removedColumns = insertResult.removedColumns || [];
+            }
+
+            await markBookingRequestAccepted(id, quoteData && quoteData.id ? quoteData.id : null);
+
+            if (removedColumns.length) {
+                alert(`Booking request accepted, but these optional fields could not be saved because the quotes table is missing the columns:\n\n${removedColumns.join(', ')}\n\nRun the quotes optional columns SQL patch to save them next time.`);
+            }
+
+            loadAll();
+        } catch (err) {
+            alert('Could not accept booking request: ' + (err && err.message ? err.message : err));
+            if (button) button.disabled = false;
+        }
+    }
+
+    async function rejectBookingRequest(event, id) {
+        if (event) event.stopPropagation();
+        if (!confirm('Reject this booking request?')) return;
+
+        const button = event && event.target;
+        if (button) button.disabled = true;
+
+        try {
+            const { error } = await sb
+                .from('booking_requests')
+                .update({ request_status: 'rejected' })
+                .eq('id', id);
+            if (error) throw error;
+            loadAll();
+        } catch (err) {
+            alert('Could not reject booking request: ' + (err && err.message ? err.message : err));
+            if (button) button.disabled = false;
+        }
     }
 
     // ==========================================
@@ -5562,6 +5972,10 @@ Are you sure you want to place it here?`);
                     boardRefreshNeededAfterDataView = true;
                     return;
                 }
+                schedulePlannerRefresh(450);
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'booking_requests' }, payload => {
+                console.log('Booking request update received.');
                 schedulePlannerRefresh(450);
             })
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jcc_bookings' }, payload => {
