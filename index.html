@@ -403,9 +403,12 @@
         .planner-search-highlight { outline: 4px solid #2563eb !important; box-shadow: 0 0 0 6px rgba(37,99,235,0.20), 0 10px 20px rgba(0,0,0,0.22) !important; position: relative; z-index: 100 !important; }
         .timestamp-toast-container { position: fixed; top: 82px; right: 18px; z-index: 3000; display: flex; flex-direction: column; gap: 10px; max-width: 360px; pointer-events: none; }
         .timestamp-toast { background: #0f172a; color: white; border-left: 5px solid var(--whatsapp-green); border-radius: 7px; padding: 12px 14px; box-shadow: 0 10px 24px rgba(0,0,0,0.28); font-size: 0.82rem; font-weight: 800; line-height: 1.35; opacity: 0; transform: translateY(-8px); animation: timestampToastIn 0.18s ease forwards; pointer-events: auto; }
+        .timestamp-toast.booking-request-toast { background: #0056b3; border-left-color: #7dd3fc; box-shadow: 0 10px 24px rgba(0,86,179,0.32); }
         .timestamp-toast small { display: block; margin-top: 4px; color: rgba(255,255,255,0.75); font-size: 0.68rem; font-weight: 700; }
         .timestamp-toast-ok { margin-top: 10px; border: none; border-radius: 4px; background: var(--whatsapp-green); color: white; padding: 6px 14px; font-size: 0.72rem; font-weight: 900; cursor: pointer; }
         .timestamp-toast-ok:hover { background: #1ebe5d; }
+        .booking-request-toast .timestamp-toast-ok { background: #ffffff; color: #0056b3; }
+        .booking-request-toast .timestamp-toast-ok:hover { background: #dbeafe; }
         @keyframes timestampToastIn { to { opacity: 1; transform: translateY(0); } }
         .header-menu-stack .week-btn,
         .header-menu-stack .week-btn:hover,
@@ -1324,6 +1327,8 @@ function escapeHtml(value) {
     const DRIVER_TICKER_DISABLED_KEY = 'frost_driver_ticker_disabled';
     const driverTickerItems = [];
     let driverTickerDisabled = localStorage.getItem(DRIVER_TICKER_DISABLED_KEY) === 'true';
+    const seenBookingRequestNotificationIds = new Set();
+    let bookingRequestNotificationsReady = false;
 
     function hasTimestampValue(value) {
         return value !== null && value !== undefined && String(value).trim() !== '';
@@ -1360,6 +1365,57 @@ function escapeHtml(value) {
             okButton.onclick = () => toast.remove();
         }
         container.prepend(toast);
+    }
+
+    function showBookingRequestToast(message, detail = '') {
+        const container = getTimestampToastContainer();
+        const toast = document.createElement('div');
+        toast.className = 'timestamp-toast booking-request-toast';
+        toast.innerHTML = `
+            <div>${escapeHtml(message)}</div>
+            ${detail ? `<small>${escapeHtml(detail)}</small>` : ''}
+            <button type="button" class="timestamp-toast-ok">OK</button>
+        `;
+        const okButton = toast.querySelector('.timestamp-toast-ok');
+        if (okButton) {
+            okButton.onclick = () => toast.remove();
+        }
+        container.prepend(toast);
+    }
+
+    function getBookingRequestRouteText(request) {
+        const from = request && (request.coll_postcode || request.coll_town || request.coll_cust_name || 'collection');
+        const to = request && (request.del_postcode || request.del_town || request.del_cust_name || 'delivery');
+        return `${from} to ${to}`;
+    }
+
+    function handleBookingRequestNotifications(requests) {
+        const rows = Array.isArray(requests) ? requests : [];
+        const currentIds = new Set();
+
+        rows.forEach(request => {
+            if (!request || request.id === undefined || request.id === null) return;
+            const id = String(request.id);
+            currentIds.add(id);
+
+            if (!bookingRequestNotificationsReady) {
+                seenBookingRequestNotificationIds.add(id);
+                return;
+            }
+
+            if (seenBookingRequestNotificationIds.has(id)) return;
+
+            seenBookingRequestNotificationIds.add(id);
+            const customer = request.customer_name || request.coll_cust_name || 'New booking request';
+            const submitted = request.created_at || request.submitted_at;
+            const detailParts = [`Route: ${getBookingRequestRouteText(request)}`];
+            if (submitted) detailParts.push(`Submitted: ${String(submitted).replace('T', ' ').slice(0, 16)}`);
+            showBookingRequestToast(`New booking request received: ${customer}`, detailParts.join(' | '));
+        });
+
+        if (!bookingRequestNotificationsReady) {
+            bookingRequestNotificationsReady = true;
+        }
     }
 
     function getTickerPlace(job, type) {
@@ -2222,30 +2278,138 @@ function escapeHtml(value) {
         return getCollectionTrailerForJob(linkedLeg1);
     }
 
+    function getAssignedDriverForPlannerSlot(slotId) {
+        if (!slotId || !String(slotId).startsWith('planner-w')) return null;
+        const cellId = String(slotId).split('-s')[0];
+        const dropdown = document.getElementById(`sel-${cellId}`);
+        if (dropdown && dropdown.value) {
+            const driverName = dropdown.options[dropdown.selectedIndex].text.toLowerCase();
+            return driverName === 'unassigned' ? null : driverName;
+        }
+        return null;
+    }
+
+    function getCleanDispatchResetPayload() {
+        return {
+            dispatch_status: 'unsent',
+            dispatch_release_date: null,
+            dispatch_sequence: null,
+            dispatch_scheduled_at: null,
+            released_at: null,
+            driver_phone: null,
+            ack_timestamp: null,
+            ack_gps: null,
+            arrived_timestamp: null,
+            arrived_gps: null,
+            loaded_timestamp: null,
+            del_arrived_timestamp: null,
+            tipped_timestamp: null,
+            tipped_gps: null
+        };
+    }
+
+    async function createOrMoveONDeliveryLeg(id, targetSlotId, options = {}) {
+        const j = allJobsRaw.find(x => x.id == id);
+        if(!j) return false;
+
+        const targetId = String(targetSlotId || '');
+        if (!targetId.startsWith('planner-w')) {
+            alert("Please drop the O/N delivery card onto a driver's planner cell.");
+            return false;
+        }
+
+        const collDate = j.coll_datetime ? new Date(j.coll_datetime) : null;
+        const delDate = j.del_datetime ? new Date(j.del_datetime) : null;
+        if (!collDate || !delDate || isNaN(collDate) || isNaN(delDate) || collDate.toDateString() === delDate.toDateString()) {
+            alert("This unlock button is only for overnight jobs with a delivery on a different day.");
+            return false;
+        }
+
+        const assignedDriver = getAssignedDriverForPlannerSlot(targetId);
+
+        if (isSplitLeg2Job(j)) {
+            await sb.from('quotes').update({
+                status: 'assigned',
+                assigned_slot: targetId,
+                assigned_driver: assignedDriver,
+                planner_sort_order: null,
+                planner_sort_manual: false,
+                ...getCleanDispatchResetPayload()
+            }).eq('id', j.id);
+            loadAll();
+            return true;
+        }
+
+        if (hasLegSuffix(j.customer_name)) {
+            const linkedLeg2 = findExistingONDeliveryLeg(j);
+            if (linkedLeg2) {
+                await sb.from('quotes').update({
+                    status: 'assigned',
+                    assigned_slot: targetId,
+                    assigned_driver: assignedDriver,
+                    planner_sort_order: null,
+                    planner_sort_manual: false,
+                    ...getCleanDispatchResetPayload()
+                }).eq('id', linkedLeg2.id);
+                loadAll();
+                return true;
+            }
+        }
+
+        if (!options.skipConfirm && !confirm("Unlock this O/N delivery? This will keep the collection on the current driver and create a separate orange delivery card that can be moved to any driver.")) return false;
+
+        const cleanDisplayName = String(j.customer_name || '').replace(/\s*\(Leg\s*\d+\)\s*$/i, '').trim();
+        const existingLeg2 = findExistingONDeliveryLeg(j);
+
+        if (existingLeg2) {
+            await sb.from('quotes').update({
+                status: 'assigned',
+                assigned_slot: targetId,
+                assigned_driver: assignedDriver,
+                planner_sort_order: null,
+                planner_sort_manual: false,
+                ...getCleanDispatchResetPayload()
+            }).eq('id', existingLeg2.id);
+            loadAll();
+            return true;
+        }
+
+        let p1 = {
+            customer_name: `${cleanDisplayName} (Leg 1)`
+        };
+
+        let p2 = buildCopiedJobPayload(j);
+        p2.customer_name = `${cleanDisplayName} (Leg 2)`;
+        p2.status = 'assigned';
+        p2.assigned_slot = targetId;
+        p2.assigned_driver = assignedDriver;
+        p2.planner_sort_order = null;
+        p2.planner_sort_manual = false;
+        Object.assign(p2, getCleanDispatchResetPayload());
+
+        try {
+            const linkedGroup = await ensureLinkedGroupForJob(j.id);
+            await insertQuoteWithOptionalLinkedGroup(p2, linkedGroup);
+            await updateQuoteWithOptionalLinkedGroup(j.id, p1, linkedGroup);
+            loadAll();
+            return true;
+        } catch(err) {
+            console.error(err);
+            alert("Error reassigning job: " + err.message);
+            return false;
+        }
+    }
+
     async function reassignONJob(e, id) {
         if (e && e.stopPropagation) e.stopPropagation();
         
         const j = allJobsRaw.find(x => x.id == id);
         if(!j) return;
 
-        const collDate = j.coll_datetime ? new Date(j.coll_datetime) : null;
-        const delDate = j.del_datetime ? new Date(j.del_datetime) : null;
-        if (!collDate || !delDate || isNaN(collDate) || isNaN(delDate) || collDate.toDateString() === delDate.toDateString()) {
-            return alert("This unlock button is only for overnight jobs with a delivery on a different day.");
-        }
-
-        if (hasLegSuffix(j.customer_name)) {
-            return alert("This overnight job has already been unlocked into separate legs.");
-        }
-
-        if(!confirm("Unlock this O/N delivery? This will keep the collection on the current driver and create a separate orange delivery card that can be moved to any driver.")) return;
-
-        let ghostSlotId = null;
-        let assignedDriver = null;
-
         const clickedGhostCard = e && e.target && e.target.closest ? e.target.closest('.ghost-card') : null;
         const clickedGhostSlotId = clickedGhostCard && clickedGhostCard.parentElement ? clickedGhostCard.parentElement.id : '';
 
+        let ghostSlotId = null;
         let delTargetWeek = getPlannerBoardWeekIndex(j.del_datetime);
         let delDateObj = new Date(j.del_datetime);
         let delDayIndex = (delDateObj.getDay() + 6) % 7; 
@@ -2259,36 +2423,7 @@ function escapeHtml(value) {
         } else {
             ghostSlotId = `pool-zone-${delDateObj.getDay()}`; 
         }
-
-        if (ghostSlotId && ghostSlotId.startsWith('planner-w')) {
-            const cellId = ghostSlotId.split('-s')[0];
-            let dropdown = document.getElementById(`sel-${cellId}`);
-            if(dropdown && dropdown.value) {
-                assignedDriver = dropdown.options[dropdown.selectedIndex].text.toLowerCase();
-                if(assignedDriver === 'unassigned') assignedDriver = null;
-            }
-        }
-        let p1 = {
-            customer_name: j.customer_name + " (Leg 1)"
-        };
-
-        let p2 = buildCopiedJobPayload(j);
-        p2.customer_name = j.customer_name + " (Leg 2)";
-        
-        p2.status = ghostSlotId && ghostSlotId.includes('planner') ? 'assigned' : 'pending';
-        p2.assigned_slot = ghostSlotId;
-        p2.assigned_driver = assignedDriver;
-        p2.driver_phone = null;
-
-        try {
-            const linkedGroup = await ensureLinkedGroupForJob(j.id);
-            await updateQuoteWithOptionalLinkedGroup(j.id, p1, linkedGroup);
-            await insertQuoteWithOptionalLinkedGroup(p2, linkedGroup);
-            loadAll();
-        } catch(err) {
-            console.error(err);
-            alert("Error reassigning job: " + err.message);
-        }
+        await createOrMoveONDeliveryLeg(id, ghostSlotId);
     }
 
     // ==========================================
@@ -2419,6 +2554,7 @@ function escapeHtml(value) {
         } else {
             bookingRequestsRaw = bookingRequestsRes.data || [];
         }
+        handleBookingRequestNotifications(bookingRequestsRaw);
         const currentPlannerMonday = getCurrentPlannerMondayDate();
 
         boardJobs.forEach(q => {
@@ -2522,7 +2658,7 @@ function escapeHtml(value) {
                 slot.appendChild(card);
             }
 
-            if (isON && !isSplitLeg2 && q.assigned_slot && !q.assigned_slot.includes('pool')) {
+            if (isON && !isSplitLeg2 && q.assigned_slot && !q.assigned_slot.includes('pool') && !findExistingONDeliveryLeg(q)) {
                 let delDateObj = new Date(q.del_datetime);
                 let delDayIndex = (delDateObj.getDay() + 6) % 7; 
                 
@@ -3335,7 +3471,7 @@ function escapeHtml(value) {
         
         card.id = isGhost ? `ghost-${q.id}` : q.id; 
         
-        card.draggable = (!isCompleted && !isGhost); 
+        card.draggable = (!isCompleted && (!isGhost || isON)); 
         
         card.ondragstart = (e) => { 
             if (e.target && e.target.closest && e.target.closest('.card-reorder-handle')) return;
@@ -4482,6 +4618,49 @@ Standard jobs without extra legs will continue to save normally.`);
         return /\(Leg\s*\d+\)\s*$/i.test(String(name || ''));
     }
 
+    function sameLocalDateValue(a, b) {
+        const aKey = getLocalDateKeyFromValue(a);
+        const bKey = getLocalDateKeyFromValue(b);
+        return !!aKey && !!bKey && aKey === bKey;
+    }
+
+    function findExistingONDeliveryLeg(source) {
+        if (!source) return null;
+        const sourceId = String(source.id);
+
+        const linkedLeg2 = getLinkedJobs(source.id).find(job =>
+            job && String(job.id) !== sourceId && isSplitLeg2Job(job)
+        );
+        if (linkedLeg2) return linkedLeg2;
+
+        const sourceFts = String(source.fts_invoice_number || '').trim().toLowerCase();
+        const sourceBaseName = cleanLegCustomerName(source.customer_name);
+        const sourceCollPc = String(source.coll_postcode || '').trim().toUpperCase();
+        const sourceDelPc = String(source.del_postcode || '').trim().toUpperCase();
+
+        const leg2Candidates = (allJobsRaw || []).filter(job =>
+            job && String(job.id) !== sourceId && isSplitLeg2Job(job)
+        );
+
+        if (sourceFts) {
+            const ftsMatch = leg2Candidates.find(job =>
+                String(job.fts_invoice_number || '').trim().toLowerCase() === sourceFts
+            );
+            if (ftsMatch) return ftsMatch;
+        }
+
+        return leg2Candidates.find(job => {
+            if (cleanLegCustomerName(job.customer_name) !== sourceBaseName) return false;
+            if (!sameLocalDateValue(job.coll_datetime, source.coll_datetime)) return false;
+            if (!sameLocalDateValue(job.del_datetime, source.del_datetime)) return false;
+            const jobCollPc = String(job.coll_postcode || '').trim().toUpperCase();
+            const jobDelPc = String(job.del_postcode || '').trim().toUpperCase();
+            if (sourceCollPc && jobCollPc && sourceCollPc !== jobCollPc) return false;
+            if (sourceDelPc && jobDelPc && sourceDelPc !== jobDelPc) return false;
+            return true;
+        }) || null;
+    }
+
     function getLinkedJobs(id) {
         const source = getJobById(id);
         if (!source) return [];
@@ -4575,7 +4754,24 @@ Standard jobs without extra legs will continue to save normally.`);
             const retry = await sb.from('quotes').insert([insertPayload]);
             error = retry.error;
         }
+        for (let attempts = 0; error && attempts < 5; attempts++) {
+            const removedColumn = removeMissingQuoteColumnFromPayload(insertPayload, error);
+            if (!removedColumn) break;
+            console.warn(`quotes.${removedColumn} is not available. Retrying insert without it.`, error);
+            const retry = await sb.from('quotes').insert([insertPayload]);
+            error = retry.error;
+        }
         if (error) throw error;
+    }
+
+    function removeMissingQuoteColumnFromPayload(payload, error) {
+        const message = error && error.message ? String(error.message) : String(error || '');
+        const match = message.match(/Could not find the '([^']+)' column of 'quotes'/i)
+            || message.match(/column "([^"]+)" of relation "quotes" does not exist/i);
+        const column = match ? match[1] : '';
+        if (!column || !Object.prototype.hasOwnProperty.call(payload, column)) return '';
+        delete payload[column];
+        return column;
     }
 
     async function updateLinkedJobs(id, payload) {
@@ -4871,7 +5067,7 @@ No phone notification has been sent yet because this job is for a future date.`;
         j.pod_url = null;
         j.invoice_pdf_url = null;
         j.invoice_pdf_path = null;
-        j.invoice_pdf_generated_at = null;
+        delete j.invoice_pdf_generated_at;
         return j;
     }
 
@@ -4885,8 +5081,7 @@ No phone notification has been sent yet because this job is for a future date.`;
         const j = buildCopiedJobPayload(source);
         j.fts_invoice_number = await getNextFtsInvoiceNumber();
 
-        const { error } = await sb.from('quotes').insert([j]);
-        if (error) throw error;
+        await insertQuoteWithOptionalLinkedGroup(j, null);
         loadAll();
     }
 
@@ -5194,6 +5389,7 @@ Are you sure you want to place it here?`);
         const dropTargetCard = ev.target && ev.target.closest ? ev.target.closest('.job-card:not(.modal-job-card-copy)') : null;
         const isReorderDrag = ev.dataTransfer.getData('planner-reorder') === 'true';
         const sourceCard = document.getElementById(String(id));
+        const isGhostDeliveryDrag = String(rawId || '').startsWith('ghost-');
 
         if (isReorderDrag && sourceCard && sourceCard.parentElement === finalTarget) {
             await reorderCardInsideContainer(id, finalTarget, dropTargetCard, ev.clientY);
@@ -5204,6 +5400,11 @@ Are you sure you want to place it here?`);
         const statusLaneStatus = getPlannerStatusFromLaneSlot(finalTarget.id);
         const isPool = finalTarget.id === 'pool-container' || finalTarget.classList.contains('pool-zone') || finalTarget.closest('.pool-zone') !== null;
         const draggedJob = allJobsRaw.find(x => String(x.id) === String(id));
+
+        if (isGhostDeliveryDrag) {
+            await createOrMoveONDeliveryLeg(id, finalTarget.id, { skipConfirm: true });
+            return;
+        }
 
         if (isMaintenancePool && draggedJob && draggedJob.customer_name !== MAINTENANCE_CUSTOMER_NAME) {
             alert("Only maintenance cards can be placed in the Maintenance Pool.");
