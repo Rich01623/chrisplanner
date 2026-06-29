@@ -434,6 +434,8 @@
         .planner-search-result-title { font-weight: 800; font-size: 0.86rem; margin-bottom: 3px; color: #111827; }
         .planner-search-result-meta { font-size: 0.72rem; color: #4b5563; line-height: 1.35; }
         .planner-search-result-type { display:inline-block; font-size:0.62rem; font-weight:900; color:#fff; background:#34495e; border-radius:999px; padding:2px 7px; margin-right:6px; }
+        .planner-search-result-type.collection { background:#0056b3; }
+        .planner-search-result-type.delivery { background:#2e7d32; }
         .planner-search-result-type.maintenance { background:#8e44ad; }
         .planner-search-result-type.note { background:#d68910; }
         .planner-search-result-type.instruction { background:#0f766e; }
@@ -6194,6 +6196,8 @@ Are you sure you want to place it here?`);
     }
 
     function getPlannerSearchType(job) {
+        const cardRole = getPlannerSearchCardRole(job);
+        if (cardRole) return cardRole;
         if (isMaintenanceJob(job)) return 'maintenance';
         if (isNoteJob(job)) return 'note';
         if (isInstructionJob(job)) return 'instruction';
@@ -6201,6 +6205,8 @@ Are you sure you want to place it here?`);
     }
 
     function getPlannerSearchTypeLabel(type) {
+        if (type === 'collection') return 'COLLECTION';
+        if (type === 'delivery') return 'DELIVERY';
         if (type === 'maintenance') return 'MAINTENANCE';
         if (type === 'note') return 'NOTE';
         if (type === 'instruction') return 'INSTRUCTION';
@@ -6280,9 +6286,113 @@ Are you sure you want to place it here?`);
         return values.join(' ').toLowerCase();
     }
 
+    function normalisePlannerFtsText(value) {
+        return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    function getPlannerSearchFtsKey(job) {
+        return normalisePlannerFtsText(job && job.fts_invoice_number);
+    }
+
+    function isPlannerFtsSearchQuery(query) {
+        const text = String(query || '').trim();
+        return /\bfts\s*-?\s*\d+/i.test(text) || /^\d{4,8}$/.test(text);
+    }
+
+    function getPlannerSearchCardRole(job) {
+        if (!job) return '';
+        if (job._plannerSearchCardRole) return job._plannerSearchCardRole;
+        if (isDeliveryPlannerCardJob(job)) return 'delivery';
+        if (isCollectionPlannerCardJob(job)) return 'collection';
+        return '';
+    }
+
+    function getPlannerSearchDateValue(job) {
+        const role = getPlannerSearchCardRole(job);
+        if (role === 'delivery') return job && (job.del_datetime || job.coll_datetime);
+        return job && (job.coll_datetime || job.del_datetime);
+    }
+
+    function getPlannerSearchSlot(job) {
+        if (!job) return '';
+        if (getPlannerSearchCardRole(job) === 'delivery' && job._plannerSearchVirtualDelivery) {
+            return getPlannerSlotForLeg(job, 'delivery');
+        }
+        return job.assigned_slot || '';
+    }
+
+    function getPlannerSearchFocusId(job) {
+        if (!job) return '';
+        return job._plannerSearchFocusId || job.id;
+    }
+
+    function hasPlannerSearchDeliveryPartner(source, jobs) {
+        const sourceFts = getPlannerSearchFtsKey(source);
+        if (!sourceFts) return false;
+        return (jobs || []).some(job =>
+            job &&
+            String(job.id) !== String(source.id) &&
+            isDeliveryPlannerCardJob(job) &&
+            getPlannerSearchFtsKey(job) === sourceFts
+        );
+    }
+
+    function makePlannerSearchVirtualDelivery(job) {
+        const cleanCustomer = cleanTwoCardCustomerName(job.customer_name) || job.customer_name || 'Job';
+        return {
+            ...job,
+            id: `delivery-${job.id}`,
+            customer_name: `${cleanCustomer} (Delivery)`,
+            _plannerSearchBaseId: String(job.id),
+            _plannerSearchFocusId: `delivery-${job.id}`,
+            _plannerSearchVirtualDelivery: true,
+            _plannerSearchCardRole: 'delivery'
+        };
+    }
+
+    function expandPlannerFtsSearchResults(results, jobs, query) {
+        if (!isPlannerFtsSearchQuery(query)) return results;
+
+        const normalisedQuery = normalisePlannerFtsText(query);
+        const matchedInvoiceKeys = new Set();
+        (jobs || []).forEach(job => {
+            const key = getPlannerSearchFtsKey(job);
+            if (key && (key.includes(normalisedQuery) || normalisedQuery.includes(key))) matchedInvoiceKeys.add(key);
+        });
+        if (matchedInvoiceKeys.size === 0) return results;
+
+        const expanded = new Map();
+        (results || []).forEach(job => expanded.set(String(getPlannerSearchFocusId(job)), job));
+
+        (jobs || []).forEach(job => {
+            if (!job) return;
+            const key = getPlannerSearchFtsKey(job);
+            if (!matchedInvoiceKeys.has(key)) return;
+            expanded.set(String(job.id), job);
+        });
+
+        (jobs || []).forEach(job => {
+            if (!job || isDeliveryPlannerCardJob(job) || !job.del_datetime || !isTwoCardOperationalJob(job)) return;
+            const key = getPlannerSearchFtsKey(job);
+            if (!matchedInvoiceKeys.has(key)) return;
+            if (hasPlannerSearchDeliveryPartner(job, jobs)) return;
+            const virtualDelivery = makePlannerSearchVirtualDelivery(job);
+            expanded.set(String(virtualDelivery.id), virtualDelivery);
+        });
+
+        return Array.from(expanded.values()).sort((a, b) => {
+            const aTime = Date.parse(getPlannerSearchDateValue(a) || '') || 0;
+            const bTime = Date.parse(getPlannerSearchDateValue(b) || '') || 0;
+            if (aTime !== bTime) return aTime - bTime;
+            const roleOrder = { collection: 1, job: 1, delivery: 2 };
+            return (roleOrder[getPlannerSearchCardRole(a) || 'job'] || 1) - (roleOrder[getPlannerSearchCardRole(b) || 'job'] || 1);
+        });
+    }
+
     function getPlannerSearchWeek(job) {
-        if (job?.coll_datetime) return getWeekOffsetFromNow(job.coll_datetime);
-        const slot = String(job?.assigned_slot || '');
+        const searchDate = getPlannerSearchDateValue(job);
+        if (searchDate) return getWeekOffsetFromNow(searchDate);
+        const slot = String(getPlannerSearchSlot(job) || job?.assigned_slot || '');
         const plannerMatch = slot.match(/planner-w(\d+)/);
         if (plannerMatch) return parseInt(plannerMatch[1], 10) || 0;
         const maintMatch = slot.match(/maintenance-pool-zone-w(\d+)/);
@@ -6321,10 +6431,11 @@ Are you sure you want to place it here?`);
         }
 
         const terms = query.split(/\s+/).filter(Boolean);
-        const results = jobs.filter(job => {
+        const baseResults = jobs.filter(job => {
             const haystack = getSearchablePlannerText(job);
             return terms.every(term => haystack.includes(term));
-        }).slice(0, 100);
+        });
+        const results = expandPlannerFtsSearchResults(baseResults, jobs, query).slice(0, 100);
 
         countBox.innerText = `${results.length} matching card${results.length === 1 ? '' : 's'}${results.length >= 100 ? ' - showing first 100' : ''}`;
 
@@ -6339,13 +6450,14 @@ Are you sure you want to place it here?`);
             const info = getWeekInfo(weekOffset);
             const route = escapeHtml(getPlannerSearchRoute(job));
             const customer = escapeHtml(job.customer_name || job.coll_cust_name || job.del_cust_name || getPlannerSearchTypeLabel(type));
-            const slot = escapeHtml(job.assigned_slot || 'Unassigned');
-            const parsedDate = job.coll_datetime ? new Date(job.coll_datetime) : null;
+            const slot = escapeHtml(getPlannerSearchSlot(job) || 'Unassigned');
+            const searchDateValue = getPlannerSearchDateValue(job);
+            const parsedDate = searchDateValue ? new Date(searchDateValue) : null;
             const date = parsedDate && !isNaN(parsedDate) ? parsedDate.toLocaleDateString('en-GB') : 'No date';
             const status = escapeHtml(job.status || 'pending');
             const ref = escapeHtml([job.coll_ref, job.del_ref, job.customers_own_invoice_number, job.fts_invoice_number].filter(Boolean).join(' | '));
             return `
-                <div class="planner-search-result" onclick="focusPlannerSearchResult('${escapeInlineArg(job.id)}')">
+                <div class="planner-search-result" onclick="focusPlannerSearchResult('${escapeInlineArg(getPlannerSearchFocusId(job))}')">
                     <div class="planner-search-result-title"><span class="planner-search-result-type ${type}">${getPlannerSearchTypeLabel(type)}</span>${customer}</div>
                     <div class="planner-search-result-meta"><b>Route:</b> ${route}</div>
                     <div class="planner-search-result-meta"><b>Week:</b> WK ${info.week} | MON ${info.date} &nbsp; <b>Date:</b> ${date} &nbsp; <b>Status:</b> ${status}</div>
@@ -6355,8 +6467,14 @@ Are you sure you want to place it here?`);
     }
 
     async function focusPlannerSearchResult(id) {
-        const job = (plannerSearchRows || []).concat(allJobsRaw || []).find(j => String(j.id) === String(id));
+        const requestedId = String(id || '');
+        const isVirtualDeliveryFocus = requestedId.startsWith('delivery-');
+        const baseId = requestedId.replace(/^delivery-/, '');
+        let job = (plannerSearchRows || []).concat(allJobsRaw || []).find(j => String(j.id) === String(isVirtualDeliveryFocus ? baseId : requestedId));
         if (!job) return;
+        if (isVirtualDeliveryFocus) {
+            job = makePlannerSearchVirtualDelivery(job);
+        }
 
         const type = getPlannerSearchType(job);
         if (type === 'maintenance' && !showMaintenanceCards) toggleMaintenanceCards();
@@ -6381,7 +6499,9 @@ Are you sure you want to place it here?`);
         }
 
         const highlightCard = () => {
-            const card = document.getElementById(String(id)) || document.getElementById(`ghost-${id}`);
+            const focusId = String(getPlannerSearchFocusId(job) || requestedId);
+            const baseFocusId = focusId.replace(/^delivery-/, '');
+            const card = document.getElementById(focusId) || document.getElementById(baseFocusId) || document.getElementById(`ghost-${baseFocusId}`);
             if (!card) return false;
             card.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
             card.classList.add('planner-search-highlight');
