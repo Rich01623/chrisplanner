@@ -101,15 +101,15 @@
         /* ==========================================
            4. PLANNER GRID & CELLS
            ========================================== */
-        table.planner-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 4200px; } 
+        table.planner-table { width: 100%; border-collapse: separate; border-spacing: 2px 2px; min-width: 4200px; background: #b8b8b8; } 
         
         .corner-header { position: sticky; top: 0; left: 0; z-index: 30; background: var(--frost-black); color: white; border-right: 3px solid var(--frost-red); border-bottom: 3px solid var(--frost-red); width: 120px; text-align: center; }
-        .vehicle-col-header { position: sticky; top: 0; z-index: 20; background: var(--frost-black); color: white; border-right: 1px solid var(--border-color); border-bottom: 3px solid var(--frost-red); padding: 10px; min-width: 240px; vertical-align: top; text-align: left; transition: background-color 0.3s; }
+        .vehicle-col-header { position: sticky; top: 0; z-index: 20; background: var(--frost-black); color: white; border-right: 0; border-bottom: 2px solid #b8b8b8; padding: 10px; min-width: 240px; vertical-align: top; text-align: left; transition: background-color 0.3s; }
         .vehicle-col-header.palletforce-header { background: #f58220; border-bottom-color: #c85f00; color: white; }
         .vehicle-col-header.palletforce-header .reg-title { color: white; }
         .vehicle-col-header.palletforce-header .driver-weekly-total { color: rgba(255,255,255,0.85); }
         .vehicle-col-header.palletforce-header .trailer-tag { background: rgba(0,0,0,0.28); color: white; }
-        .status-col-header { position: sticky; top: 0; z-index: 20; background: #34495e; color: white; border-right: 1px solid var(--border-color); border-bottom: 3px solid var(--frost-red); padding: 10px; min-width: 240px; vertical-align: middle; text-align: center; font-size: 0.9rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3px; }
+        .status-col-header { position: sticky; top: 0; z-index: 20; background: #34495e; color: white; border-right: 0; border-bottom: 2px solid #b8b8b8; padding: 10px; min-width: 240px; vertical-align: middle; text-align: center; font-size: 0.9rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3px; }
         .status-col-header.booking_requests-header { background: #0056b3; }
         .status-col-header.cancelled-header { background: #8a1c20; }
         table.planner-table td.status-booking_requests-cell { background: #f4f9ff !important; }
@@ -145,7 +145,7 @@
         .past-day-collapsed .date-cell { padding: 6px 8px; background: #dfe3e8; }
         .past-day-collapsed .job-card { display: none !important; }
 
-        table.planner-table td { border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); min-height: 125px; height: 125px; vertical-align: top; padding: 6px; background: white; transition: background 0.2s; position: relative; }
+        table.planner-table td { border-right: 0; border-bottom: 0; min-height: 125px; height: 125px; vertical-align: top; padding: 6px; background: white; transition: background 0.2s; position: relative; }
         table.planner-table td:hover { background: #fdfdfd; }
         table.planner-table td.palletforce-cell { background: #fff3e6; }
         table.planner-table td.palletforce-cell:hover { background: #ffe8cf; }
@@ -199,7 +199,7 @@
            ========================================== */
         .job-card { background: white; color: black; border: 1px solid var(--border-color); border-left: 4px solid var(--frost-red); padding: 8px; margin-bottom: 6px; border-radius: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: grab; font-size: 0.72rem; position: relative; transition: all 0.2s; z-index: 2; }
         .job-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
-        .job-card.pod-received-card::after { content: 'POD RECEIVED'; position: absolute; left: 63%; top: 50%; transform: translate(-50%, -50%) rotate(0deg); z-index: 7; pointer-events: none; border: 3px solid rgba(46, 125, 50, 0.82); color: rgba(46, 125, 50, 0.9); background: rgba(255,255,255,0.72); border-radius: 5px; padding: 5px 10px; font-size: 1rem; font-weight: 1000; letter-spacing: 1px; text-transform: uppercase; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+        .job-card.pod-received-card::after { content: 'POD RECEIVED'; position: absolute; right: 4px; top: 4px; z-index: 7; pointer-events: none; color: #fff; background: #c1272d; border-radius: 3px; padding: 2px 5px; font-size: 0.54rem; font-weight: 1000; letter-spacing: 0.2px; text-transform: uppercase; box-shadow: 0 1px 2px rgba(0,0,0,0.16); }
         .job-card.pod-received-card .card-reorder-handle { z-index: 9; }
         .modal-job-card-copy.pod-received-card::after { display: none; }
         .card-reorder-handle { position: absolute; top: 4px; right: 5px; width: 18px; height: 18px; border: 1px solid rgba(15, 23, 42, 0.18); border-radius: 4px; background: rgba(255,255,255,0.92); color: #64748b; font-size: 13px; font-weight: 900; line-height: 16px; display: inline-flex; align-items: center; justify-content: center; cursor: ns-resize; user-select: none; z-index: 8; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
@@ -219,9 +219,6 @@
         .on-unlock-wrap { display: flex; justify-content: center; margin: -2px 0 7px; }
         .on-unlock-btn { border: 1px solid #e67e22; background: #fff7ed; color: #9a3412; border-radius: 4px; padding: 3px 7px; font-size: 0.68rem; font-weight: 900; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; line-height: 1; font-family: inherit; }
         .on-unlock-btn:hover { background: #e67e22; border-color: #e67e22; color: white; }
-        .release-card-wrap { display:flex; justify-content:center; margin: 0 0 7px; }
-        .release-card-btn { border: 1px solid #c1272d; background: #c1272d; color: #fff !important; border-radius: 4px; padding: 4px 12px; font-size: 0.7rem; font-weight: 900; cursor: pointer; line-height: 1; font-family: inherit; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
-        .release-card-btn:hover { background: #9f1f25; border-color: #9f1f25; }
         .maintenance-card { background: #fffaf4 !important; border-left-color: #f58220 !important; }
         .maintenance-card.vehicle-maintenance { border-left-color: #8e44ad !important; }
         .maintenance-card.trailer-maintenance { border-left-color: #f58220 !important; }
@@ -236,6 +233,44 @@
         .job-card.status-load { background: #f5eef8; border-left-color: #8e44ad; }
         .job-card.status-del-arr { background: #fef9e7; border-left-color: #f1c40f; }
         .job-card.status-tipped { background: #e8f8f5; border-left-color: #1abc9c; }
+        .job-card.two-card-planner-card { border-left-width: 7px; padding: 6px 7px 6px 8px; }
+        .job-card.two-card-planner-card.collection-planner-card { background: #eef6ff !important; }
+        .job-card.two-card-planner-card.delivery-planner-card { background: #edf8ef !important; }
+        .job-card.two-card-planner-card.collection-planner-card:hover { background: #e4f1ff !important; }
+        .job-card.two-card-planner-card.delivery-planner-card:hover { background: #e2f4e5 !important; }
+        .job-card.two-card-planner-card.status-scheduled,
+        .job-card.two-card-planner-card.status-ack,
+        .job-card.two-card-planner-card.status-arr,
+        .job-card.two-card-planner-card.status-load,
+        .job-card.two-card-planner-card.status-del-arr,
+        .job-card.two-card-planner-card.status-tipped { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .job-card.two-card-planner-card.collection-planner-card.status-scheduled,
+        .job-card.two-card-planner-card.collection-planner-card.status-ack,
+        .job-card.two-card-planner-card.collection-planner-card.status-arr,
+        .job-card.two-card-planner-card.collection-planner-card.status-load,
+        .job-card.two-card-planner-card.collection-planner-card.status-del-arr,
+        .job-card.two-card-planner-card.collection-planner-card.status-tipped { background: #eef6ff !important; }
+        .job-card.two-card-planner-card.delivery-planner-card.status-scheduled,
+        .job-card.two-card-planner-card.delivery-planner-card.status-ack,
+        .job-card.two-card-planner-card.delivery-planner-card.status-arr,
+        .job-card.two-card-planner-card.delivery-planner-card.status-load,
+        .job-card.two-card-planner-card.delivery-planner-card.status-del-arr,
+        .job-card.two-card-planner-card.delivery-planner-card.status-tipped { background: #edf8ef !important; }
+        .two-card-header { margin: 0 18px 5px 0; padding: 0; border-radius: 0; font-weight: 1000; line-height: 1.12; }
+        .two-card-header.collection { color: #004f9f; }
+        .two-card-header.delivery { color: #247a2e; }
+        .two-card-fts-line { display:flex; align-items:center; gap:5px; margin-bottom:2px; }
+        .two-card-fts { display:block; font-size:0.66rem; letter-spacing:0.2px; opacity:0.95; color:#111827; }
+        .two-card-fts-line .dispatch-route-dot { flex: 0 0 auto; width: 10px; height: 10px; }
+        .two-card-route { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+        .two-card-postcode { font-size:0.86rem; font-weight:1000; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .two-card-time { font-size:0.76rem; font-weight:900; white-space:nowrap; color:#111827; }
+        .two-card-type { display:inline-block; margin-bottom:5px; padding:2px 6px; border-radius:999px; font-size:0.62rem; font-weight:1000; letter-spacing:0.2px; }
+        .two-card-type.collection { color:#0056b3; background:#e9f3ff; border:1px solid #b9d7f7; }
+        .two-card-type.delivery { color:#2e7d32; background:#e8f5e9; border:1px solid #b8dfbd; }
+        .two-card-main { font-weight:900; color:#111827; font-size:0.76rem; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .two-card-meta { display:flex; flex-wrap:wrap; gap:4px; margin:4px 0; }
+        .two-card-planner-card .card-actions { border-top:1px solid rgba(15,23,42,0.08); margin-top:5px; padding-top:5px; }
         .dispatch-route-marker { display: inline-flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px; min-width: 13px; padding: 0 2px; line-height: 1; }
         .dispatch-route-dot { width: 9px; height: 9px; border-radius: 50%; display: block; box-shadow: 0 0 0 1px rgba(0,0,0,0.14); }
         .dispatch-route-dot.sent { background: #c1272d; }
@@ -273,6 +308,8 @@
         .card-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #eee; justify-content: space-between; }
         .action-btn { color: #666; cursor: pointer; font-size: 1.1rem; transition: color 0.2s; }
         .action-btn:hover { color: var(--frost-red); }
+        .release-action-btn { border: 1px solid #c1272d; background: #c1272d; color: #fff !important; border-radius: 4px; padding: 3px 7px; font-size: 0.68rem; font-weight: 900; line-height: 1; display: inline-flex; align-items: center; }
+        .release-action-btn:hover { background: #9f1f25; border-color: #9f1f25; color: #fff !important; }
 
         .card-body { display: none; margin-top: 8px; line-height: 1.4; border-top: 1px solid #eee; padding-top: 5px;}
         .expanded .card-body { display: block; }
@@ -1119,8 +1156,8 @@ function escapeHtml(value) {
     let activePlannerView = 0;
     let plannerRefreshTimer = null;
     let showTownsInHeader = false; // legacy flag kept for older planner logic
-    let headerDisplayMode = 'postcodes'; // postcodes -> towns -> client -> all
-    let showMaintenanceCards = true;
+    let headerDisplayMode = 'all'; // postcodes -> towns -> client -> all
+    let showMaintenanceCards = false;
     let isDragging = false;
     const expandedPastPlannerDays = new Set();
     const PLANNER_STATUS_LANES = [
@@ -2629,6 +2666,34 @@ function escapeHtml(value) {
             }
 
             const shouldRenderCollectionCard = targetWeek >= 0 && targetWeek <= 3;
+            const shouldRenderDeliveryCard = q.del_datetime ? (delTargetWeek >= 0 && delTargetWeek <= 3) : shouldRenderCollectionCard;
+            const isTwoCardJob = isTwoCardOperationalJob(q);
+
+            if (isTwoCardJob) {
+                const isDeliveryRow = isDeliveryPlannerCardJob(q);
+                if (isDeliveryRow) {
+                    if (shouldRenderDeliveryCard) {
+                        const card = createCardElement(q, false, isON, 'delivery');
+                        const slot = document.getElementById(getPlannerSlotForLeg(q, 'delivery')) || document.getElementById('pool-zone-tba');
+                        slot.appendChild(card);
+                    }
+                    return;
+                }
+
+                if (shouldRenderCollectionCard) {
+                    const card = createCardElement(q, false, isON, 'collection');
+                    const slot = document.getElementById(getPlannerSlotForLeg(q, 'collection')) || document.getElementById('pool-zone-tba');
+                    slot.appendChild(card);
+                }
+
+                if (shouldRenderDeliveryCard && !findDeliveryCardForJob(q)) {
+                    const card = createCardElement(q, false, isON, 'delivery');
+                    const slot = document.getElementById(getPlannerSlotForLeg(q, 'delivery')) || document.getElementById('pool-zone-tba');
+                    slot.appendChild(card);
+                }
+                return;
+            }
+
             if (shouldRenderCollectionCard) {
                 const card = createCardElement(q, false, isON);
                 let slot = null;
@@ -2657,26 +2722,10 @@ function escapeHtml(value) {
                 
                 slot.appendChild(card);
             }
-
-            if (isON && !isSplitLeg2 && q.assigned_slot && !q.assigned_slot.includes('pool') && !findExistingONDeliveryLeg(q)) {
-                let delDateObj = new Date(q.del_datetime);
-                let delDayIndex = (delDateObj.getDay() + 6) % 7; 
-                
-                let match = q.assigned_slot.match(/dr(\d+)/);
-                if (match) {
-                    let vehIndex = match[1];
-                    let ghostSlotId = `planner-w${delTargetWeek}-dr${vehIndex}-s${delDayIndex}`;
-                    let ghostSlot = document.getElementById(ghostSlotId);
-                    
-                    if (ghostSlot) {
-                        const ghostCard = createCardElement(q, true, isON);
-                        ghostSlot.appendChild(ghostCard);
-                    }
-                }
-            }
         });
 
         renderBookingRequests();
+        sortAllPlannerContainers();
         
         updateCalculations();
         restoreDrivers(allJobsRaw);
@@ -3220,20 +3269,23 @@ function escapeHtml(value) {
         }
         if (isDragging) return;
 
-        const sourceCard = document.getElementById(isGhost ? `ghost-${id}` : id);
+        const clickedCard = e && e.currentTarget && e.currentTarget.classList && e.currentTarget.classList.contains('job-card') ? e.currentTarget : null;
+        const sourceCard = clickedCard || document.getElementById(isGhost ? `ghost-${id}` : id) || document.getElementById(`delivery-${id}`);
         const job = allJobsRaw.find(x => String(x.id) === String(id));
-        if (!sourceCard || !job) return;
+        const detailJob = isDeliveryPlannerCardJob(job) ? (findCollectionCardForDeliveryJob(job) || job) : job;
+        if (!sourceCard || !job || !detailJob) return;
 
         const modal = document.getElementById('modal-job-detail');
         const title = document.getElementById('job-detail-title');
         const body = document.getElementById('job-detail-body');
 
         const routeTitle = `${job.coll_postcode || job.coll_town || 'Collection'} ➔ ${job.del_postcode || job.del_town || 'Delivery'}`;
-        const ftsTitle = job.fts_invoice_number ? `${job.fts_invoice_number} | ` : '';
-        title.innerText = `${ftsTitle}${job.customer_name || 'Job Details'} | ${routeTitle}`;
+        const detailRouteTitle = `${detailJob.coll_postcode || detailJob.coll_town || 'Collection'} to ${detailJob.del_postcode || detailJob.del_town || 'Delivery'}`;
+        const ftsTitle = detailJob.fts_invoice_number ? `${detailJob.fts_invoice_number} | ` : '';
+        title.innerText = `${ftsTitle}${cleanTwoCardCustomerName(detailJob.customer_name) || detailJob.customer_name || 'Job Details'} | ${detailRouteTitle}`;
 
         body.innerHTML = '';
-        const isMaintenanceDetail = isMaintenanceJob(job);
+        const isMaintenanceDetail = isMaintenanceJob(detailJob);
         const detailCard = sourceCard.cloneNode(true);
         detailCard.id = `modal-copy-${sourceCard.id}`;
         detailCard.draggable = false;
@@ -3245,13 +3297,13 @@ function escapeHtml(value) {
 
         if (isMaintenanceDetail) {
             body.appendChild(detailCard);
-            body.insertAdjacentHTML('beforeend', buildMaintenanceDetailsHtml(job));
+            body.insertAdjacentHTML('beforeend', buildMaintenanceDetailsHtml(detailJob));
         } else {
-            body.insertAdjacentHTML('beforeend', buildInvoiceNumberBanner(job));
-            body.insertAdjacentHTML('beforeend', buildJobEtaPanel(job));
+            body.insertAdjacentHTML('beforeend', buildInvoiceNumberBanner(detailJob));
+            body.insertAdjacentHTML('beforeend', buildJobEtaPanel(detailJob));
             body.appendChild(detailCard);
-            body.insertAdjacentHTML('beforeend', buildFullJobDetailsHtml(job, isGhost));
-            updateJobEtaPanel(job);
+            body.insertAdjacentHTML('beforeend', buildFullJobDetailsHtml(detailJob, isGhost));
+            updateJobEtaPanel(detailJob);
         }
 
         body.onclick = (ev) => {
@@ -3275,7 +3327,7 @@ function escapeHtml(value) {
     }
 
     function cleanCardDomId(id) {
-        return String(id || '').replace(/^ghost-/, '');
+        return String(id || '').replace(/^ghost-/, '').replace(/^delivery-/, '');
     }
 
     function hasPlannerSortOverride(job) {
@@ -3295,9 +3347,62 @@ function escapeHtml(value) {
     }
 
     function getPlannerDefaultTime(job) {
-        if (!job || !job.coll_datetime) return Infinity;
-        const time = new Date(job.coll_datetime).getTime();
+        const value = getPlannerDateForCard(job) || (job && job.coll_datetime);
+        if (!value) return Infinity;
+        const time = new Date(value).getTime();
         return Number.isFinite(time) ? time : Infinity;
+    }
+
+    function getPlannerCardSortTime(job, role = '') {
+        const value = role === 'delivery'
+            ? (job && (job.del_datetime || job.coll_datetime))
+            : role === 'collection'
+                ? (job && (job.coll_datetime || job.del_datetime))
+                : (getPlannerDateForCard(job) || (job && job.coll_datetime));
+        if (!value) return Infinity;
+        const time = new Date(value).getTime();
+        return Number.isFinite(time) ? time : Infinity;
+    }
+
+    function stampPlannerCardSortData(card, job, role = '') {
+        if (!card) return;
+        const manual = hasPlannerSortOverride(job);
+        card.dataset.plannerSortManual = manual ? 'true' : 'false';
+        card.dataset.plannerSortOrder = manual ? String(getPlannerSortOrder(job)) : '';
+        card.dataset.plannerSortTime = String(getPlannerCardSortTime(job, role));
+    }
+
+    function getCardDatasetNumber(card, key, fallback = Infinity) {
+        const value = Number(card && card.dataset ? card.dataset[key] : NaN);
+        return Number.isFinite(value) ? value : fallback;
+    }
+
+    function comparePlannerCardElementsForDisplay(a, b) {
+        const manualA = a?.dataset?.plannerSortManual === 'true' && Number.isFinite(Number(a.dataset.plannerSortOrder));
+        const manualB = b?.dataset?.plannerSortManual === 'true' && Number.isFinite(Number(b.dataset.plannerSortOrder));
+
+        if (manualA && manualB) {
+            const orderDiff = getCardDatasetNumber(a, 'plannerSortOrder') - getCardDatasetNumber(b, 'plannerSortOrder');
+            if (orderDiff !== 0) return orderDiff;
+        } else if (manualA !== manualB) {
+            return manualA ? 1 : -1;
+        }
+
+        const timeDiff = getCardDatasetNumber(a, 'plannerSortTime') - getCardDatasetNumber(b, 'plannerSortTime');
+        if (timeDiff !== 0) return timeDiff;
+        return String(a?.id || '').localeCompare(String(b?.id || ''));
+    }
+
+    function sortPlannerContainerCards(container) {
+        if (!container) return;
+        const cards = Array.from(container.querySelectorAll(':scope > .job-card:not(.modal-job-card-copy)'));
+        if (cards.length < 2) return;
+        cards.sort(comparePlannerCardElementsForDisplay).forEach(card => container.appendChild(card));
+    }
+
+    function sortAllPlannerContainers() {
+        document.querySelectorAll('#planner-board td, #pool-container .pool-zone, #maintenance-sidebar .maintenance-pool-zone')
+            .forEach(sortPlannerContainerCards);
     }
 
     function comparePlannerCardsForDisplay(a, b) {
@@ -3333,14 +3438,16 @@ function escapeHtml(value) {
         }
         if (job.assigned_slot) {
             const savedSlot = String(job.assigned_slot);
-            if (savedSlot.startsWith('planner-w') && job.coll_datetime) {
-                const displayWeek = getPlannerBoardWeekIndex(job.coll_datetime);
+            const plannerDate = getPlannerDateForCard(job);
+            if (savedSlot.startsWith('planner-w') && plannerDate) {
+                const displayWeek = getPlannerBoardWeekIndex(plannerDate);
                 return savedSlot.replace(/^planner-w\d+/, `planner-w${displayWeek}`);
             }
             return savedSlot;
         }
-        if (job.coll_datetime) {
-            const d = new Date(job.coll_datetime);
+        const plannerDate = getPlannerDateForCard(job);
+        if (plannerDate) {
+            const d = new Date(plannerDate);
             if (!isNaN(d)) return `pool-zone-${d.getDay()}`;
         }
         return 'pool-zone-tba';
@@ -3349,10 +3456,6 @@ function escapeHtml(value) {
     window.startCardReorderDrag = (event, id) => {
         if (!event || !event.dataTransfer) return;
         const card = document.getElementById(String(id));
-        if (card && !card.draggable) {
-            event.preventDefault();
-            return;
-        }
         isDragging = true;
         event.stopPropagation();
         event.dataTransfer.effectAllowed = 'move';
@@ -3436,7 +3539,238 @@ function escapeHtml(value) {
         return true;
     }
 
-    function createCardElement(q, isGhost = false, isON = false) {
+    function cleanTwoCardCustomerName(name) {
+        return String(name || '').replace(/\s*\((?:Leg\s*[12]|Collection|Delivery)\)\s*$/i, '').trim();
+    }
+
+    function isDeliveryPlannerCardJob(job) {
+        return /\((?:Leg\s*2|Delivery)\)\s*$/i.test(String(job && job.customer_name || ''));
+    }
+
+    function isCollectionPlannerCardJob(job) {
+        return /\((?:Leg\s*1|Collection)\)\s*$/i.test(String(job && job.customer_name || ''));
+    }
+
+    function isTwoCardOperationalJob(job) {
+        if (!job) return false;
+        const status = String(job.status || '').toLowerCase();
+        if (['driver_config', 'template'].includes(status)) return false;
+        if (['subbed', 'cancelled'].includes(status)) return false;
+        if (job.customer_name === MAINTENANCE_CUSTOMER_NAME) return false;
+        if (isInstructionJob(job) || isQuickCardJob(job)) return false;
+        const customer = String(job.customer_name || '');
+        if (customer.includes('PLANNER NOTE')) return false;
+        return true;
+    }
+
+    function findDeliveryCardForJob(source) {
+        if (!source) return null;
+        const sourceId = String(source.id);
+        const sourceFts = String(source.fts_invoice_number || '').trim().toLowerCase();
+        const sourceBaseName = cleanTwoCardCustomerName(source.customer_name).toLowerCase();
+
+        const linkedDelivery = getLinkedJobs(source.id).find(job =>
+            job && String(job.id) !== sourceId && isDeliveryPlannerCardJob(job)
+        );
+        if (linkedDelivery) return linkedDelivery;
+
+        const deliveryCandidates = (allJobsRaw || []).filter(job =>
+            job && String(job.id) !== sourceId && isDeliveryPlannerCardJob(job)
+        );
+
+        if (sourceFts) {
+            const ftsMatch = deliveryCandidates.find(job =>
+                String(job.fts_invoice_number || '').trim().toLowerCase() === sourceFts
+            );
+            if (ftsMatch) return ftsMatch;
+        }
+
+        return deliveryCandidates.find(job => {
+            if (!jobsHaveCompatibleInvoiceNumbers(source, job)) return false;
+            if (cleanTwoCardCustomerName(job.customer_name).toLowerCase() !== sourceBaseName) return false;
+            if (!sameLocalDateValue(job.coll_datetime, source.coll_datetime)) return false;
+            if (!sameLocalDateValue(job.del_datetime, source.del_datetime)) return false;
+            return true;
+        }) || null;
+    }
+
+    function findCollectionCardForDeliveryJob(source) {
+        if (!source || !isDeliveryPlannerCardJob(source)) return source || null;
+        const sourceId = String(source.id);
+        const sourceFts = String(source.fts_invoice_number || '').trim().toLowerCase();
+        const sourceBaseName = cleanTwoCardCustomerName(source.customer_name).toLowerCase();
+
+        const linkedCollection = getLinkedJobs(source.id).find(job =>
+            job && String(job.id) !== sourceId && !isDeliveryPlannerCardJob(job) && isTwoCardOperationalJob(job)
+        );
+        if (linkedCollection) return linkedCollection;
+
+        const collectionCandidates = (allJobsRaw || []).filter(job =>
+            job && String(job.id) !== sourceId && !isDeliveryPlannerCardJob(job) && isTwoCardOperationalJob(job)
+        );
+
+        if (sourceFts) {
+            const ftsMatch = collectionCandidates.find(job =>
+                String(job.fts_invoice_number || '').trim().toLowerCase() === sourceFts
+            );
+            if (ftsMatch) return ftsMatch;
+        }
+
+        return collectionCandidates.find(job => {
+            if (!jobsHaveCompatibleInvoiceNumbers(source, job)) return false;
+            if (cleanTwoCardCustomerName(job.customer_name).toLowerCase() !== sourceBaseName) return false;
+            if (!sameLocalDateValue(job.coll_datetime, source.coll_datetime)) return false;
+            if (!sameLocalDateValue(job.del_datetime, source.del_datetime)) return false;
+            return true;
+        }) || source;
+    }
+
+    function getPlannerSlotForLeg(job, role) {
+        if (!job) return 'pool-zone-tba';
+        const savedSlot = String(job.assigned_slot || '');
+        if (role === 'collection') {
+            return getJobRenderSlotKey(job);
+        }
+        if (savedSlot.startsWith('planner-w')) {
+            const match = savedSlot.match(/dr(\d+)/);
+            const deliveryDate = job.del_datetime ? new Date(job.del_datetime) : null;
+            const week = deliveryDate && !isNaN(deliveryDate) ? getPlannerBoardWeekIndex(job.del_datetime) : null;
+            const day = deliveryDate && !isNaN(deliveryDate) ? ((deliveryDate.getDay() + 6) % 7) : null;
+            if (match && week !== null && day !== null) return `planner-w${week}-dr${match[1]}-s${day}`;
+        }
+        if (savedSlot && !savedSlot.startsWith('planner-w')) return savedSlot;
+        if (job.del_datetime) {
+            const d = new Date(job.del_datetime);
+            if (!isNaN(d)) return `pool-zone-${d.getDay()}`;
+        }
+        return 'pool-zone-tba';
+    }
+
+    function getDeliverySlotFromCollectionTarget(job, targetSlotId) {
+        const targetId = String(targetSlotId || '');
+        if (!targetId.startsWith('planner-w') || !job || !job.del_datetime) return targetId;
+        const match = targetId.match(/dr(\d+)/);
+        const delDate = new Date(job.del_datetime);
+        if (!match || isNaN(delDate)) return targetId;
+        const week = getPlannerBoardWeekIndex(job.del_datetime);
+        const day = (delDate.getDay() + 6) % 7;
+        return `planner-w${week}-dr${match[1]}-s${day}`;
+    }
+
+    function buildTwoCardActions(q, role, isVirtualDelivery) {
+        return `
+            <div class="card-actions">
+                <div style="display:flex; gap:10px;">
+                    <span class="action-btn" onclick="dispatchJob(event, '${q.id}')" title="Send to Driver App">&#128242;</span>
+                    <span class="action-btn" onclick="sendWhatsApp(event, '${q.id}')" title="Send via WhatsApp">&#128172;</span>
+                    <span class="action-btn" onclick="editJob(event, '${q.id}')" title="Edit">&#9998;</span>
+                    <span class="action-btn" onclick="splitJob(event, '${q.id}')" title="Split">&#9986;</span>
+                    <span class="action-btn" onclick="duplicateJob(event, '${q.id}')" title="Duplicate">&#10064;</span>
+                    <span class="action-btn" onclick="openPODImage(event, '${q.id}')" title="Open POD Image">&#128206;</span>
+                    <span class="action-btn" onclick="queryRoute(event, '${q.coll_postcode}', '${q.del_postcode}')" title="Maps">&#128205;</span>
+                    ${q.status !== 'completed' ? `<span class="action-btn" onclick="markPODReceived(event, '${q.id}')" title="Complete POD">&#9989;</span>` : (!isVirtualDelivery ? `<span class="action-btn release-action-btn" onclick="releaseCompletedCard(event, '${q.id}')" title="Release this completed card so it can be planned again">Release</span>` : '')}
+                </div>
+                ${isVirtualDelivery ? '' : `<span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;" title="Delete">&#128465;&#65039;</span>`}
+            </div>`;
+    }
+
+    function getTwoCardHeaderText(q, role) {
+        const mode = getHeaderDisplayMode();
+        const isDelivery = role === 'delivery';
+        const customer = isDelivery
+            ? getVal(q.del_cust_name, cleanTwoCardCustomerName(q.customer_name), 'Delivery')
+            : getVal(q.coll_cust_name, cleanTwoCardCustomerName(q.customer_name), 'Collection');
+        const postcode = isDelivery ? getVal(q.del_postcode, q.del_town, 'DELIVERY') : getVal(q.coll_postcode, q.coll_town, 'COLLECTION');
+        const town = isDelivery ? getVal(q.del_town, q.del_postcode, 'DELIVERY') : getVal(q.coll_town, q.coll_postcode, 'COLLECTION');
+
+        if (mode === 'towns') return town;
+        if (mode === 'client') return customer;
+        if (mode === 'all') return [customer, postcode, town].filter(Boolean).join(' | ');
+        return postcode;
+    }
+
+    function createTwoCardPlannerElement(q, role, options = {}) {
+        const card = document.createElement('div');
+        const isCompleted = q.status === 'completed';
+        const isVirtualDelivery = !!options.virtualDelivery;
+        const cleanCustomer = cleanTwoCardCustomerName(q.customer_name) || q.customer_name || 'Job';
+        const headerText = getTwoCardHeaderText(q, role);
+        const eventTime = role === 'delivery' ? q.del_datetime : q.coll_datetime;
+        const timeText = eventTime ? new Date(eventTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+        const dateText = eventTime ? new Date(eventTime).toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: '2-digit' }) : '';
+        const dispatchStatus = String(q.dispatch_status || '').toLowerCase();
+        let dispatchClass = '';
+        if (dispatchStatus === 'scheduled') dispatchClass = ' status-scheduled';
+        if (dispatchStatus === 'sent') dispatchClass = ' status-sent';
+        if (dispatchStatus === 'acknowledged') dispatchClass = ' status-ack';
+        if (dispatchStatus === 'arrived') dispatchClass = ' status-arr';
+        if (dispatchStatus === 'loaded') dispatchClass = ' status-load';
+        if (dispatchStatus === 'del_arrived') dispatchClass = ' status-del-arr';
+        if (dispatchStatus === 'tipped' || dispatchStatus === 'completed') dispatchClass = ' status-tipped';
+        const hasDispatchAck = !!q.ack_timestamp || ['acknowledged', 'arrived', 'loaded', 'del_arrived', 'tipped', 'completed'].includes(dispatchStatus);
+        const hasDispatchSent = hasDispatchAck || !!q.dispatch_scheduled_at || ['scheduled', 'sent'].includes(dispatchStatus);
+        const dispatchDotHtml = hasDispatchSent
+            ? `<span class="dispatch-route-dot ${hasDispatchAck ? 'ack' : 'sent'}" title="${hasDispatchAck ? 'Driver has acknowledged this job' : 'Job has been sent to the driver'}"></span>`
+            : '';
+
+        card.className = `job-card two-card-planner-card ${role}-planner-card${dispatchClass}`;
+        if (isCompleted) card.classList.add('completed-grey');
+        if (shouldShowPODReceivedStamp(q)) card.classList.add('pod-received-card');
+        card.id = isVirtualDelivery ? `delivery-${q.id}` : String(q.id);
+        card.dataset.jobId = String(q.id);
+        card.dataset.cardRole = role;
+        card.dataset.virtualDelivery = isVirtualDelivery ? 'true' : 'false';
+        card.dataset.targetWeek = getPlannerBoardWeekIndex(eventTime || q.coll_datetime || q.del_datetime);
+        stampPlannerCardSortData(card, q, role);
+        card.draggable = !isCompleted;
+        card.ondragstart = (e) => {
+            if (!card.draggable) return;
+            isDragging = true;
+            e.dataTransfer.setData('text', card.id);
+            e.dataTransfer.setData('planner-job-id', String(q.id));
+            e.dataTransfer.setData('planner-card-role', role);
+            if (isVirtualDelivery) e.dataTransfer.setData('planner-virtual-delivery', 'true');
+        };
+        card.ondragend = () => { isDragging = false; };
+        card.onclick = (e) => {
+            if (e.target.closest('.action-btn, .card-reorder-handle, button, input, select, textarea, a')) return;
+            openJobDetailsModal(e, q.id, false);
+        };
+
+        const contractBadge = isPalletforceJobType(q.job_contract_type || q.contract_type || '') ? `<span class="palletforce-job-badge">${escapeHtml(q.job_contract_type || q.contract_type || '')}</span>` : '';
+        const palletTag = q.total_pallets ? `<span class="vehicle-tag" style="background:#d68910;">${escapeHtml(q.total_pallets)} Plt</span>` : '';
+        const weightTag = q.total_weight ? `<span class="vehicle-tag" style="background:#666;">${escapeHtml(q.total_weight)}kg</span>` : '';
+        const podDownloadButton = q.pod_url && !isVirtualDelivery ? `<button type="button" class="pod-download-card-btn" onclick="downloadPODPdf(event, '${escapeInlineArg(q.id)}')">DOWNLOAD POD PDF</button>` : '';
+        const reorderHandleHtml = `<div class="card-reorder-handle" draggable="true" title="Rearrange this card within this grid space" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()" ondragstart="startCardReorderDrag(event, '${card.id}')" ondragend="endCardReorderDrag(event)">☰</div>`;
+
+        card.innerHTML = `
+            ${reorderHandleHtml}
+            <div class="two-card-header ${role}">
+                <div class="two-card-fts-line"><span class="two-card-fts">${escapeHtml(q.fts_invoice_number || 'NO FTS')}</span>${dispatchDotHtml}</div>
+                <div class="two-card-route">
+                    <span class="two-card-postcode" title="${escapeHtml(headerText)}">${escapeHtml(headerText)}</span>
+                    <span class="two-card-time">${escapeHtml(timeText)}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <span class="two-card-type ${role}">${role === 'delivery' ? 'DELIVERY' : 'COLLECTION'}</span>
+                <div class="two-card-main" title="${escapeHtml(cleanCustomer)}">${escapeHtml(cleanCustomer)} ${contractBadge}</div>
+                <div style="font-size:0.68rem; color:#475569; font-weight:800;">${escapeHtml(dateText)}</div>
+                <div class="two-card-meta">
+                    <span class="vehicle-tag">${escapeHtml(q.vehicle_type || 'Any')}</span>
+                    ${palletTag}
+                    ${weightTag}
+                </div>
+                ${podDownloadButton}
+                ${buildTwoCardActions(q, role, isVirtualDelivery)}
+            </div>`;
+        return card;
+    }
+
+    function createCardElement(q, isGhost = false, isON = false, cardRole = '') {
+        if (!isGhost && isTwoCardOperationalJob(q) && (cardRole === 'collection' || cardRole === 'delivery')) {
+            return createTwoCardPlannerElement(q, cardRole, { virtualDelivery: cardRole === 'delivery' && !isDeliveryPlannerCardJob(q) });
+        }
         const card = document.createElement('div');
         const isCompleted = q.status === 'completed';
         const isMaintenance = q.customer_name === "🔧 PLANNED MAINTENANCE";
@@ -3496,6 +3830,7 @@ function escapeHtml(value) {
 
         let targetWeek = getPlannerBoardWeekIndex(q.coll_datetime);
         card.dataset.targetWeek = targetWeek;
+        stampPlannerCardSortData(card, q, isGhost ? 'delivery' : cardRole);
 
         let pcHeader = "";
         let headerAlignment = "center";
@@ -3653,13 +3988,11 @@ function escapeHtml(value) {
                 </button>
             </div>`
             : '';
-        const releaseButtonHtml = (!isGhost && isCompleted)
-            ? `<div class="release-card-wrap">
-                <button type="button" class="release-card-btn" title="Release this completed card so it can be planned again" onclick="releaseCompletedCard(event, '${q.id}')">Release</button>
-            </div>`
+        const releaseActionHtml = (!isGhost && isCompleted)
+            ? `<span class="action-btn release-action-btn" title="Release this completed card so it can be planned again" onclick="releaseCompletedCard(event, '${q.id}')">Release</span>`
             : '';
         let actionsHtml = '';
-        const reorderHandleHtml = (!isGhost && !isCompleted)
+        const reorderHandleHtml = (!isGhost)
             ? `<div class="card-reorder-handle" draggable="true" title="Rearrange this card within this grid space" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()" ondragstart="startCardReorderDrag(event, '${q.id}')" ondragend="endCardReorderDrag(event)">☰</div>`
             : '';
         
@@ -3676,7 +4009,7 @@ function escapeHtml(value) {
                         <span class="action-btn" onclick="duplicateJob(event, '${q.id}')" title="Duplicate">❐</span>
                         <span class="action-btn" onclick="openPODImage(event, '${q.id}')" title="Open POD Image">📎</span>
                         <span class="action-btn" onclick="queryRoute(event, '${q.coll_postcode}', '${q.del_postcode}')" title="Maps">📍</span>
-                        ${!isCompleted ? `<span class="action-btn" onclick="markPODReceived(event, '${q.id}')" title="Complete POD">✅</span>` : ''}
+                        ${!isCompleted ? `<span class="action-btn" onclick="markPODReceived(event, '${q.id}')" title="Complete POD">✅</span>` : releaseActionHtml}
                     </div>
                     <span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;">🗑️</span>
                 </div>
@@ -3692,11 +4025,10 @@ function escapeHtml(value) {
             card.innerHTML = `
                 ${ghostBanner}
                 ${reorderHandleHtml}
-                ${releaseButtonHtml}
                 <div class="postcode-header" style="align-items: ${headerAlignment};">${pcHeader}</div>
                 <div class="card-body">
                     <div class="card-actions" style="justify-content: flex-end; padding-bottom:0; border:none; margin-bottom:5px;">
-                        <span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;" title="Delete Instruction">🗑️</span>
+                        ${releaseActionHtml}<span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;" title="Delete Instruction">🗑️</span>
                     </div>
                     <div style="font-weight:bold; color:#0f766e; font-size: 0.8rem; margin-bottom: 5px;">EMPTY MOVEMENT <span class="instruction-badge">INSTRUCTION</span></div>
                     <div style="background: #ffffff; padding: 10px; border-radius: 4px; border: 1px dashed #0f766e; margin-bottom: 5px; font-size: 0.75rem; color: #333; font-weight: 700;">
@@ -3712,11 +4044,10 @@ function escapeHtml(value) {
             
             card.innerHTML = `
                 ${reorderHandleHtml}
-                ${releaseButtonHtml}
                 <div class="postcode-header" style="color:#d68910; align-items: ${headerAlignment};">${pcHeader}</div>
                 <div class="card-body">
                     <div class="card-actions" style="justify-content: flex-end; padding-bottom:0; border:none; margin-bottom:5px;">
-                        <span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;" title="Delete Note">🗑️</span>
+                        ${releaseActionHtml}<span class="action-btn" onclick="deleteJob('${q.id}')" style="color:red;" title="Delete Note">🗑️</span>
                     </div>
                     <div style="background: #ffffff; padding: 10px; border-radius: 4px; border: 1px dashed #f39c12; margin-bottom: 5px; font-size: 0.75rem; color: #333; white-space: pre-wrap; font-weight: 500;">${q.coll_ref || ''}</div>
                 </div>`;
@@ -3760,11 +4091,10 @@ function escapeHtml(value) {
             card.innerHTML = `
                 ${ghostBanner}
                 ${reorderHandleHtml}
-                ${releaseButtonHtml}
                 <div class="postcode-header" style="color:${titleColor}; align-items: ${headerAlignment};">${pcHeader}</div>
                 <div class="card-body">
                     <div class="card-actions" style="justify-content: flex-end; padding-bottom:0; border:none; margin-bottom:5px;">
-                        ${delBtn}
+                        ${releaseActionHtml}${delBtn}
                     </div>
                     
                     <div style="font-weight:bold; color:${titleColor}; font-size: 0.85rem; margin-bottom: 8px; text-align:center;">
@@ -3818,7 +4148,6 @@ function escapeHtml(value) {
                 ${ghostBanner}
                 ${reorderHandleHtml}
                 ${ftsCardHeader}
-                ${releaseButtonHtml}
                 <div class="postcode-header" style="align-items: ${headerAlignment};">${pcHeader}</div>
                 ${onUnlockHtml}
                 <div class="card-body">
@@ -3861,6 +4190,7 @@ function escapeHtml(value) {
         card.className = 'job-card booking-request-card';
         card.id = `booking-request-${requestId}`;
         card.draggable = false;
+        stampPlannerCardSortData(card, request, 'collection');
         card.onclick = (event) => {
             if (event.target.closest('button, .action-btn, a, input, select, textarea')) return;
             openBookingRequestDetailsModal(event, requestId);
@@ -4409,6 +4739,7 @@ function escapeHtml(value) {
         if (!bookingCustomerValid) return;
 
         const id = document.getElementById('sys_job_id').value;
+        const existingJobBeforeSave = id ? getJobById(id) : null;
         
         const payload = {
             customer_name: document.getElementById('n_cust_name').value,
@@ -4476,26 +4807,29 @@ function escapeHtml(value) {
         try {
             let errorObj = null;
 
-            if (!id && diffHours > 24) {
-                let p1 = { ...payload };
-                p1.customer_name = payload.customer_name + " (Leg 1)";
-                p1.status = 'pending';
-
-                let p2 = { ...payload };
-                p2.customer_name = payload.customer_name + " (Leg 2)";
-                p2.status = 'pending';
-
-                const { error } = await sb.from('quotes').insert([p1, p2]);
-                errorObj = error;
-            } else {
-                if(id) {
-                    const { error } = await sb.from('quotes').update(payload).eq('id', id);
-                    errorObj = error;
-                } else { 
-                    payload.status = 'pending'; 
-                    const { error } = await sb.from('quotes').insert([payload]); 
-                    errorObj = error;
+            if(id) {
+                const editedDeliveryCard = isDeliveryPlannerCardJob(existingJobBeforeSave);
+                if (editedDeliveryCard) {
+                    payload.customer_name = `${cleanTwoCardCustomerName(payload.customer_name) || payload.customer_name || 'Job'} (Delivery)`;
                 }
+                const { error } = await sb.from('quotes').update(payload).eq('id', id);
+                errorObj = error;
+                if (!errorObj && !editedDeliveryCard && existingJobBeforeSave) {
+                    const deliveryPartner = findDeliveryCardForJob(existingJobBeforeSave);
+                    if (deliveryPartner) {
+                        const deliveryPayload = {
+                            ...payload,
+                            customer_name: `${cleanTwoCardCustomerName(payload.customer_name) || payload.customer_name || 'Job'} (Delivery)`,
+                            total_price: '0'
+                        };
+                        const partnerUpdate = await sb.from('quotes').update(deliveryPayload).eq('id', deliveryPartner.id);
+                        errorObj = partnerUpdate.error;
+                    }
+                }
+            } else { 
+                payload.status = 'pending'; 
+                const { error } = await sb.from('quotes').insert([payload]); 
+                errorObj = error;
             }
             
             if (errorObj) {
@@ -4556,7 +4890,7 @@ Standard jobs without extra legs will continue to save normally.`);
         document.getElementById('n_cx_number').value = j.cx_number || '';
         document.getElementById('n_fts_invoice_number').value = j.fts_invoice_number || '';
         setJobBookingMode(j.job_contract_type || j.contract_type || '');
-        document.getElementById('n_cust_name').value = j.customer_name || '';
+        document.getElementById('n_cust_name').value = cleanTwoCardCustomerName(j.customer_name) || j.customer_name || '';
         document.getElementById('n_cust_phone').value = j.customer_phone || '';
         document.getElementById('n_cust_email').value = j.customer_email || '';
         if (document.getElementById('n_job_notes')) document.getElementById('n_job_notes').value = j.job_notes || '';
@@ -4618,7 +4952,16 @@ Standard jobs without extra legs will continue to save normally.`);
         return /\(Leg\s*\d+\)\s*$/i.test(String(name || ''));
     }
 
-    function sameLocalDateValue(a, b) {
+    function getCleanFtsNumber(job) {
+        return String(job && job.fts_invoice_number || '').trim().toLowerCase();
+    }
+
+    function jobsHaveCompatibleInvoiceNumbers(a, b) {
+        const aFts = getCleanFtsNumber(a);
+        const bFts = getCleanFtsNumber(b);
+        return !aFts || !bFts || aFts === bFts;
+    }
+function sameLocalDateValue(a, b) {
         const aKey = getLocalDateKeyFromValue(a);
         const bKey = getLocalDateKeyFromValue(b);
         return !!aKey && !!bKey && aKey === bKey;
@@ -4671,7 +5014,7 @@ Standard jobs without extra legs will continue to save normally.`);
         const group = source[LINKED_JOB_GROUP_COLUMN];
         if (group !== null && group !== undefined && String(group).trim() !== '') {
             allJobsRaw.forEach(job => {
-                if (String(job[LINKED_JOB_GROUP_COLUMN] || '') === String(group)) {
+                if (String(job[LINKED_JOB_GROUP_COLUMN] || '') === String(group) && jobsHaveCompatibleInvoiceNumbers(source, job)) {
                     linked.set(String(job.id), job);
                 }
             });
@@ -5351,7 +5694,7 @@ No phone notification has been sent yet because this job is for a future date.`;
     }
 
     function isSplitLeg2Job(job) {
-        return /\(Leg 2\)\s*$/i.test(String(job && job.customer_name || ''));
+        return isDeliveryPlannerCardJob(job);
     }
 
     function getPlannerDateForCard(job) {
@@ -5380,19 +5723,104 @@ The ${dateLabel} for this job is ${jobDateStr}, but you are placing it on ${targ
 Are you sure you want to place it here?`);
     }
 
+    async function moveDeliveryPlannerCard(jobId, targetSlotId) {
+        const source = allJobsRaw.find(x => String(x.id) === String(jobId));
+        if (!source) return false;
+
+        const targetId = String(targetSlotId || '');
+        const isPoolTarget = targetId === 'pool-container' || targetId.includes('pool-zone');
+        const assignedSlot = isPoolTarget ? null : targetId;
+        const assignedDriver = assignedSlot && assignedSlot.startsWith('planner-w') ? getAssignedDriverForPlannerSlot(assignedSlot) : null;
+
+        if (assignedSlot && !assignedSlot.startsWith('planner-w') && !getPlannerStatusFromLaneSlot(assignedSlot)) {
+            alert("Please drop the delivery card onto a driver's planner cell or back into the unassigned pool.");
+            return false;
+        }
+
+        const updatePayload = {
+            status: isPoolTarget ? 'pending' : 'assigned',
+            assigned_slot: assignedSlot,
+            assigned_driver: assignedDriver,
+            planner_sort_order: null,
+            planner_sort_manual: false,
+            ...getCleanDispatchResetPayload()
+        };
+
+        try {
+            if (isDeliveryPlannerCardJob(source)) {
+                const { error } = await sb.from('quotes').update(updatePayload).eq('id', source.id);
+                if (error) throw error;
+                loadAll();
+                return true;
+            }
+
+            const existingDelivery = findDeliveryCardForJob(source);
+            if (existingDelivery) {
+                const { error } = await sb.from('quotes').update(updatePayload).eq('id', existingDelivery.id);
+                if (error) throw error;
+                loadAll();
+                return true;
+            }
+
+            const deliveryPayload = buildCopiedJobPayload(source);
+            deliveryPayload.customer_name = `${cleanTwoCardCustomerName(source.customer_name) || source.customer_name || 'Job'} (Delivery)`;
+            deliveryPayload.total_price = '0';
+            Object.assign(deliveryPayload, updatePayload);
+            await insertQuoteWithOptionalLinkedGroup(deliveryPayload, null);
+            loadAll();
+            return true;
+        } catch (err) {
+            console.error(err);
+            alert("Error moving delivery card: " + (err && err.message ? err.message : err));
+            return false;
+        }
+    }
+
+    async function moveUnplannedDeliveryWithCollection(collectionJob, collectionTargetId) {
+        if (!collectionJob || isDeliveryPlannerCardJob(collectionJob)) return;
+        const deliveryJob = findDeliveryCardForJob(collectionJob);
+        if (deliveryJob && deliveryJob.assigned_slot && String(deliveryJob.assigned_slot).startsWith('planner-w')) return;
+
+        const deliverySlot = getDeliverySlotFromCollectionTarget(collectionJob, collectionTargetId);
+        if (!deliverySlot || !String(deliverySlot).startsWith('planner-w')) return;
+
+        const deliveryPayload = {
+            status: 'assigned',
+            assigned_slot: deliverySlot,
+            assigned_driver: getAssignedDriverForPlannerSlot(deliverySlot),
+            planner_sort_order: null,
+            planner_sort_manual: false,
+            ...getCleanDispatchResetPayload()
+        };
+
+        if (deliveryJob) {
+            const { error } = await sb.from('quotes').update(deliveryPayload).eq('id', deliveryJob.id);
+            if (error) throw error;
+            return;
+        }
+
+        const newDelivery = buildCopiedJobPayload(collectionJob);
+        newDelivery.customer_name = `${cleanTwoCardCustomerName(collectionJob.customer_name) || collectionJob.customer_name || 'Job'} (Delivery)`;
+        newDelivery.total_price = '0';
+        Object.assign(newDelivery, deliveryPayload);
+        await insertQuoteWithOptionalLinkedGroup(newDelivery, null);
+    }
+
     async function drop(ev) {
         ev.preventDefault();
         const rawId = ev.dataTransfer.getData("text");
-        const id = String(rawId || '').replace(/^ghost-/, '');
+        const transferJobId = ev.dataTransfer.getData('planner-job-id');
+        const cardRole = ev.dataTransfer.getData('planner-card-role');
+        const id = String(transferJobId || rawId || '').replace(/^ghost-/, '').replace(/^delivery-/, '');
         const target = ev.currentTarget;
         let finalTarget = target.classList.contains('job-card') ? target.parentElement : target;
         const dropTargetCard = ev.target && ev.target.closest ? ev.target.closest('.job-card:not(.modal-job-card-copy)') : null;
         const isReorderDrag = ev.dataTransfer.getData('planner-reorder') === 'true';
-        const sourceCard = document.getElementById(String(id));
+        const sourceCard = document.getElementById(String(rawId)) || document.getElementById(String(id));
         const isGhostDeliveryDrag = String(rawId || '').startsWith('ghost-');
 
         if (isReorderDrag && sourceCard && sourceCard.parentElement === finalTarget) {
-            await reorderCardInsideContainer(id, finalTarget, dropTargetCard, ev.clientY);
+            await reorderCardInsideContainer(sourceCard.id, finalTarget, dropTargetCard, ev.clientY);
             return;
         }
 
@@ -5400,6 +5828,11 @@ Are you sure you want to place it here?`);
         const statusLaneStatus = getPlannerStatusFromLaneSlot(finalTarget.id);
         const isPool = finalTarget.id === 'pool-container' || finalTarget.classList.contains('pool-zone') || finalTarget.closest('.pool-zone') !== null;
         const draggedJob = allJobsRaw.find(x => String(x.id) === String(id));
+
+        if (cardRole === 'delivery') {
+            await moveDeliveryPlannerCard(id, finalTarget.id);
+            return;
+        }
 
         if (isGhostDeliveryDrag) {
             await createOrMoveONDeliveryLeg(id, finalTarget.id, { skipConfirm: true });
@@ -5463,7 +5896,19 @@ Are you sure you want to place it here?`);
             updatePayload.tipped_gps = null;
         }
 
-        await sb.from('quotes').update(updatePayload).eq('id', id);
+        const { error } = await sb.from('quotes').update(updatePayload).eq('id', id);
+        if (error) {
+            alert("Error reassigning job: " + error.message);
+            return;
+        }
+
+        if (cardRole === 'collection' && draggedJob && !isPool && !statusLaneStatus) {
+            try {
+                await moveUnplannedDeliveryWithCollection(draggedJob, finalTarget.id);
+            } catch (err) {
+                alert("The collection card moved, but the delivery card could not be moved with it: " + (err && err.message ? err.message : err));
+            }
+        }
         loadAll();
     }
 
@@ -5484,6 +5929,7 @@ Are you sure you want to place it here?`);
         // are relative and may belong to an older planner window after Monday rollover.
         let vehicleTotals = {};
         allJobsRaw.forEach(q => {
+            if (isDeliveryPlannerCardJob(q)) return;
             const plannerDate = getPlannerDateForCard(q);
             if (!q || !plannerDate || !q.assigned_slot) return;
             if (getPlannerBoardWeekIndex(plannerDate) !== currentWeekOffset) return;
@@ -5718,6 +6164,16 @@ Are you sure you want to place it here?`);
         if (btn) {
             btn.innerText = showMaintenanceCards ? '🔧 HIDE MAINTENANCE' : '🔧 SHOW MAINTENANCE';
             btn.style.background = showMaintenanceCards ? '#f58220' : '#555';
+        }
+    }
+
+    function applyPlannerDisplayDefaults() {
+        document.body.classList.toggle('hide-maintenance-cards', !showMaintenanceCards);
+        updateHeaderToggleButton();
+        const maintenanceBtn = document.getElementById('btn-toggle-maintenance');
+        if (maintenanceBtn) {
+            maintenanceBtn.innerText = showMaintenanceCards ? '🔧 HIDE MAINTENANCE' : '🔧 SHOW MAINTENANCE';
+            maintenanceBtn.style.background = showMaintenanceCards ? '#f58220' : '#555';
         }
     }
     function allowDrop(ev) { ev.preventDefault(); }
@@ -6332,6 +6788,7 @@ Are you sure you want to place it here?`);
     };
 
     document.addEventListener('DOMContentLoaded', () => {
+        applyPlannerDisplayDefaults();
         if (window.google && google.maps && google.maps.places) window.initGooglePlacesAutocomplete();
     });
 
