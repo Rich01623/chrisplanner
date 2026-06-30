@@ -5329,21 +5329,32 @@ function sameLocalDateValue(a, b) {
         const releaseDate = getJobDispatchReleaseDate(j);
         const sequence = j.dispatch_sequence || getNextDispatchSequence(driverName, releaseDate, id);
         const nowIso = new Date().toISOString();
+        const hideTimesFromDriver = confirm('Would you like to hide collection and delivery times from the driver?');
 
         // IMPORTANT: planner dispatch now queues the job instead of making every job live.
         // The driver app is responsible for releasing only ONE job at a time. If the driver
         // is already on shift and has no active job, the driver app will release the next
         // queued job automatically on its next sync.
         try {
-            const { error: queueError } = await sb.from('quotes').update({
+            const dispatchPayload = {
                 dispatch_status: 'scheduled',
                 assigned_driver: driverName,
                 driver_phone: selectedDriver.phone || null,
                 dispatch_release_date: releaseDate,
                 dispatch_sequence: sequence,
                 dispatch_scheduled_at: nowIso,
-                released_at: null
-            }).eq('id', id);
+                released_at: null,
+                driver_hide_times: hideTimesFromDriver
+            };
+
+            let { error: queueError } = await sb.from('quotes').update(dispatchPayload).eq('id', id);
+            if (queueError && /driver_hide_times|schema cache|column/i.test(queueError.message || String(queueError))) {
+                // Safety fallback: if an older Supabase cache has not seen the new column yet,
+                // still queue the job normally instead of breaking dispatch.
+                delete dispatchPayload.driver_hide_times;
+                const retry = await sb.from('quotes').update(dispatchPayload).eq('id', id);
+                queueError = retry.error;
+            }
             if (queueError) throw queueError;
 
             let pushMessage = '';
