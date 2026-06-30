@@ -482,6 +482,17 @@
         .job-card.quick-card-incomplete { background: #fff1f2 !important; border-left-color: #dc2626 !important; box-shadow: 0 0 0 2px rgba(220,38,38,0.12), 0 2px 4px rgba(0,0,0,0.12) !important; }
         .job-card.quick-card-incomplete:hover { background: #ffe4e6 !important; }
         .quick-card-badge { display:inline-block; font-size:0.58rem; color:#991b1b; border:1px solid #dc2626; padding:1px 5px; border-radius:999px; background:#fff; margin-left:5px; font-weight:900; letter-spacing:0.3px; }
+        .multi-job-btn { background: #7c3aed !important; color: #fff !important; border: 2px solid #5b21b6 !important; box-shadow: 0 2px 8px rgba(124,58,237,0.24); }
+        .multi-job-btn:hover { background: #6d28d9 !important; }
+        .multi-job-modal-content { width: 1180px; max-width: 98vw; max-height: 92vh; border-top: 5px solid #7c3aed; overflow: auto; }
+        .multi-job-grid { display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+        .multi-stop-panel { border: 1px solid #d8dce6; border-radius: 8px; background: #f8fafc; padding: 12px; margin-bottom: 10px; }
+        .multi-stop-panel.collection { border-left: 5px solid #0056b3; }
+        .multi-stop-panel.delivery { border-left: 5px solid #2e7d32; }
+        .multi-stop-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px; font-weight:900; color:#1a1a1a; }
+        .multi-stop-remove { border:0; background:#e5e7eb; color:#111827; border-radius:4px; padding:4px 8px; font-size:0.68rem; font-weight:900; cursor:pointer; }
+        .multi-stop-remove:hover { background:#cbd5e1; }
+        .multi-job-section-title { margin:16px 0 8px; color:#1a1a1a; font-size:0.86rem; font-weight:900; text-transform:uppercase; }
         @media (max-width: 700px) { .quick-card-grid { grid-template-columns: 1fr; } }
 
 </style>
@@ -509,6 +520,7 @@
                     <button class="week-btn" onclick="toggleUnassigned()">UNASSIGNED</button>
                     <button class="week-btn" onclick="toggleMaintenancePool()">MAINTENANCE POOL</button>
                     <button class="week-btn" onclick="resetForm(); openModal('modal-add')">+ NEW JOB</button>
+                    <button class="week-btn multi-job-btn" onclick="openMultiJobModal()">+ MULTI JOB</button>
                     <button class="week-btn" onclick="openNoteModal()">NOTES</button>
                 </div>
                 <div class="menu-group">
@@ -677,6 +689,60 @@
         <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px; border-top:1px solid #eee; padding-top:14px;">
             <button type="button" class="week-btn" onclick="closeModal('modal-quick-card')" style="background:#ddd; color:#333;">Cancel</button>
             <button type="button" class="week-btn quick-card-btn" onclick="saveQuickCard()">Create Quick Card</button>
+        </div>
+    </div>
+</div>
+
+<!-- Multi Job Modal -->
+<div id="modal-multi-job" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-multi-job')">
+    <div class="modal-content multi-job-modal-content" onclick="event.stopPropagation();">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #7c3aed; padding-bottom:10px; margin-bottom:14px; gap:12px;">
+            <div>
+                <h2 style="margin:0; color:#7c3aed;">Multi Job</h2>
+                <p style="margin:4px 0 0; color:#475569; font-size:0.78rem; font-weight:700;">Creates one linked planner card per collection and delivery, all under the same FTS number.</p>
+            </div>
+            <button type="button" class="week-btn" onclick="closeModal('modal-multi-job')" style="background:#ddd; color:#333;">Close</button>
+        </div>
+
+        <div class="multi-job-section-title">Booking / invoice</div>
+        <div class="multi-job-grid">
+            <div class="form-group" style="position:relative;"><label>Booking Customer Name *</label><input type="text" id="mj_customer_name" oninput="showMultiCustomerSuggestions()" autocomplete="off" required><div id="mj-cust-suggestions" class="autocomplete-suggestions"></div></div>
+            <div class="form-group"><label>Telephone</label><input type="text" id="mj_customer_phone"></div>
+            <div class="form-group"><label>Email</label><input type="email" id="mj_customer_email"></div>
+            <div class="form-group"><label>Customer Invoice Number</label><input type="text" id="mj_customer_invoice"></div>
+            <div class="form-group"><label>CX Number</label><input type="text" id="mj_cx_number"></div>
+            <div class="form-group"><label>FTS Invoice Number</label><input type="text" id="mj_fts_number" readonly placeholder="Auto generated" style="font-weight:bold; color:var(--frost-red); background:#f8fafc;"></div>
+        </div>
+
+        <div class="multi-job-section-title">Logistics</div>
+        <div class="multi-job-grid">
+            <div class="form-group"><label>Vehicle Required</label><select id="mj_vehicle_type"><option>Artic</option><option>Rigid</option><option>7.5t</option><option>Van</option></select></div>
+            <div class="form-group"><label>Total Pallets</label><input type="number" id="mj_total_pallets"></div>
+            <div class="form-group"><label>Total Weight (kg)</label><input type="number" id="mj_total_weight"></div>
+            <div class="form-group"><label>Total Job Price (GBP) *</label><input type="text" id="mj_price" placeholder="0.00" required></div>
+            <div class="form-group" style="grid-column: span 2;"><label>Job Notes</label><input type="text" id="mj_job_notes" placeholder="Shared notes for all cards"></div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px;">
+            <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                    <div class="multi-job-section-title">Collections</div>
+                    <button type="button" class="week-btn" onclick="addMultiJobStop('collection')" style="background:#0056b3;">+ Collection</button>
+                </div>
+                <div id="multi-collections"></div>
+            </div>
+            <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                    <div class="multi-job-section-title">Deliveries</div>
+                    <button type="button" class="week-btn" onclick="addMultiJobStop('delivery')" style="background:#2e7d32;">+ Delivery</button>
+                </div>
+                <div id="multi-deliveries"></div>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px; border-top:1px solid #eee; padding-top:14px;">
+            <button type="button" class="week-btn" onclick="closeModal('modal-multi-job')" style="background:#ddd; color:#333;">Cancel</button>
+            <button type="button" id="save-multi-job-btn" class="week-btn multi-job-btn" onclick="saveMultiJob()">Create Multi Job</button>
         </div>
     </div>
 </div>
@@ -3542,15 +3608,25 @@ function escapeHtml(value) {
     }
 
     function cleanTwoCardCustomerName(name) {
-        return String(name || '').replace(/\s*\((?:Leg\s*[12]|Collection|Delivery)\)\s*$/i, '').trim();
+        return String(name || '').replace(/\s*\((?:Leg\s*[12]|Collection(?:\s+\d+\s*\/\s*\d+)?|Delivery(?:\s+\d+\s*\/\s*\d+)?)\)\s*$/i, '').trim();
     }
 
     function isDeliveryPlannerCardJob(job) {
-        return /\((?:Leg\s*2|Delivery)\)\s*$/i.test(String(job && job.customer_name || ''));
+        return /\((?:Leg\s*2|Delivery(?:\s+\d+\s*\/\s*\d+)?)\)\s*$/i.test(String(job && job.customer_name || ''));
     }
 
     function isCollectionPlannerCardJob(job) {
-        return /\((?:Leg\s*1|Collection)\)\s*$/i.test(String(job && job.customer_name || ''));
+        return /\((?:Leg\s*1|Collection(?:\s+\d+\s*\/\s*\d+)?)\)\s*$/i.test(String(job && job.customer_name || ''));
+    }
+
+    function getOperationalTaskLabel(job, role) {
+        const customer = String(job && job.customer_name || '');
+        const match = customer.match(/\((Collection|Delivery)(?:\s+(\d+)\s*\/\s*(\d+))?\)\s*$/i);
+        if (match) {
+            const label = match[1].toUpperCase();
+            return match[2] && match[3] ? `${label} ${match[2]}/${match[3]}` : label;
+        }
+        return role === 'delivery' ? 'DELIVERY' : 'COLLECTION';
     }
 
     function isTwoCardOperationalJob(job) {
@@ -3696,6 +3772,7 @@ function escapeHtml(value) {
         const isCompleted = q.status === 'completed';
         const isVirtualDelivery = !!options.virtualDelivery;
         const cleanCustomer = cleanTwoCardCustomerName(q.customer_name) || q.customer_name || 'Job';
+        const taskLabel = getOperationalTaskLabel(q, role);
         const headerText = getTwoCardHeaderText(q, role);
         const eventTime = role === 'delivery' ? q.del_datetime : q.coll_datetime;
         const timeText = eventTime ? new Date(eventTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '--:--';
@@ -3755,7 +3832,7 @@ function escapeHtml(value) {
                 </div>
             </div>
             <div class="card-body">
-                <span class="two-card-type ${role}">${role === 'delivery' ? 'DELIVERY' : 'COLLECTION'}</span>
+                <span class="two-card-type ${role}">${escapeHtml(taskLabel)}</span>
                 <div class="two-card-main" title="${escapeHtml(cleanCustomer)}">${escapeHtml(cleanCustomer)} ${contractBadge}</div>
                 <div style="font-size:0.68rem; color:#475569; font-weight:800;">${escapeHtml(dateText)}</div>
                 <div class="two-card-meta">
@@ -4501,6 +4578,15 @@ function escapeHtml(value) {
         if (box) box.style.display = 'none';
     }
 
+    function applyMultiBookingCustomerProfile(profile) {
+        if (!profile) return;
+        document.getElementById('mj_customer_name').value = String(profile.customer_name || '').trim();
+        document.getElementById('mj_customer_phone').value = String(profile.accounts_tel || '').trim();
+        document.getElementById('mj_customer_email').value = String(profile.accounts_email || '').trim();
+        const box = document.getElementById('mj-cust-suggestions');
+        if (box) box.style.display = 'none';
+    }
+
     function showCustomerSuggestions() {
         const input = document.getElementById('n_cust_name');
         const box = document.getElementById('cust-suggestions');
@@ -4517,6 +4603,24 @@ function escapeHtml(value) {
 
         const requestId = customerSuggestionRequestId;
         customerSuggestionTimer = setTimeout(() => loadCustomerSuggestions(searchTerm, requestId), 250);
+    }
+
+    function showMultiCustomerSuggestions() {
+        const input = document.getElementById('mj_customer_name');
+        const box = document.getElementById('mj-cust-suggestions');
+        const searchTerm = String(input && input.value || '').trim();
+
+        clearTimeout(customerSuggestionTimer);
+        customerSuggestionRequestId += 1;
+        if (box) box.innerHTML = '';
+
+        if (!box || searchTerm.length < 2) {
+            if (box) box.style.display = 'none';
+            return;
+        }
+
+        const requestId = customerSuggestionRequestId;
+        customerSuggestionTimer = setTimeout(() => loadMultiCustomerSuggestions(searchTerm, requestId), 250);
     }
 
     async function loadCustomerSuggestions(searchTerm, requestId) {
@@ -4567,6 +4671,60 @@ function escapeHtml(value) {
 
             item.append(name, details);
             item.onclick = () => applyBookingCustomerProfile(profile);
+            box.appendChild(item);
+        });
+
+        box.style.display = 'block';
+    }
+
+    async function loadMultiCustomerSuggestions(searchTerm, requestId) {
+        const input = document.getElementById('mj_customer_name');
+        const box = document.getElementById('mj-cust-suggestions');
+        if (!input || !box) return;
+
+        const { data, error } = await sb
+            .from('customer_invoice_emails')
+            .select('customer_name, accounts_email, accounts_tel')
+            .ilike('customer_name', `%${escapeSupabaseLikeValue(searchTerm)}%`)
+            .order('customer_name', { ascending: true })
+            .limit(15);
+
+        const currentSearch = String(input.value || '').trim();
+        if (requestId !== customerSuggestionRequestId || currentSearch.toLowerCase() !== searchTerm.toLowerCase()) return;
+
+        box.innerHTML = '';
+        if (error) {
+            console.error('Could not search customer_invoice_emails for multi job:', error);
+            box.style.display = 'none';
+            return;
+        }
+
+        const uniqueProfiles = new Map();
+        (data || []).forEach(profile => {
+            const name = String(profile.customer_name || '').trim();
+            if (name && !uniqueProfiles.has(name.toLowerCase())) uniqueProfiles.set(name.toLowerCase(), profile);
+        });
+
+        const profiles = Array.from(uniqueProfiles.values());
+        if (!profiles.length) {
+            box.style.display = 'none';
+            return;
+        }
+
+        profiles.forEach(profile => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+
+            const name = document.createElement('span');
+            name.className = 'ac-name';
+            name.textContent = profile.customer_name || '';
+
+            const details = document.createElement('span');
+            details.className = 'ac-details';
+            details.textContent = [profile.accounts_tel, profile.accounts_email].filter(Boolean).join(' | ');
+
+            item.append(name, details);
+            item.onclick = () => applyMultiBookingCustomerProfile(profile);
             box.appendChild(item);
         });
 
@@ -4689,6 +4847,10 @@ function escapeHtml(value) {
             const box = document.getElementById('cust-suggestions');
             if (box) box.style.display = 'none';
         }
+        if (e.target.id !== 'mj_customer_name') {
+            const multiBox = document.getElementById('mj-cust-suggestions');
+            if (multiBox && !multiBox.contains(e.target)) multiBox.style.display = 'none';
+        }
     });
 
     function openNoteModal() {
@@ -4724,6 +4886,214 @@ function escapeHtml(value) {
         d.setHours(d.getHours() + hours);
         let pad = n => n.toString().padStart(2, '0');
         return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    let multiJobStopCounters = { collection: 0, delivery: 0 };
+
+    function openMultiJobModal() {
+        resetMultiJobForm();
+        openModal('modal-multi-job');
+    }
+
+    function resetMultiJobForm() {
+        ['mj_customer_name', 'mj_customer_phone', 'mj_customer_email', 'mj_customer_invoice', 'mj_cx_number', 'mj_fts_number', 'mj_total_pallets', 'mj_total_weight', 'mj_price', 'mj_job_notes'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        const vehicle = document.getElementById('mj_vehicle_type');
+        if (vehicle) vehicle.value = 'Artic';
+        multiJobStopCounters = { collection: 0, delivery: 0 };
+        const collections = document.getElementById('multi-collections');
+        const deliveries = document.getElementById('multi-deliveries');
+        if (collections) collections.innerHTML = '';
+        if (deliveries) deliveries.innerHTML = '';
+        addMultiJobStop('collection');
+        addMultiJobStop('delivery');
+    }
+
+    function addMultiJobStop(type) {
+        const isDelivery = type === 'delivery';
+        const container = document.getElementById(isDelivery ? 'multi-deliveries' : 'multi-collections');
+        if (!container) return;
+
+        multiJobStopCounters[type] += 1;
+        const index = multiJobStopCounters[type];
+        const panel = document.createElement('div');
+        panel.className = `multi-stop-panel ${type}`;
+        panel.dataset.stopType = type;
+        panel.innerHTML = `
+            <div class="multi-stop-head">
+                <span>${isDelivery ? 'Delivery' : 'Collection'} ${index}</span>
+                <button type="button" class="multi-stop-remove" onclick="removeMultiJobStop(this)">Remove</button>
+            </div>
+            <div class="multi-job-grid" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                <div class="form-group google-address-helper"><label>${isDelivery ? 'Delivery' : 'Collection'} Name</label><input type="text" class="mj-stop-name mj-google-place-input" autocomplete="off" placeholder="Start typing to search Google..."><small>Select a Google result to fill address details.</small></div>
+                <div class="form-group"><label>Postcode *</label><input type="text" class="mj-stop-postcode" style="text-transform:uppercase;" required></div>
+                <div class="form-group" style="grid-column: span 2;"><label>Street</label><input type="text" class="mj-stop-street"></div>
+                <div class="form-group"><label>Town</label><input type="text" class="mj-stop-town"></div>
+                <div class="form-group"><label>County</label><input type="text" class="mj-stop-county"></div>
+                <div class="form-group"><label>Telephone</label><input type="text" class="mj-stop-phone"></div>
+                <div class="form-group"><label>Email</label><input type="email" class="mj-stop-email"></div>
+                <div class="form-group"><label>Reference</label><input type="text" class="mj-stop-ref"></div>
+                <div class="form-group"><label>Date & Time *</label><input type="datetime-local" class="mj-stop-datetime" required></div>
+            </div>
+        `;
+        container.appendChild(panel);
+        attachMultiJobStopAutocomplete(panel);
+        refreshMultiJobStopLabels(type);
+    }
+
+    function removeMultiJobStop(button) {
+        const panel = button && button.closest ? button.closest('.multi-stop-panel') : null;
+        if (!panel) return;
+        const type = panel.dataset.stopType || 'collection';
+        const container = panel.parentElement;
+        if (container && container.querySelectorAll('.multi-stop-panel').length <= 1) {
+            alert(`A multi job needs at least one ${type}.`);
+            return;
+        }
+        panel.remove();
+        refreshMultiJobStopLabels(type);
+    }
+
+    function refreshMultiJobStopLabels(type) {
+        const container = document.getElementById(type === 'delivery' ? 'multi-deliveries' : 'multi-collections');
+        if (!container) return;
+        const label = type === 'delivery' ? 'Delivery' : 'Collection';
+        container.querySelectorAll('.multi-stop-panel').forEach((panel, index) => {
+            const title = panel.querySelector('.multi-stop-head span');
+            if (title) title.textContent = `${label} ${index + 1}`;
+        });
+    }
+
+    function readMultiJobStops(type) {
+        const container = document.getElementById(type === 'delivery' ? 'multi-deliveries' : 'multi-collections');
+        if (!container) return [];
+        return Array.from(container.querySelectorAll('.multi-stop-panel')).map((panel, index) => ({
+            type,
+            index: index + 1,
+            name: panel.querySelector('.mj-stop-name')?.value.trim() || '',
+            postcode: panel.querySelector('.mj-stop-postcode')?.value.trim().toUpperCase() || '',
+            street: panel.querySelector('.mj-stop-street')?.value.trim() || '',
+            town: panel.querySelector('.mj-stop-town')?.value.trim() || '',
+            county: panel.querySelector('.mj-stop-county')?.value.trim() || '',
+            phone: panel.querySelector('.mj-stop-phone')?.value.trim() || '',
+            email: panel.querySelector('.mj-stop-email')?.value.trim() || '',
+            ref: panel.querySelector('.mj-stop-ref')?.value.trim() || '',
+            datetime: panel.querySelector('.mj-stop-datetime')?.value || ''
+        }));
+    }
+
+    function buildMultiJobTaskPayload(shared, stop, role, totalForRole, collectionAnchor, deliveryAnchor, priceValue) {
+        const isDelivery = role === 'delivery';
+        const collectionStop = isDelivery ? (collectionAnchor || {}) : stop;
+        const deliveryStop = isDelivery ? stop : (deliveryAnchor || {});
+        const roleLabel = `${isDelivery ? 'Delivery' : 'Collection'} ${stop.index}/${totalForRole}`;
+        const taskNote = `[MULTI JOB ${roleLabel.toUpperCase()}]`;
+
+        return {
+            customer_name: `${shared.customerName} (${roleLabel})`,
+            customer_phone: shared.customerPhone,
+            customer_email: shared.customerEmail,
+            job_notes: [taskNote, shared.jobNotes].filter(Boolean).join(' '),
+            coll_cust_name: collectionStop.name || shared.customerName,
+            coll_phone: collectionStop.phone || shared.customerPhone,
+            coll_email: collectionStop.email || shared.customerEmail,
+            coll_postcode: collectionStop.postcode || '',
+            coll_street: collectionStop.street || '',
+            coll_town: collectionStop.town || '',
+            coll_county: collectionStop.county || '',
+            coll_ref: isDelivery ? `Multi job origin: ${collectionStop.ref || collectionStop.postcode || 'collection'}` : stop.ref,
+            coll_datetime: isDelivery ? (deliveryStop.datetime || '') : stop.datetime,
+            del_postcode: deliveryStop.postcode || '',
+            del_cust_name: deliveryStop.name || (isDelivery ? '' : 'Multi job delivery task'),
+            del_phone: deliveryStop.phone || '',
+            del_email: deliveryStop.email || '',
+            del_street: deliveryStop.street || '',
+            del_town: deliveryStop.town || '',
+            del_county: deliveryStop.county || '',
+            del_ref: isDelivery ? stop.ref : `Awaiting multi-job delivery (${shared.ftsNumber})`,
+            del_datetime: isDelivery ? stop.datetime : (deliveryStop.datetime || stop.datetime),
+            total_price: priceValue,
+            total_pallets: shared.totalPallets,
+            total_weight: shared.totalWeight,
+            vehicle_type: shared.vehicleType,
+            customers_own_invoice_number: shared.customerInvoice,
+            cx_number: shared.cxNumber,
+            fts_invoice_number: shared.ftsNumber,
+            job_contract_type: '',
+            status: 'pending',
+            dispatch_status: 'unsent'
+        };
+    }
+
+    async function saveMultiJob() {
+        const saveButton = document.getElementById('save-multi-job-btn');
+        const customerName = document.getElementById('mj_customer_name').value.trim();
+        const priceValue = document.getElementById('mj_price').value.trim();
+        if (!customerName) return alert('Booking Customer Name is required.');
+        if (!priceValue) return alert('Total Job Price is required.');
+
+        const collections = readMultiJobStops('collection');
+        const deliveries = readMultiJobStops('delivery');
+        if (!collections.length || !deliveries.length) return alert('Please add at least one collection and one delivery.');
+        const missingCollection = collections.find(stop => !stop.postcode || !stop.datetime);
+        const missingDelivery = deliveries.find(stop => !stop.postcode || !stop.datetime);
+        if (missingCollection || missingDelivery) return alert('Each collection and delivery needs a postcode and date/time.');
+
+        if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = 'Creating...';
+        }
+
+        try {
+            let ftsNumber = document.getElementById('mj_fts_number').value.trim();
+            if (!ftsNumber) {
+                ftsNumber = await getNextFtsInvoiceNumber();
+                document.getElementById('mj_fts_number').value = ftsNumber;
+            }
+
+            const shared = {
+                customerName,
+                customerPhone: document.getElementById('mj_customer_phone').value.trim(),
+                customerEmail: document.getElementById('mj_customer_email').value.trim(),
+                customerInvoice: document.getElementById('mj_customer_invoice').value.trim(),
+                cxNumber: document.getElementById('mj_cx_number').value.trim(),
+                ftsNumber,
+                vehicleType: document.getElementById('mj_vehicle_type').value || 'Artic',
+                totalPallets: document.getElementById('mj_total_pallets').value,
+                totalWeight: document.getElementById('mj_total_weight').value,
+                jobNotes: document.getElementById('mj_job_notes').value.trim()
+            };
+
+            const group = `multi-job-${ftsNumber}-${Date.now()}`.replace(/[^a-z0-9_-]+/gi, '-');
+            const firstCollection = collections[0];
+            const firstDelivery = deliveries[0];
+            const payloads = [];
+
+            collections.forEach((stop, index) => {
+                payloads.push(buildMultiJobTaskPayload(shared, stop, 'collection', collections.length, firstCollection, firstDelivery, index === 0 ? priceValue : '0'));
+            });
+
+            deliveries.forEach(stop => {
+                payloads.push(buildMultiJobTaskPayload(shared, stop, 'delivery', deliveries.length, firstCollection, stop, '0'));
+            });
+
+            for (const payload of payloads) {
+                await insertQuoteWithOptionalLinkedGroup(payload, group);
+            }
+
+            closeModal('modal-multi-job');
+            loadAll();
+        } catch (err) {
+            console.error(err);
+            alert('Could not create multi job: ' + (err && err.message ? err.message : err));
+        } finally {
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.textContent = 'Create Multi Job';
+            }
+        }
     }
 
     async function saveJob() {
@@ -6845,7 +7215,7 @@ Are you sure you want to place it here?`);
         return formatted.split(',')[0].trim();
     }
 
-    function fillPlannerAddressFromGoogle(kind, place) {
+    function getAddressPartsFromGooglePlace(place) {
         if (!place) return;
 
         const postcode = [
@@ -6870,28 +7240,48 @@ Are you sure you want to place it here?`);
         const street = buildGoogleStreetLine(place);
         const placeName = String(place.name || '').trim();
 
+        return { placeName, postcode, street, town, county };
+    }
+
+    function fillPlannerAddressFromGoogle(kind, place) {
+        const parts = getAddressPartsFromGooglePlace(place);
+        if (!parts) return;
+
         const setField = (id, value) => {
             const el = document.getElementById(id);
             if (el && value !== undefined && value !== null) el.value = value;
         };
 
         if (kind === 'collection') {
-            setField('n_coll_name', placeName);
-            setField('n_coll_pc', postcode);
-            setField('n_coll_street', street);
-            setField('n_coll_town', town);
-            setField('n_coll_county', county);
+            setField('n_coll_name', parts.placeName);
+            setField('n_coll_pc', parts.postcode);
+            setField('n_coll_street', parts.street);
+            setField('n_coll_town', parts.town);
+            setField('n_coll_county', parts.county);
         } else if (kind === 'delivery') {
-            setField('n_del_name', placeName);
-            setField('n_del_pc', postcode);
-            setField('n_del_street', street);
-            setField('n_8', town);
-            setField('n_9', county);
+            setField('n_del_name', parts.placeName);
+            setField('n_del_pc', parts.postcode);
+            setField('n_del_street', parts.street);
+            setField('n_8', parts.town);
+            setField('n_9', parts.county);
         }
     }
 
-    function attachGoogleAddressAutocomplete(inputId, kind) {
-        const input = document.getElementById(inputId);
+    function fillMultiJobStopAddressFromGoogle(panel, place) {
+        const parts = getAddressPartsFromGooglePlace(place);
+        if (!panel || !parts) return;
+        const setPanelField = (selector, value) => {
+            const el = panel.querySelector(selector);
+            if (el && value !== undefined && value !== null) el.value = value;
+        };
+        setPanelField('.mj-stop-name', parts.placeName);
+        setPanelField('.mj-stop-postcode', parts.postcode);
+        setPanelField('.mj-stop-street', parts.street);
+        setPanelField('.mj-stop-town', parts.town);
+        setPanelField('.mj-stop-county', parts.county);
+    }
+
+    function attachGoogleAutocompleteToInput(input, onPlaceChanged) {
         if (!input || input.dataset.googlePlacesAttached === 'true') return;
         if (!window.google || !google.maps || !google.maps.places) return;
 
@@ -6901,16 +7291,29 @@ Are you sure you want to place it here?`);
         });
 
         autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace();
-            fillPlannerAddressFromGoogle(kind, place);
+            onPlaceChanged(autocomplete.getPlace());
         });
 
         input.dataset.googlePlacesAttached = 'true';
     }
 
+    function attachGoogleAddressAutocomplete(inputId, kind) {
+        const input = document.getElementById(inputId);
+        attachGoogleAutocompleteToInput(input, place => fillPlannerAddressFromGoogle(kind, place));
+    }
+
+    function attachMultiJobStopAutocomplete(panel) {
+        const root = panel || document;
+        root.querySelectorAll('.mj-google-place-input').forEach(input => {
+            const stopPanel = input.closest('.multi-stop-panel');
+            attachGoogleAutocompleteToInput(input, place => fillMultiJobStopAddressFromGoogle(stopPanel, place));
+        });
+    }
+
     window.initGooglePlacesAutocomplete = function() {
         attachGoogleAddressAutocomplete('n_coll_address_search', 'collection');
         attachGoogleAddressAutocomplete('n_del_address_search', 'delivery');
+        attachMultiJobStopAutocomplete(document);
     };
 
     window.gm_authFailure = function() {
