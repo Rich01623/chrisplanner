@@ -5778,10 +5778,9 @@ Are you sure you want to place it here?`);
         }
     }
 
-    async function moveUnplannedDeliveryWithCollection(collectionJob, collectionTargetId) {
+    async function moveDeliveryWithCollection(collectionJob, collectionTargetId) {
         if (!collectionJob || isDeliveryPlannerCardJob(collectionJob)) return;
         const deliveryJob = findDeliveryCardForJob(collectionJob);
-        if (deliveryJob && deliveryJob.assigned_slot && String(deliveryJob.assigned_slot).startsWith('planner-w')) return;
 
         const deliverySlot = getDeliverySlotFromCollectionTarget(collectionJob, collectionTargetId);
         if (!deliverySlot || !String(deliverySlot).startsWith('planner-w')) return;
@@ -5906,7 +5905,7 @@ Are you sure you want to place it here?`);
 
         if (cardRole === 'collection' && draggedJob && !isPool && !statusLaneStatus) {
             try {
-                await moveUnplannedDeliveryWithCollection(draggedJob, finalTarget.id);
+                await moveDeliveryWithCollection(draggedJob, finalTarget.id);
             } catch (err) {
                 alert("The collection card moved, but the delivery card could not be moved with it: " + (err && err.message ? err.message : err));
             }
