@@ -204,8 +204,11 @@
         .modal-job-card-copy.pod-received-card::after { display: none; }
         .card-reorder-handle { position: absolute; top: 4px; right: 5px; width: 18px; height: 18px; border: 1px solid rgba(15, 23, 42, 0.18); border-radius: 4px; background: rgba(255,255,255,0.92); color: #64748b; font-size: 13px; font-weight: 900; line-height: 16px; display: inline-flex; align-items: center; justify-content: center; cursor: ns-resize; user-select: none; z-index: 8; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
         .card-reorder-handle:hover { color: #c1272d; border-color: #c1272d; background: #fff5f5; }
+        .card-quick-edit-btn { position: absolute; top: 26px; right: 5px; width: 18px; height: 18px; border: 1px solid rgba(15, 23, 42, 0.18); border-radius: 4px; background: rgba(255,255,255,0.94); color: #0056b3; font-size: 12px; font-weight: 900; line-height: 16px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; z-index: 8; box-shadow: 0 1px 2px rgba(0,0,0,0.08); padding: 0; }
+        .card-quick-edit-btn:hover { color: #c1272d; border-color: #c1272d; background: #fff5f5; }
         .job-card.card-reorder-dragging { opacity: 0.55; outline: 2px dashed #c1272d; }
         .modal-job-card-copy .card-reorder-handle { display: none !important; }
+        .modal-job-card-copy .card-quick-edit-btn { display: none !important; }
         
         /* Grey Lockout styling for Leg 1 */
         .job-card.completed-grey { background: #f0f0f0 !important; border-left-color: #bbb !important; color: #888 !important; opacity: 0.8; }
@@ -259,8 +262,10 @@
         .two-card-header { margin: 0 18px 5px 0; padding: 0; border-radius: 0; font-weight: 1000; line-height: 1.12; }
         .two-card-header.collection { color: #004f9f; }
         .two-card-header.delivery { color: #247a2e; }
-        .two-card-fts-line { display:flex; align-items:center; gap:5px; margin-bottom:2px; }
-        .two-card-fts { display:block; font-size:0.66rem; letter-spacing:0.2px; opacity:0.95; color:#111827; }
+        .two-card-fts-line { display:flex; align-items:center; gap:10px; margin-bottom:2px; min-width:0; }
+        .two-card-fts, .two-card-fts-ref { display:block; font-size:0.66rem; letter-spacing:0.2px; opacity:0.95; color:#111827; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .two-card-fts { flex:0 0 auto; }
+        .two-card-fts-ref { flex:1 1 auto; min-width:0; }
         .two-card-fts-line .dispatch-route-dot { flex: 0 0 auto; width: 10px; height: 10px; }
         .two-card-route { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
         .two-card-postcode { font-size:0.86rem; font-weight:1000; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -275,7 +280,8 @@
         .dispatch-route-dot { width: 9px; height: 9px; border-radius: 50%; display: block; box-shadow: 0 0 0 1px rgba(0,0,0,0.14); }
         .dispatch-route-dot.sent { background: #c1272d; }
         .dispatch-route-dot.ack { background: #2e7d32; }
-        .fts-card-header { margin: -2px 22px 6px 0; padding: 3px 6px; background: #1a1a1a; color: #fff; border-radius: 3px; font-size: 0.66rem; font-weight: 900; letter-spacing: 0.2px; text-align: center; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .fts-card-header { margin: -2px 22px 6px 0; padding: 3px 6px; background: #1a1a1a; color: #fff; border-radius: 3px; font-size: 0.66rem; font-weight: 900; letter-spacing: 0.2px; text-align: center; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display:flex; align-items:center; justify-content:center; gap:14px; }
+        .fts-card-ref { min-width:0; overflow:hidden; text-overflow:ellipsis; }
         .job-card.palletforce-job-card { background: #fff3e6 !important; border-left-color: #f58220 !important; }
         .job-card.palletforce-job-card:hover { background: #ffe8cf !important; }
         .job-card.booking-request-card { border-left-color: #0056b3 !important; background: #f4f9ff !important; cursor: pointer; }
@@ -807,7 +813,7 @@
                         <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_coll_email"></div>
                     </div>
                     <div class="form-group"><label>Ref</label><input type="text" id="n_coll_ref"></div>
-                    <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_coll_dt"></div>
+                    <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_coll_dt" onchange="updateNewJobDatePickerLimits()"></div>
                 </div>
                 
                 <div style="flex: 1;">
@@ -837,7 +843,7 @@
                         <div class="form-group" style="flex:1;"><label>Email</label><input type="email" id="n_del_email"></div>
                     </div>
                     <div class="form-group"><label>Ref</label><input type="text" id="n_10"></div>
-                    <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_del_dt"></div>
+                    <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="n_del_dt" onchange="updateNewJobDatePickerLimits()"></div>
                 </div>
             </div>
         </div>
@@ -2714,17 +2720,11 @@ function escapeHtml(value) {
 
             if (q.assigned_slot && q.assigned_slot.startsWith('planner-w')) {
                 let savedWeekMatch = q.assigned_slot.match(/w(\d+)/);
-                let savedDayMatch = q.assigned_slot.match(/-s(\d+)/);
-                const plannerCardDateObj = plannerCardDate ? new Date(plannerCardDate) : null;
-                const targetDayIndex = plannerCardDateObj && !isNaN(plannerCardDateObj) ? (plannerCardDateObj.getDay() + 6) % 7 : null;
                 if (savedWeekMatch) {
                     let savedWeek = parseInt(savedWeekMatch[1]);
-                    let savedDay = savedDayMatch ? parseInt(savedDayMatch[1]) : null;
                     const needsWeekMove = savedWeek !== targetWeek;
-                    const needsDayMove = targetDayIndex !== null && savedDay !== null && savedDay !== targetDayIndex;
-                    if ((needsWeekMove || needsDayMove) && targetWeek >= 0 && targetWeek <= 3) {
+                    if (needsWeekMove && targetWeek >= 0 && targetWeek <= 3) {
                         let newSlot = q.assigned_slot.replace(`w${savedWeek}`, `w${targetWeek}`);
-                        if (needsDayMove) newSlot = newSlot.replace(/-s\d+$/, `-s${targetDayIndex}`);
                         q.assigned_slot = newSlot; 
                         if (plannerWeekStartOffset === 0) {
                             sb.from('quotes').update({ assigned_slot: newSlot }).eq('id', q.id); 
@@ -3710,6 +3710,10 @@ function escapeHtml(value) {
             return getJobRenderSlotKey(job);
         }
         if (savedSlot.startsWith('planner-w')) {
+            const savedDateKey = getPlannerSlotDateKey(savedSlot);
+            const collectionDateKey = getLocalDateKeyFromValue(job.coll_datetime);
+            if (savedDateKey && collectionDateKey && savedDateKey !== collectionDateKey) return savedSlot;
+
             const match = savedSlot.match(/dr(\d+)/);
             const deliveryDate = job.del_datetime ? new Date(job.del_datetime) : null;
             const week = deliveryDate && !isNaN(deliveryDate) ? getPlannerBoardWeekIndex(job.del_datetime) : null;
@@ -3724,9 +3728,23 @@ function escapeHtml(value) {
         return 'pool-zone-tba';
     }
 
+    function getPlannerSlotDateKey(slotId) {
+        const match = String(slotId || '').match(/^planner-w(\d+)-dr\d+-s(\d+)$/);
+        if (!match) return '';
+        const weekOffset = getPlannerDisplayWeekOffset(parseInt(match[1], 10));
+        const dayIndex = parseInt(match[2], 10);
+        const targetDate = getCurrentPlannerMondayDate();
+        targetDate.setDate(targetDate.getDate() + (weekOffset * 7) + dayIndex);
+        return normaliseLocalDateKey(targetDate);
+    }
+
     function getDeliverySlotFromCollectionTarget(job, targetSlotId) {
         const targetId = String(targetSlotId || '');
         if (!targetId.startsWith('planner-w') || !job || !job.del_datetime) return targetId;
+        const targetDateKey = getPlannerSlotDateKey(targetId);
+        const collectionDateKey = getLocalDateKeyFromValue(job.coll_datetime);
+        if (targetDateKey && collectionDateKey && targetDateKey !== collectionDateKey) return targetId;
+
         const match = targetId.match(/dr(\d+)/);
         const delDate = new Date(job.del_datetime);
         if (!match || isNaN(delDate)) return targetId;
@@ -3765,6 +3783,12 @@ function escapeHtml(value) {
         if (mode === 'client') return customer;
         if (mode === 'all') return [customer, postcode, town].filter(Boolean).join(' | ');
         return postcode;
+    }
+
+    function getCardCollectionRefDisplay(job) {
+        const ref = String(job && job.coll_ref || '').trim();
+        if (/^multi job origin:/i.test(ref)) return '';
+        return ref;
     }
 
     function createTwoCardPlannerElement(q, role, options = {}) {
@@ -3820,12 +3844,15 @@ function escapeHtml(value) {
         const palletTag = q.total_pallets ? `<span class="vehicle-tag" style="background:#d68910;">${escapeHtml(q.total_pallets)} Plt</span>` : '';
         const weightTag = q.total_weight ? `<span class="vehicle-tag" style="background:#666;">${escapeHtml(q.total_weight)}kg</span>` : '';
         const podDownloadButton = q.pod_url && !isVirtualDelivery ? `<button type="button" class="pod-download-card-btn" onclick="downloadPODPdf(event, '${escapeInlineArg(q.id)}')">DOWNLOAD POD PDF</button>` : '';
+        const collectionRefText = getCardCollectionRefDisplay(q);
+        const quickEditHtml = `<button type="button" class="card-quick-edit-btn" title="Edit this job" onmousedown="event.stopPropagation()" onclick="editJob(event, '${q.id}')">&#9998;</button>`;
         const reorderHandleHtml = `<div class="card-reorder-handle" draggable="true" title="Rearrange this card within this grid space" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()" ondragstart="startCardReorderDrag(event, '${card.id}')" ondragend="endCardReorderDrag(event)">☰</div>`;
 
         card.innerHTML = `
             ${reorderHandleHtml}
+            ${quickEditHtml}
             <div class="two-card-header ${role}">
-                <div class="two-card-fts-line"><span class="two-card-fts">${escapeHtml(q.fts_invoice_number || 'NO FTS')}</span>${dispatchDotHtml}</div>
+                <div class="two-card-fts-line"><span class="two-card-fts">${escapeHtml(q.fts_invoice_number || 'NO FTS')}</span><span class="two-card-fts-ref">Collection Ref: ${escapeHtml(collectionRefText)}</span>${dispatchDotHtml}</div>
                 <div class="two-card-route">
                     <span class="two-card-postcode" title="${escapeHtml(headerText)}">${escapeHtml(headerText)}</span>
                     <span class="two-card-time">${escapeHtml(timeText)}</span>
@@ -4074,6 +4101,9 @@ function escapeHtml(value) {
         const reorderHandleHtml = (!isGhost)
             ? `<div class="card-reorder-handle" draggable="true" title="Rearrange this card within this grid space" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()" ondragstart="startCardReorderDrag(event, '${q.id}')" ondragend="endCardReorderDrag(event)">☰</div>`
             : '';
+        const quickEditHtml = (!isGhost && !isMaintenance && !isNote && !isInstruction)
+            ? `<button type="button" class="card-quick-edit-btn" title="Edit this job" onmousedown="event.stopPropagation()" onclick="editJob(event, '${q.id}')">&#9998;</button>`
+            : '';
         
         if (isGhost) {
             actionsHtml = '';
@@ -4209,7 +4239,8 @@ function escapeHtml(value) {
             let contractBadge = isPalletforceJob ? `<span class="palletforce-job-badge">${jobContractType}</span>` : '';
             if (isQuickCard) contractBadge += `<span class="quick-card-badge">QUICK CARD - COMPLETE</span>`;
             let podDownloadButton = q.pod_url ? `<button type="button" class="pod-download-card-btn" onclick="downloadPODPdf(event, '${escapeInlineArg(q.id)}')">DOWNLOAD POD PDF</button>` : '';
-            const ftsCardHeader = q.fts_invoice_number ? `<div class="fts-card-header">${escapeHtml(q.fts_invoice_number)}</div>` : '';
+            const collectionRefText = getCardCollectionRefDisplay(q);
+            const ftsCardHeader = `<div class="fts-card-header"><span>${escapeHtml(q.fts_invoice_number || 'NO FTS')}</span><span class="fts-card-ref">Collection Ref: ${escapeHtml(collectionRefText)}</span></div>`;
             const priceValue = String(q.total_price ?? '').trim();
             const priceDisplay = priceValue.toUpperCase() === 'PFJ' ? 'PFJ' : `£${priceValue || '0'}`;
             const splitTrailer = isLeg2 ? getSplitDeliveryTrailer(q) : '';
@@ -4226,6 +4257,7 @@ function escapeHtml(value) {
             card.innerHTML = `
                 ${ghostBanner}
                 ${reorderHandleHtml}
+                ${quickEditHtml}
                 ${ftsCardHeader}
                 <div class="postcode-header" style="align-items: ${headerAlignment};">${pcHeader}</div>
                 ${onUnlockHtml}
@@ -4888,6 +4920,125 @@ function escapeHtml(value) {
         return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
 
+    function getDatePickerTodayMin() {
+        return `${getTodayLocalDateKey()}T00:00`;
+    }
+
+    function getDatePickerMinForDateKey(dateKey) {
+        return dateKey ? `${dateKey}T00:00` : getDatePickerTodayMin();
+    }
+
+    function getLocalDateKeyFromInputValue(value) {
+        return getLocalDateKeyFromValue(value);
+    }
+
+    function localDateKeyToTime(dateKey) {
+        const d = dateKey ? new Date(`${dateKey}T00:00`) : null;
+        return d && !isNaN(d.getTime()) ? d.getTime() : null;
+    }
+
+    function localDateKeyDiffDays(laterKey, earlierKey) {
+        const laterTime = localDateKeyToTime(laterKey);
+        const earlierTime = localDateKeyToTime(earlierKey);
+        if (laterTime === null || earlierTime === null) return null;
+        return Math.round((laterTime - earlierTime) / 86400000);
+    }
+
+    function focusDateValidationInput(input) {
+        if (input && typeof input.focus === 'function') input.focus();
+    }
+
+    function validatePlannerFormDateRules(collectionItems, deliveryItems) {
+        const todayKey = getTodayLocalDateKey();
+        const collections = (collectionItems || []).map(item => ({
+            ...item,
+            dateKey: getLocalDateKeyFromInputValue(item && item.value)
+        })).filter(item => item.dateKey);
+        const deliveries = (deliveryItems || []).map(item => ({
+            ...item,
+            dateKey: getLocalDateKeyFromInputValue(item && item.value)
+        })).filter(item => item.dateKey);
+
+        const pastCollection = collections.find(item => item.dateKey < todayKey);
+        if (pastCollection) {
+            alert('Collection date cannot be before today.');
+            focusDateValidationInput(pastCollection.input);
+            return false;
+        }
+
+        if (!collections.length || !deliveries.length) return true;
+
+        const earliestCollectionKey = collections
+            .map(item => item.dateKey)
+            .sort()[0];
+        const earlierDelivery = deliveries.find(item => item.dateKey < earliestCollectionKey);
+        if (earlierDelivery) {
+            alert('Delivery date must be the same date as collection or a future date.');
+            focusDateValidationInput(earlierDelivery.input);
+            return false;
+        }
+
+        const longGapDelivery = deliveries.find(item => localDateKeyDiffDays(item.dateKey, earliestCollectionKey) >= 5);
+        if (longGapDelivery) {
+            const ok = confirm('The delivery date is 5 days or more ahead of the collection date, are you sure you want to continue?');
+            if (!ok) {
+                focusDateValidationInput(longGapDelivery.input);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function updateNewJobDatePickerLimits() {
+        const collectionInput = document.getElementById('n_coll_dt');
+        const deliveryInput = document.getElementById('n_del_dt');
+        const todayMin = getDatePickerTodayMin();
+        if (collectionInput) collectionInput.min = todayMin;
+
+        const collectionDateKey = getLocalDateKeyFromInputValue(collectionInput && collectionInput.value);
+        if (deliveryInput) deliveryInput.min = getDatePickerMinForDateKey(collectionDateKey || getTodayLocalDateKey());
+    }
+
+    function updateMultiJobDatePickerLimits() {
+        const panels = Array.from(document.querySelectorAll('#modal-multi-job .multi-stop-panel'));
+        const collectionInputs = panels
+            .filter(panel => panel.dataset.stopType === 'collection')
+            .map(panel => panel.querySelector('.mj-stop-datetime'))
+            .filter(Boolean);
+        const deliveryInputs = panels
+            .filter(panel => panel.dataset.stopType === 'delivery')
+            .map(panel => panel.querySelector('.mj-stop-datetime'))
+            .filter(Boolean);
+
+        const todayMin = getDatePickerTodayMin();
+        collectionInputs.forEach(input => { input.min = todayMin; });
+
+        const collectionKeys = collectionInputs
+            .map(input => getLocalDateKeyFromInputValue(input.value))
+            .filter(Boolean)
+            .sort();
+        const deliveryMin = getDatePickerMinForDateKey(collectionKeys[0] || getTodayLocalDateKey());
+        deliveryInputs.forEach(input => { input.min = deliveryMin; });
+    }
+
+    function validateNewJobDateRules() {
+        const collectionInput = document.getElementById('n_coll_dt');
+        const deliveryInput = document.getElementById('n_del_dt');
+        return validatePlannerFormDateRules(
+            [{ value: collectionInput && collectionInput.value, input: collectionInput }],
+            [{ value: deliveryInput && deliveryInput.value, input: deliveryInput }]
+        );
+    }
+
+    function validateMultiJobDateRules() {
+        const collectionItems = Array.from(document.querySelectorAll('#multi-collections .mj-stop-datetime'))
+            .map(input => ({ value: input.value, input }));
+        const deliveryItems = Array.from(document.querySelectorAll('#multi-deliveries .mj-stop-datetime'))
+            .map(input => ({ value: input.value, input }));
+        return validatePlannerFormDateRules(collectionItems, deliveryItems);
+    }
+
     let multiJobStopCounters = { collection: 0, delivery: 0 };
 
     function openMultiJobModal() {
@@ -4909,6 +5060,7 @@ function escapeHtml(value) {
         if (deliveries) deliveries.innerHTML = '';
         addMultiJobStop('collection');
         addMultiJobStop('delivery');
+        updateMultiJobDatePickerLimits();
     }
 
     function addMultiJobStop(type) {
@@ -4935,11 +5087,12 @@ function escapeHtml(value) {
                 <div class="form-group"><label>Telephone</label><input type="text" class="mj-stop-phone"></div>
                 <div class="form-group"><label>Email</label><input type="email" class="mj-stop-email"></div>
                 <div class="form-group"><label>Reference</label><input type="text" class="mj-stop-ref"></div>
-                <div class="form-group"><label>Date & Time *</label><input type="datetime-local" class="mj-stop-datetime" required></div>
+                <div class="form-group"><label>Date & Time *</label><input type="datetime-local" class="mj-stop-datetime" onchange="updateMultiJobDatePickerLimits()" required></div>
             </div>
         `;
         container.appendChild(panel);
         attachMultiJobStopAutocomplete(panel);
+        updateMultiJobDatePickerLimits();
         refreshMultiJobStopLabels(type);
     }
 
@@ -5040,6 +5193,7 @@ function escapeHtml(value) {
         const missingCollection = collections.find(stop => !stop.postcode || !stop.datetime);
         const missingDelivery = deliveries.find(stop => !stop.postcode || !stop.datetime);
         if (missingCollection || missingDelivery) return alert('Each collection and delivery needs a postcode and date/time.');
+        if (!validateMultiJobDateRules()) return;
 
         if (saveButton) {
             saveButton.disabled = true;
@@ -5109,6 +5263,7 @@ function escapeHtml(value) {
 
         const bookingCustomerValid = await validateBookingCustomerBeforeSave();
         if (!bookingCustomerValid) return;
+        if (!validateNewJobDateRules()) return;
 
         const id = document.getElementById('sys_job_id').value;
         const existingJobBeforeSave = id ? getJobById(id) : null;
@@ -5253,7 +5408,11 @@ Standard jobs without extra legs will continue to save normally.`);
     }
 
     function editJob(e, id) {
-        e.stopPropagation();
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        closeJobDetailsModal();
         const j = allJobsRaw.find(x => x.id == id);
         if(!j) return;
         resetForm();
@@ -5297,6 +5456,7 @@ Standard jobs without extra legs will continue to save normally.`);
         document.getElementById('n_total_pallets').value = j.total_pallets || '';
         document.getElementById('n_total_weight').value = j.total_weight || '';
         document.getElementById('n_veh_type').value = j.vehicle_type || 'Artic';
+        updateNewJobDatePickerLimits();
         
         openModal('modal-add');
     }
@@ -6210,8 +6370,12 @@ Are you sure you want to place it here?`);
         const statusLaneStatus = getPlannerStatusFromLaneSlot(finalTarget.id);
         const isPool = finalTarget.id === 'pool-container' || finalTarget.classList.contains('pool-zone') || finalTarget.closest('.pool-zone') !== null;
         const draggedJob = allJobsRaw.find(x => String(x.id) === String(id));
+        const effectiveCardRole = cardRole
+            || (sourceCard && sourceCard.dataset ? sourceCard.dataset.cardRole : '')
+            || (String(rawId || '').startsWith('delivery-') || isDeliveryPlannerCardJob(draggedJob) ? 'delivery' : '')
+            || (isTwoCardOperationalJob(draggedJob) ? 'collection' : '');
 
-        if (cardRole === 'delivery') {
+        if (effectiveCardRole === 'delivery') {
             await moveDeliveryPlannerCard(id, finalTarget.id);
             return;
         }
@@ -6284,7 +6448,7 @@ Are you sure you want to place it here?`);
             return;
         }
 
-        if (cardRole === 'collection' && draggedJob && !isPool && !statusLaneStatus) {
+        if (effectiveCardRole === 'collection' && draggedJob && !isPool && !statusLaneStatus) {
             try {
                 await moveDeliveryWithCollection(draggedJob, finalTarget.id);
             } catch (err) {
@@ -6512,6 +6676,7 @@ Are you sure you want to place it here?`);
         ['n_cust_name','n_coll_address_search','n_del_address_search','n_coll_name','n_coll_phone','n_coll_email','n_cust_phone', 'n_cust_email','n_job_notes','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2', 'n_customers_own_invoice_number', 'n_cx_number', 'n_fts_invoice_number', 'n_job_contract_type', 'n_coll_time_period', 'n_del_time_period'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
         setJobBookingMode('');
         prefillNextFtsInvoiceNumber();
+        updateNewJobDatePickerLimits();
         switchFormTab('leg1');
     }
 
@@ -6900,6 +7065,8 @@ Are you sure you want to place it here?`);
     function openModal(id) { 
         document.getElementById(id).style.display = 'flex'; 
         if(id === 'modal-add') switchFormTab('leg1');
+        if(id === 'modal-add') updateNewJobDatePickerLimits();
+        if(id === 'modal-multi-job') updateMultiJobDatePickerLimits();
     }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function closeModalOnOutsideClick(e, id) {
