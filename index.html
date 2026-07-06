@@ -101,7 +101,7 @@
         /* ==========================================
            4. PLANNER GRID & CELLS
            ========================================== */
-        table.planner-table { width: 100%; border-collapse: separate; border-spacing: 2px 2px; min-width: 4200px; background: #b8b8b8; } 
+        table.planner-table { width: 100%; border-collapse: separate; border-spacing: 2px 2px; min-width: 4680px; background: #b8b8b8; } 
         
         .corner-header { position: sticky; top: 0; left: 0; z-index: 30; background: var(--frost-black); color: white; border-right: 3px solid var(--frost-red); border-bottom: 3px solid var(--frost-red); width: 120px; text-align: center; }
         .vehicle-col-header { position: sticky; top: 0; z-index: 20; background: var(--frost-black); color: white; border-right: 0; border-bottom: 2px solid #b8b8b8; padding: 10px; min-width: 240px; vertical-align: top; text-align: left; transition: background-color 0.3s; }
@@ -109,6 +109,10 @@
         .vehicle-col-header.palletforce-header .reg-title { color: white; }
         .vehicle-col-header.palletforce-header .driver-weekly-total { color: rgba(255,255,255,0.85); }
         .vehicle-col-header.palletforce-header .trailer-tag { background: rgba(0,0,0,0.28); color: white; }
+        .vehicle-col-header.rental-header { background: #2e7d32; border-bottom-color: #1f5b24; color: white; }
+        .vehicle-col-header.rental-header .reg-title { color: white; }
+        .vehicle-col-header.rental-header .driver-weekly-total { color: rgba(255,255,255,0.85); }
+        .vehicle-col-header.rental-header .trailer-tag { background: rgba(0,0,0,0.28); color: white; }
         .status-col-header { position: sticky; top: 0; z-index: 20; background: #34495e; color: white; border-right: 0; border-bottom: 2px solid #b8b8b8; padding: 10px; min-width: 240px; vertical-align: middle; text-align: center; font-size: 0.9rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3px; }
         .status-col-header.booking_requests-header { background: #0056b3; }
         .status-col-header.cancelled-header { background: #8a1c20; }
@@ -120,6 +124,7 @@
         table.planner-table td.status-cancelled-cell { background: #fff2f2; }
         table.planner-table td.status-cancelled-cell:hover { background: #ffe7e7; }
         .palletforce-badge { display: inline-block; margin-top: 4px; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.4px; background: rgba(0,0,0,0.22); color: white; padding: 2px 6px; border-radius: 999px; }
+        .rental-badge { display: inline-block; margin-top: 4px; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.4px; background: rgba(0,0,0,0.22); color: white; padding: 2px 6px; border-radius: 999px; }
         .date-cell { position: sticky; left: 0; z-index: 10; background: #eee; color: var(--frost-black); border-right: 3px solid var(--frost-red); border-bottom: 1px solid var(--border-color); padding: 10px; min-width: 120px; text-align: center; font-weight: bold; }
         
         .day-name { font-size: 0.95rem; color: var(--frost-red); margin-bottom: 4px; }
@@ -149,6 +154,8 @@
         table.planner-table td:hover { background: #fdfdfd; }
         table.planner-table td.palletforce-cell { background: #fff3e6; }
         table.planner-table td.palletforce-cell:hover { background: #ffe8cf; }
+        table.planner-table td.rental-cell { background: #ecfdf5; }
+        table.planner-table td.rental-cell:hover { background: #dcfce7; }
 
         /* VOR LOCKDOWN STYLES */
         th.vor-header { background-color: #8a1c20 !important; }
@@ -499,6 +506,7 @@
         .multi-stop-remove { border:0; background:#e5e7eb; color:#111827; border-radius:4px; padding:4px 8px; font-size:0.68rem; font-weight:900; cursor:pointer; }
         .multi-stop-remove:hover { background:#cbd5e1; }
         .multi-job-section-title { margin:16px 0 8px; color:#1a1a1a; font-size:0.86rem; font-weight:900; text-transform:uppercase; }
+        .vehicle-type-btn.active { outline: 3px solid rgba(46,125,50,0.25); box-shadow: 0 0 0 1px rgba(255,255,255,0.7) inset; }
         @media (max-width: 700px) { .quick-card-grid { grid-template-columns: 1fr; } }
 
 </style>
@@ -520,6 +528,7 @@
                 <button class="week-btn" id="btn-toggle-maintenance" onclick="toggleMaintenanceCards()">HIDE MAINTENANCE</button>
                 <button class="week-btn" id="btn-toggle-header" onclick="toggleHeaderView()">TOWNS</button>
                 <button class="week-btn" onclick="syncMaintenanceAndLoadAll()">SYNC</button>
+                <button class="week-btn" onclick="openAddVehicleModal()">ADD VEHICLE</button>
             </div>
             <div class="header-menu-bar header-menu-row-secondary">
                 <div class="menu-group">
@@ -695,6 +704,36 @@
         <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px; border-top:1px solid #eee; padding-top:14px;">
             <button type="button" class="week-btn" onclick="closeModal('modal-quick-card')" style="background:#ddd; color:#333;">Cancel</button>
             <button type="button" class="week-btn quick-card-btn" onclick="saveQuickCard()">Create Quick Card</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Vehicle Modal -->
+<div id="modal-add-vehicle" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-add-vehicle')">
+    <div class="modal-content" style="width:460px; max-width:94vw;" onclick="event.stopPropagation();">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #2e7d32; padding-bottom:10px; margin-bottom:14px;">
+            <h2 style="margin:0; color:#2e7d32;">Add Vehicle</h2>
+            <button type="button" class="week-btn" onclick="closeModal('modal-add-vehicle')" style="background:#ddd; color:#333;">Close</button>
+        </div>
+        <div class="form-group">
+            <label>Registration Number</label>
+            <input type="text" id="new_vehicle_reg" placeholder="e.g. AB12 CDE" style="text-transform:uppercase;">
+        </div>
+        <div class="form-group">
+            <label>Vehicle Type</label>
+            <input type="hidden" id="new_vehicle_type" value="general">
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="button" class="week-btn vehicle-type-btn active" data-vehicle-type="general" onclick="setNewVehicleType('general')" style="background:#555;">General Haulage</button>
+                <button type="button" class="week-btn vehicle-type-btn" data-vehicle-type="palletforce" onclick="setNewVehicleType('palletforce')" style="background:#f58220;">Palletforce</button>
+                <button type="button" class="week-btn vehicle-type-btn" data-vehicle-type="rental" onclick="setNewVehicleType('rental')" style="background:#2e7d32;">Rental</button>
+            </div>
+        </div>
+        <div style="font-size:0.76rem; color:#64748b; background:#f8fafc; border:1px solid #e5e7eb; border-radius:6px; padding:9px; line-height:1.35;">
+            New vehicles are saved to Supabase if the planner_vehicles table exists. The built-in vehicle list stays as the fallback.
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px; border-top:1px solid #eee; padding-top:14px;">
+            <button type="button" class="week-btn" onclick="closeModal('modal-add-vehicle')" style="background:#ddd; color:#333;">Cancel</button>
+            <button type="button" id="save-new-vehicle-btn" class="week-btn" onclick="saveNewVehicle()" style="background:#2e7d32;">Add Vehicle</button>
         </div>
     </div>
 </div>
@@ -1090,20 +1129,101 @@ function escapeHtml(value) {
     const DRIVER_PUSH_FUNCTION_NAME = "driver-dispatch-push";
     const podFolder = "https://drive.google.com/drive/folders/173z9mkrCmqmEyEENeH__-qvdw1SFJl7w?usp=sharing";
 
-    const vehicles = [
+    const PLANNER_VEHICLES_TABLE = 'planner_vehicles';
+
+    let vehicles = [
         "FN21 HLZ", "FR72 FTS", "FS72 FTS", "FT72 FTS", 
         "KU70 XNR", "KU70 XNS", "KU70 XNT", "KU70 XNV", 
         "KU70 XNW", "KU70 XNX",
         // PalletForce contract vehicles are kept together on the far right.
         // FJ69 WMC and DK69 ZHM stay in their original indexes to avoid existing planner jobs jumping columns.
-        "FJ69 WMC", "DK69 ZHM", "FJ69 WML", "FD65 VZA", "HS19 YNH"
+        "FJ69 WMC", "DK69 ZHM", "FJ69 WML", "FD65 VZA", "HS19 YNH",
+        // New vehicles are appended to keep existing saved column numbers stable.
+        "FJ21 ULW", "FJ17 OPT"
     ];
 
-    const palletforceVehicles = ["FJ69 WMC", "FJ69 WML", "DK69 ZHM", "FD65 VZA", "HS19 YNH"];
+    let plannerVehicleDisplayOrder = [
+        "FN21 HLZ", "FR72 FTS", "FS72 FTS", "FT72 FTS",
+        "KU70 XNR", "KU70 XNS", "KU70 XNT", "KU70 XNV",
+        "KU70 XNW", "KU70 XNX", "FJ21 ULW",
+        "FJ69 WMC", "DK69 ZHM", "FJ69 WML", "FD65 VZA", "HS19 YNH", "FJ17 OPT"
+    ];
+
+    let palletforceVehicles = ["FJ69 WMC", "FJ69 WML", "DK69 ZHM", "FD65 VZA", "HS19 YNH", "FJ17 OPT"];
+    let rentalVehicles = ["FJ21 ULW"];
     const palletforceFixedBadges = { "FD65 VZA": "26t", "HS19 YNH": "18t" };
 
     function isPalletforceVehicle(reg) {
         return palletforceVehicles.includes(reg);
+    }
+
+    function isRentalVehicle(reg) {
+        return rentalVehicles.includes(reg);
+    }
+
+    function normaliseVehicleRegistration(value) {
+        return String(value || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    }
+
+    function normalisePlannerVehicleType(value) {
+        const type = String(value || '').trim().toLowerCase();
+        if (type === 'palletforce') return 'palletforce';
+        if (type === 'rental') return 'rental';
+        return 'general';
+    }
+
+    function removeVehicleFromTypeLists(reg) {
+        palletforceVehicles = palletforceVehicles.filter(item => item !== reg);
+        rentalVehicles = rentalVehicles.filter(item => item !== reg);
+    }
+
+    function insertVehicleAfter(displayOrder, reg, afterReg) {
+        const cleanOrder = displayOrder.filter(item => item !== reg);
+        const afterIndex = cleanOrder.indexOf(afterReg);
+        if (afterIndex >= 0) {
+            cleanOrder.splice(afterIndex + 1, 0, reg);
+            return cleanOrder;
+        }
+        cleanOrder.push(reg);
+        return cleanOrder;
+    }
+
+    function applyPlannerVehicleRecord(record) {
+        const reg = normaliseVehicleRegistration(record && (record.registration_number || record.reg || record.vehicle_reg));
+        if (!reg) return false;
+
+        const type = normalisePlannerVehicleType(record && (record.vehicle_type || record.type));
+        if (!vehicles.includes(reg)) vehicles.push(reg);
+
+        removeVehicleFromTypeLists(reg);
+        if (type === 'palletforce') palletforceVehicles.push(reg);
+        if (type === 'rental') rentalVehicles.push(reg);
+
+        if (type === 'palletforce') {
+            plannerVehicleDisplayOrder = plannerVehicleDisplayOrder.filter(item => item !== reg);
+            plannerVehicleDisplayOrder.push(reg);
+        } else {
+            plannerVehicleDisplayOrder = insertVehicleAfter(plannerVehicleDisplayOrder, reg, 'KU70 XNX');
+        }
+
+        return true;
+    }
+
+    function getPlannerVehicleDisplayIndexes() {
+        const used = new Set();
+        const ordered = plannerVehicleDisplayOrder
+            .map(reg => vehicles.indexOf(reg))
+            .filter(index => {
+                if (index < 0 || used.has(index)) return false;
+                used.add(index);
+                return true;
+            });
+
+        vehicles.forEach((_, index) => {
+            if (!used.has(index)) ordered.push(index);
+        });
+
+        return ordered;
     }
 
     function getVehicleRegFromControlId(controlId) {
@@ -1944,8 +2064,12 @@ function escapeHtml(value) {
     // ==========================================
     // 4. PLANNER GRID GENERATION
     // ==========================================
-    const plannerBoard = document.getElementById('planner-board');
-    [0, 1, 2, 3].forEach(week => {
+    function renderPlannerGrid() {
+        const plannerBoard = document.getElementById('planner-board');
+        if (!plannerBoard) return;
+        plannerBoard.innerHTML = '';
+
+        [0, 1, 2, 3].forEach(week => {
         const table = document.createElement('table');
         table.className = 'planner-table';
         table.id = `table-w${week}`;
@@ -1955,14 +2079,17 @@ function escapeHtml(value) {
         let headRow = document.createElement('tr');
         headRow.innerHTML = `<th class="corner-header">Date</th>`;
         
-        vehicles.forEach((reg, i) => {
+        getPlannerVehicleDisplayIndexes().forEach(i => {
+            const reg = vehicles[i];
             let driverOptions = drivers.map(d => `<option value="${d.phone}">${d.name}</option>`).join('');
             const isPalletforce = isPalletforceVehicle(reg);
+            const isRental = isRentalVehicle(reg);
             const fixedBadge = palletforceFixedBadges[reg] || '';
             headRow.innerHTML += `
-                <th class="vehicle-col-header ${isPalletforce ? 'palletforce-header' : ''}" id="header-w${week}-dr${i}">
+                <th class="vehicle-col-header ${isPalletforce ? 'palletforce-header' : ''} ${isRental ? 'rental-header' : ''}" id="header-w${week}-dr${i}">
                     <span class="reg-title">${reg} <span class="trailer-tag ${fixedBadge ? 'visible' : ''}" id="trl-planner-w${week}-dr${i}">${fixedBadge}</span></span>
                     ${isPalletforce ? '<span class="palletforce-badge">PALLETFORCE</span>' : ''}
+                    ${isRental ? '<span class="rental-badge">RENTAL</span>' : ''}
                     <select class="driver-sel" id="sel-planner-w${week}-dr${i}">
                         ${driverOptions}
                     </select>
@@ -1990,10 +2117,11 @@ function escapeHtml(value) {
             
             row.innerHTML = `<th class="date-cell" id="date-w${week}-d${day}">...</th>`;
             
-            for(let veh = 0; veh < vehicles.length; veh++) {
+            getPlannerVehicleDisplayIndexes().forEach(veh => {
                 const reg = vehicles[veh];
-                row.innerHTML += `<td id="planner-w${week}-dr${veh}-s${day}" class="${isPalletforceVehicle(reg) ? 'palletforce-cell' : ''}" ondrop="drop(event)" ondragover="allowDrop(event)"></td>`;
-            }
+                const vehicleCellClass = isPalletforceVehicle(reg) ? 'palletforce-cell' : (isRentalVehicle(reg) ? 'rental-cell' : '');
+                row.innerHTML += `<td id="planner-w${week}-dr${veh}-s${day}" class="${vehicleCellClass}" ondrop="drop(event)" ondragover="allowDrop(event)"></td>`;
+            });
             PLANNER_STATUS_LANES.forEach(lane => {
                 const dropHandlers = lane.acceptsDrop === false ? '' : ' ondrop="drop(event)" ondragover="allowDrop(event)"';
                 row.innerHTML += `<td id="planner-w${week}-status-${lane.key}-s${day}" class="status-lane-cell status-${lane.key}-cell"${dropHandlers}></td>`;
@@ -2002,7 +2130,117 @@ function escapeHtml(value) {
         }
         table.appendChild(tbody);
         plannerBoard.appendChild(table);
-    });
+        });
+    }
+
+    renderPlannerGrid();
+
+    function openAddVehicleModal() {
+        const regInput = document.getElementById('new_vehicle_reg');
+        if (regInput) regInput.value = '';
+        setNewVehicleType('general');
+        openModal('modal-add-vehicle');
+        setTimeout(() => regInput && regInput.focus(), 80);
+    }
+
+    function setNewVehicleType(type) {
+        const cleanType = normalisePlannerVehicleType(type);
+        const field = document.getElementById('new_vehicle_type');
+        if (field) field.value = cleanType;
+        document.querySelectorAll('.vehicle-type-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.vehicleType === cleanType);
+        });
+    }
+
+    function plannerVehiclesTableMissingMessage(error) {
+        const detail = error && error.message ? `\n\nSupabase said: ${error.message}` : '';
+        return `The planner_vehicles table is not available yet.\n\nTo use Add Vehicle across all planner users, create a Supabase table called planner_vehicles with these columns:\n\nregistration_number text unique not null\nvehicle_type text not null\nactive boolean default true\ndisplay_order integer\n\nThen try again.${detail}`;
+    }
+
+    async function loadPlannerVehicleExtras() {
+        const { data, error } = await sb
+            .from(PLANNER_VEHICLES_TABLE)
+            .select('registration_number, vehicle_type, active, display_order')
+            .neq('active', false)
+            .order('display_order', { ascending: true });
+
+        if (error) {
+            console.warn('Planner vehicle extras could not be loaded. Using built-in vehicles only.', error);
+            return false;
+        }
+
+        let changed = false;
+        (data || []).forEach(record => {
+            if (applyPlannerVehicleRecord(record)) changed = true;
+        });
+
+        if (changed) {
+            renderPlannerGrid();
+            updateDateHeaders(currentWeekOffset || 0);
+            updateUnassignedPoolDateHeaders(getActivePlannerWeekOffset());
+            updateMaintenancePoolHeaders();
+        }
+
+        return changed;
+    }
+
+    async function saveNewVehicle() {
+        const saveButton = document.getElementById('save-new-vehicle-btn');
+        const regInput = document.getElementById('new_vehicle_reg');
+        const typeInput = document.getElementById('new_vehicle_type');
+        const reg = normaliseVehicleRegistration(regInput && regInput.value);
+        const type = normalisePlannerVehicleType(typeInput && typeInput.value);
+
+        if (!reg) {
+            alert('Please enter a registration number.');
+            if (regInput) regInput.focus();
+            return;
+        }
+
+        if (vehicles.includes(reg)) {
+            alert(`${reg} is already on the planner.`);
+            if (regInput) regInput.focus();
+            return;
+        }
+
+        if (saveButton) {
+            saveButton.disabled = true;
+            saveButton.textContent = 'Saving...';
+        }
+
+        try {
+            const displayOrder = type === 'palletforce' ? 900 + vehicles.length : 100 + vehicles.length;
+            const { error } = await sb
+                .from(PLANNER_VEHICLES_TABLE)
+                .insert([{
+                    registration_number: reg,
+                    vehicle_type: type,
+                    active: true,
+                    display_order: displayOrder
+                }]);
+
+            if (error) throw error;
+
+            applyPlannerVehicleRecord({ registration_number: reg, vehicle_type: type });
+            renderPlannerGrid();
+            closeModal('modal-add-vehicle');
+            await loadAll();
+        } catch (error) {
+            console.error(error);
+            const errText = String((error && error.message) || error || '');
+            if ((error && error.code === '23505') || /duplicate|unique/i.test(errText)) {
+                alert(`${reg} is already saved as a planner vehicle.`);
+                await loadPlannerVehicleExtras();
+            } else {
+                alert(plannerVehiclesTableMissingMessage(error));
+            }
+        } finally {
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.textContent = 'Add Vehicle';
+            }
+        }
+    }
 
     // ==========================================
     // 5. MAINTENANCE & TRAILER LOGIC
@@ -7348,6 +7586,7 @@ Are you sure you want to place it here?`);
     window.onload = async () => { 
         setupAutoScroll();
         setupPlannerRealtimeOnce();
+        await loadPlannerVehicleExtras();
         await syncMaintenanceAndLoadAll(); 
     };
 
@@ -7579,4 +7818,3 @@ Are you sure you want to place it here?`);
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDOPkYduNBvti4HWX2izIhCrrQ02uk5SL0&libraries=places&callback=initGooglePlacesAutocomplete"></script>
 </body>
 </html>
- 
