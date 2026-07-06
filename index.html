@@ -4993,11 +4993,9 @@ function escapeHtml(value) {
     function updateNewJobDatePickerLimits() {
         const collectionInput = document.getElementById('n_coll_dt');
         const deliveryInput = document.getElementById('n_del_dt');
-        const todayMin = getDatePickerTodayMin();
-        if (collectionInput) collectionInput.min = todayMin;
-
-        const collectionDateKey = getLocalDateKeyFromInputValue(collectionInput && collectionInput.value);
-        if (deliveryInput) deliveryInput.min = getDatePickerMinForDateKey(collectionDateKey || getTodayLocalDateKey());
+        [collectionInput, deliveryInput].forEach(input => {
+            if (input) input.removeAttribute('min');
+        });
     }
 
     function updateMultiJobDatePickerLimits() {
@@ -5011,15 +5009,9 @@ function escapeHtml(value) {
             .map(panel => panel.querySelector('.mj-stop-datetime'))
             .filter(Boolean);
 
-        const todayMin = getDatePickerTodayMin();
-        collectionInputs.forEach(input => { input.min = todayMin; });
-
-        const collectionKeys = collectionInputs
-            .map(input => getLocalDateKeyFromInputValue(input.value))
-            .filter(Boolean)
-            .sort();
-        const deliveryMin = getDatePickerMinForDateKey(collectionKeys[0] || getTodayLocalDateKey());
-        deliveryInputs.forEach(input => { input.min = deliveryMin; });
+        [...collectionInputs, ...deliveryInputs].forEach(input => {
+            if (input) input.removeAttribute('min');
+        });
     }
 
     function validateNewJobDateRules() {
