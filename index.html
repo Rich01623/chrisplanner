@@ -3310,7 +3310,7 @@ function escapeHtml(value) {
                     slot.appendChild(card);
                 }
 
-                if (shouldRenderDeliveryCard && !findDeliveryCardForJob(q)) {
+                if (!isNumberedOperationalStageJob(q) && shouldRenderDeliveryCard && !findDeliveryCardForJob(q)) {
                     const card = createCardElement(q, false, isON, 'delivery');
                     const slot = document.getElementById(getPlannerSlotForLeg(q, 'delivery')) || document.getElementById('pool-zone-tba');
                     slot.appendChild(card);
@@ -4152,6 +4152,33 @@ function escapeHtml(value) {
         }
     }
 
+    async function clearManualSortForContainerJobs(container, extraIds = []) {
+        if (!container) return;
+        const ids = new Set(extraIds.map(id => String(id || '').replace(/^ghost-/, '').replace(/^delivery-/, '')).filter(Boolean));
+        Array.from(container.querySelectorAll(':scope > .job-card:not(.ghost-card):not(.modal-job-card-copy)')).forEach(card => {
+            const id = cleanCardDomId(card.id);
+            if (id) ids.add(String(id));
+        });
+
+        if (ids.size === 0) return;
+
+        const idList = Array.from(ids);
+        idList.forEach(id => {
+            const cached = allJobsRaw.find(job => String(job.id) === String(id));
+            if (cached) {
+                cached.planner_sort_order = null;
+                cached.planner_sort_manual = false;
+            }
+        });
+
+        const { error } = await sb.from('quotes')
+            .update({ planner_sort_order: null, planner_sort_manual: false })
+            .in('id', idList);
+        if (error) {
+            console.warn('Could not clear manual planner order for target slot:', error);
+        }
+    }
+
     async function reorderCardInsideContainer(id, container, dropTargetCard, clientY) {
         const draggedCard = document.getElementById(String(id));
         if (!draggedCard || !container || draggedCard.parentElement !== container) return false;
@@ -4180,6 +4207,20 @@ function escapeHtml(value) {
         return /\((?:Leg\s*1|Collection(?:\s+\d+\s*\/\s*\d+)?)\)\s*$/i.test(String(job && job.customer_name || ''));
     }
 
+    function getNumberedOperationalStage(job) {
+        const match = String(job && job.customer_name || '').match(/\((Collection|Delivery)\s+(\d+)\s*\/\s*(\d+)\)\s*$/i);
+        if (!match) return null;
+        return {
+            role: match[1].toLowerCase(),
+            index: Number(match[2]),
+            total: Number(match[3])
+        };
+    }
+
+    function isNumberedOperationalStageJob(job) {
+        return !!getNumberedOperationalStage(job);
+    }
+
     function getOperationalTaskLabel(job, role) {
         const customer = String(job && job.customer_name || '');
         const match = customer.match(/\((Collection|Delivery)(?:\s+(\d+)\s*\/\s*(\d+))?\)\s*$/i);
@@ -4205,24 +4246,19 @@ function escapeHtml(value) {
     function findDeliveryCardForJob(source) {
         if (!source) return null;
         const sourceId = String(source.id);
-        const sourceFts = String(source.fts_invoice_number || '').trim().toLowerCase();
         const sourceBaseName = cleanTwoCardCustomerName(source.customer_name).toLowerCase();
+        const sourceStage = getNumberedOperationalStage(source);
 
-        const linkedDelivery = getLinkedJobs(source.id).find(job =>
+        if (sourceStage) return null;
+
+        const linkedDeliveries = getLinkedJobs(source.id).filter(job =>
             job && String(job.id) !== sourceId && isDeliveryPlannerCardJob(job)
         );
-        if (linkedDelivery) return linkedDelivery;
+        if (linkedDeliveries.length === 1 && !isNumberedOperationalStageJob(linkedDeliveries[0])) return linkedDeliveries[0];
 
         const deliveryCandidates = (allJobsRaw || []).filter(job =>
-            job && String(job.id) !== sourceId && isDeliveryPlannerCardJob(job)
+            job && String(job.id) !== sourceId && isDeliveryPlannerCardJob(job) && !isNumberedOperationalStageJob(job)
         );
-
-        if (sourceFts) {
-            const ftsMatch = deliveryCandidates.find(job =>
-                String(job.fts_invoice_number || '').trim().toLowerCase() === sourceFts
-            );
-            if (ftsMatch) return ftsMatch;
-        }
 
         return deliveryCandidates.find(job => {
             if (!jobsHaveCompatibleInvoiceNumbers(source, job)) return false;
@@ -4236,24 +4272,19 @@ function escapeHtml(value) {
     function findCollectionCardForDeliveryJob(source) {
         if (!source || !isDeliveryPlannerCardJob(source)) return source || null;
         const sourceId = String(source.id);
-        const sourceFts = String(source.fts_invoice_number || '').trim().toLowerCase();
         const sourceBaseName = cleanTwoCardCustomerName(source.customer_name).toLowerCase();
+        const sourceStage = getNumberedOperationalStage(source);
 
-        const linkedCollection = getLinkedJobs(source.id).find(job =>
+        if (sourceStage) return source;
+
+        const linkedCollections = getLinkedJobs(source.id).filter(job =>
             job && String(job.id) !== sourceId && !isDeliveryPlannerCardJob(job) && isTwoCardOperationalJob(job)
         );
-        if (linkedCollection) return linkedCollection;
+        if (linkedCollections.length === 1 && !isNumberedOperationalStageJob(linkedCollections[0])) return linkedCollections[0];
 
         const collectionCandidates = (allJobsRaw || []).filter(job =>
-            job && String(job.id) !== sourceId && !isDeliveryPlannerCardJob(job) && isTwoCardOperationalJob(job)
+            job && String(job.id) !== sourceId && !isDeliveryPlannerCardJob(job) && isTwoCardOperationalJob(job) && !isNumberedOperationalStageJob(job)
         );
-
-        if (sourceFts) {
-            const ftsMatch = collectionCandidates.find(job =>
-                String(job.fts_invoice_number || '').trim().toLowerCase() === sourceFts
-            );
-            if (ftsMatch) return ftsMatch;
-        }
 
         return collectionCandidates.find(job => {
             if (!jobsHaveCompatibleInvoiceNumbers(source, job)) return false;
@@ -6982,6 +7013,9 @@ Are you sure you want to place it here?`);
             if (isDeliveryPlannerCardJob(source)) {
                 const { error } = await sb.from('quotes').update(updatePayload).eq('id', source.id);
                 if (error) throw error;
+                if (assignedSlot && assignedSlot.startsWith('planner-w')) {
+                    await clearManualSortForContainerJobs(document.getElementById(assignedSlot), [source.id]);
+                }
                 loadAll();
                 return true;
             }
@@ -6990,6 +7024,9 @@ Are you sure you want to place it here?`);
             if (existingDelivery) {
                 const { error } = await sb.from('quotes').update(updatePayload).eq('id', existingDelivery.id);
                 if (error) throw error;
+                if (assignedSlot && assignedSlot.startsWith('planner-w')) {
+                    await clearManualSortForContainerJobs(document.getElementById(assignedSlot), [existingDelivery.id]);
+                }
                 loadAll();
                 return true;
             }
@@ -6999,6 +7036,9 @@ Are you sure you want to place it here?`);
             deliveryPayload.total_price = '0';
             Object.assign(deliveryPayload, updatePayload);
             await insertQuoteWithOptionalLinkedGroup(deliveryPayload, null);
+            if (assignedSlot && assignedSlot.startsWith('planner-w')) {
+                await clearManualSortForContainerJobs(document.getElementById(assignedSlot));
+            }
             loadAll();
             return true;
         } catch (err) {
@@ -7010,6 +7050,7 @@ Are you sure you want to place it here?`);
 
     async function moveDeliveryWithCollection(collectionJob, collectionTargetId) {
         if (!collectionJob || isDeliveryPlannerCardJob(collectionJob)) return;
+        if (isNumberedOperationalStageJob(collectionJob)) return;
         const deliveryJob = findDeliveryCardForJob(collectionJob);
 
         const deliverySlot = getDeliverySlotFromCollectionTarget(collectionJob, collectionTargetId);
@@ -7027,6 +7068,7 @@ Are you sure you want to place it here?`);
         if (deliveryJob) {
             const { error } = await sb.from('quotes').update(deliveryPayload).eq('id', deliveryJob.id);
             if (error) throw error;
+            await clearManualSortForContainerJobs(document.getElementById(deliverySlot), [deliveryJob.id]);
             return;
         }
 
@@ -7035,6 +7077,7 @@ Are you sure you want to place it here?`);
         newDelivery.total_price = '0';
         Object.assign(newDelivery, deliveryPayload);
         await insertQuoteWithOptionalLinkedGroup(newDelivery, null);
+        await clearManualSortForContainerJobs(document.getElementById(deliverySlot));
     }
 
     async function drop(ev) {
@@ -7135,6 +7178,10 @@ Are you sure you want to place it here?`);
         if (error) {
             alert("Error reassigning job: " + error.message);
             return;
+        }
+
+        if (!isPool && !statusLaneStatus && finalTarget.id && finalTarget.id.startsWith('planner-w')) {
+            await clearManualSortForContainerJobs(finalTarget, [id]);
         }
 
         if (effectiveCardRole === 'collection' && draggedJob && !isPool && !statusLaneStatus) {
