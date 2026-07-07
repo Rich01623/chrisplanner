@@ -356,6 +356,7 @@
         
         .tab-content-zone { display: none; }
         .tab-content-zone.active { display: block; }
+        #form-tabs { display: none !important; }
         
         /* Auto-Complete Dropdown Styles */
         .autocomplete-suggestions { display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid var(--frost-blue); border-radius: 0 0 4px 4px; max-height:160px; overflow-y:auto; z-index:1000; box-shadow:0 4px 6px rgba(0,0,0,0.1); }
@@ -1246,6 +1247,7 @@ function escapeHtml(value) {
         { name: "Agency One", phone: "447701238562" },
         { name: "Agency Two", phone: "447701238558" },
         { name: "Andy West", phone: "447734369810" },
+        { name: "Barrie Ashmore", phone: "447890536159" },
         { name: "Callum Lee", phone: "447359390140" },
         { name: "Chris Frost", phone: "447701238561" },
         { name: "Johannes Van Neerven", phone: "447701238575" },
@@ -3224,6 +3226,8 @@ function escapeHtml(value) {
         handleBookingRequestNotifications(bookingRequestsRaw);
         const currentPlannerMonday = getCurrentPlannerMondayDate();
 
+        const renderedDeliveryCardKeys = new Set();
+
         boardJobs.forEach(q => {
             let status = String(q.status || '').toLowerCase();
             if (['driver_config', 'template'].includes(status)) return;
@@ -3296,6 +3300,11 @@ function escapeHtml(value) {
             if (isTwoCardJob) {
                 const isDeliveryRow = isDeliveryPlannerCardJob(q);
                 if (isDeliveryRow) {
+                    const deliveryPairKey = !isNumberedOperationalStageJob(q) ? getTwoCardPairKey(q) : '';
+                    if (deliveryPairKey) {
+                        if (renderedDeliveryCardKeys.has(deliveryPairKey)) return;
+                        renderedDeliveryCardKeys.add(deliveryPairKey);
+                    }
                     if (shouldRenderDeliveryCard) {
                         const card = createCardElement(q, false, isON, 'delivery');
                         const slot = document.getElementById(getPlannerSlotForLeg(q, 'delivery')) || document.getElementById('pool-zone-tba');
@@ -4221,6 +4230,19 @@ function escapeHtml(value) {
         return !!getNumberedOperationalStage(job);
     }
 
+    function getTwoCardPairKey(job) {
+        if (!job) return '';
+        const fts = String(job.fts_invoice_number || '').trim().toLowerCase();
+        if (fts) return `fts:${fts}`;
+        return [
+            cleanTwoCardCustomerName(job.customer_name).toLowerCase(),
+            getLocalDateKeyFromValue(job.coll_datetime),
+            getLocalDateKeyFromValue(job.del_datetime),
+            String(job.coll_postcode || '').trim().toUpperCase(),
+            String(job.del_postcode || '').trim().toUpperCase()
+        ].join('|');
+    }
+
     function getOperationalTaskLabel(job, role) {
         const customer = String(job && job.customer_name || '');
         const match = customer.match(/\((Collection|Delivery)(?:\s+(\d+)\s*\/\s*(\d+))?\)\s*$/i);
@@ -4246,19 +4268,33 @@ function escapeHtml(value) {
     function findDeliveryCardForJob(source) {
         if (!source) return null;
         const sourceId = String(source.id);
+        const sourceFts = String(source.fts_invoice_number || '').trim().toLowerCase();
         const sourceBaseName = cleanTwoCardCustomerName(source.customer_name).toLowerCase();
         const sourceStage = getNumberedOperationalStage(source);
 
         if (sourceStage) return null;
 
         const linkedDeliveries = getLinkedJobs(source.id).filter(job =>
-            job && String(job.id) !== sourceId && isDeliveryPlannerCardJob(job)
+            job && String(job.id) !== sourceId && isDeliveryPlannerCardJob(job) && !isNumberedOperationalStageJob(job)
         );
-        if (linkedDeliveries.length === 1 && !isNumberedOperationalStageJob(linkedDeliveries[0])) return linkedDeliveries[0];
+        if (sourceFts) {
+            const linkedFtsMatch = linkedDeliveries.find(job =>
+                String(job.fts_invoice_number || '').trim().toLowerCase() === sourceFts
+            );
+            if (linkedFtsMatch) return linkedFtsMatch;
+        }
+        if (linkedDeliveries.length === 1) return linkedDeliveries[0];
 
         const deliveryCandidates = (allJobsRaw || []).filter(job =>
             job && String(job.id) !== sourceId && isDeliveryPlannerCardJob(job) && !isNumberedOperationalStageJob(job)
         );
+
+        if (sourceFts) {
+            const ftsMatch = deliveryCandidates.find(job =>
+                String(job.fts_invoice_number || '').trim().toLowerCase() === sourceFts
+            );
+            if (ftsMatch) return ftsMatch;
+        }
 
         return deliveryCandidates.find(job => {
             if (!jobsHaveCompatibleInvoiceNumbers(source, job)) return false;
@@ -4272,19 +4308,33 @@ function escapeHtml(value) {
     function findCollectionCardForDeliveryJob(source) {
         if (!source || !isDeliveryPlannerCardJob(source)) return source || null;
         const sourceId = String(source.id);
+        const sourceFts = String(source.fts_invoice_number || '').trim().toLowerCase();
         const sourceBaseName = cleanTwoCardCustomerName(source.customer_name).toLowerCase();
         const sourceStage = getNumberedOperationalStage(source);
 
         if (sourceStage) return source;
 
         const linkedCollections = getLinkedJobs(source.id).filter(job =>
-            job && String(job.id) !== sourceId && !isDeliveryPlannerCardJob(job) && isTwoCardOperationalJob(job)
+            job && String(job.id) !== sourceId && !isDeliveryPlannerCardJob(job) && isTwoCardOperationalJob(job) && !isNumberedOperationalStageJob(job)
         );
-        if (linkedCollections.length === 1 && !isNumberedOperationalStageJob(linkedCollections[0])) return linkedCollections[0];
+        if (sourceFts) {
+            const linkedFtsMatch = linkedCollections.find(job =>
+                String(job.fts_invoice_number || '').trim().toLowerCase() === sourceFts
+            );
+            if (linkedFtsMatch) return linkedFtsMatch;
+        }
+        if (linkedCollections.length === 1) return linkedCollections[0];
 
         const collectionCandidates = (allJobsRaw || []).filter(job =>
             job && String(job.id) !== sourceId && !isDeliveryPlannerCardJob(job) && isTwoCardOperationalJob(job) && !isNumberedOperationalStageJob(job)
         );
+
+        if (sourceFts) {
+            const ftsMatch = collectionCandidates.find(job =>
+                String(job.fts_invoice_number || '').trim().toLowerCase() === sourceFts
+            );
+            if (ftsMatch) return ftsMatch;
+        }
 
         return collectionCandidates.find(job => {
             if (!jobsHaveCompatibleInvoiceNumbers(source, job)) return false;
