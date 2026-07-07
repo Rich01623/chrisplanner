@@ -456,11 +456,18 @@
         .timestamp-toast-container { position: fixed; top: 82px; right: 18px; z-index: 3000; display: flex; flex-direction: column; gap: 10px; max-width: 360px; pointer-events: none; }
         .timestamp-toast { background: #0f172a; color: white; border-left: 5px solid var(--whatsapp-green); border-radius: 7px; padding: 12px 14px; box-shadow: 0 10px 24px rgba(0,0,0,0.28); font-size: 0.82rem; font-weight: 800; line-height: 1.35; opacity: 0; transform: translateY(-8px); animation: timestampToastIn 0.18s ease forwards; pointer-events: auto; }
         .timestamp-toast.booking-request-toast { background: #0056b3; border-left-color: #7dd3fc; box-shadow: 0 10px 24px rgba(0,86,179,0.32); }
+        .timestamp-toast.demurrage-toast { background: #f97316; border-left-color: #7c2d12; color:#fff; box-shadow: 0 10px 24px rgba(249,115,22,0.38); }
+        .timestamp-toast.demurrage-escalation-toast { background: #b91c1c; border-left-color: #fee2e2; color:#fff; box-shadow: 0 10px 24px rgba(185,28,28,0.42); }
+        .timestamp-toast.demurrage-apply-toast { background: #15803d; border-left-color: #bbf7d0; color:#fff; box-shadow: 0 10px 24px rgba(21,128,61,0.42); }
         .timestamp-toast small { display: block; margin-top: 4px; color: rgba(255,255,255,0.75); font-size: 0.68rem; font-weight: 700; }
         .timestamp-toast-ok { margin-top: 10px; border: none; border-radius: 4px; background: var(--whatsapp-green); color: white; padding: 6px 14px; font-size: 0.72rem; font-weight: 900; cursor: pointer; }
         .timestamp-toast-ok:hover { background: #1ebe5d; }
         .booking-request-toast .timestamp-toast-ok { background: #ffffff; color: #0056b3; }
         .booking-request-toast .timestamp-toast-ok:hover { background: #dbeafe; }
+        .timestamp-toast-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+        .timestamp-toast-actions button { border:none; border-radius:4px; padding:6px 12px; font-size:0.72rem; font-weight:900; cursor:pointer; }
+        .timestamp-toast-yes { background: var(--whatsapp-green); color:white; }
+        .timestamp-toast-no { background: rgba(255,255,255,0.18); color:white; border:1px solid rgba(255,255,255,0.35) !important; }
         @keyframes timestampToastIn { to { opacity: 1; transform: translateY(0); } }
         .header-menu-stack .week-btn,
         .header-menu-stack .week-btn:hover,
@@ -537,6 +544,7 @@
                     <button class="week-btn" onclick="resetForm(); openModal('modal-add')">+ NEW JOB</button>
                     <button class="week-btn multi-job-btn" onclick="openMultiJobModal()">+ MULTI JOB</button>
                     <button class="week-btn" onclick="openNoteModal()">NOTES</button>
+                    <button class="week-btn" onclick="showDemurrageTestNotifications()">TEST</button>
                 </div>
                 <div class="menu-group">
                     <button class="week-btn active" id="btn-w0" onclick="switchView(0)">WEEK 1</button>
@@ -1560,6 +1568,12 @@ function escapeHtml(value) {
     let driverTickerDisabled = localStorage.getItem(DRIVER_TICKER_DISABLED_KEY) === 'true';
     const seenBookingRequestNotificationIds = new Set();
     let bookingRequestNotificationsReady = false;
+    const DEMURRAGE_WARNING_MINUTES = 30;
+    const DEMURRAGE_ESCALATION_MINUTES = 45;
+    const DEMURRAGE_APPLY_MINUTES = 60;
+    const DEMURRAGE_FEE_AMOUNT = 80;
+    const demurrageAlertedKeys = new Set();
+    const demurrageTimerIds = new Map();
 
     function hasTimestampValue(value) {
         return value !== null && value !== undefined && String(value).trim() !== '';
@@ -1612,6 +1626,307 @@ function escapeHtml(value) {
             okButton.onclick = () => toast.remove();
         }
         container.prepend(toast);
+    }
+
+    function normaliseDialPhone(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        const cleaned = raw.replace(/[^\d+]/g, '');
+        if (!cleaned) return '';
+        if (cleaned.startsWith('+')) return cleaned;
+        if (cleaned.startsWith('00')) return `+${cleaned.slice(2)}`;
+        if (cleaned.startsWith('0')) return `+44${cleaned.slice(1)}`;
+        return `+${cleaned}`;
+    }
+
+    function callBookingCustomerForJob(job) {
+        const phone = normaliseDialPhone(job && (job.customer_phone || job.coll_phone || job.del_phone));
+        if (!phone) {
+            alert('No booking customer phone number is saved on this job card.');
+            return;
+        }
+        window.location.href = `tel:${phone}`;
+    }
+
+    function getBookingCustomerEmail(job) {
+        return String(job && (job.customer_email || job.coll_email || job.del_email) || '').trim();
+    }
+
+    function sendDemurrageWarningEmail(job, stage) {
+        const combinedJob = job || {};
+        const email = getBookingCustomerEmail(combinedJob);
+        if (!email) {
+            alert('No booking customer email address is saved on this job card.');
+            return;
+        }
+
+        const actionText = stage === 'delivery' ? 'tipped' : 'loaded';
+        const driverName = combinedJob.assigned_driver || 'The driver';
+        const ftsNumber = combinedJob.fts_invoice_number || combinedJob.fts_number || '';
+        const route = [
+            combinedJob.coll_postcode || combinedJob.coll_town || combinedJob.coll_cust_name,
+            combinedJob.del_postcode || combinedJob.del_town || combinedJob.del_cust_name
+        ].filter(Boolean).join(' to ');
+        const subject = `Demurrage warning${ftsNumber ? ` ${ftsNumber}` : ''}`;
+        const bodyLines = [
+            'Hello,',
+            '',
+            `${driverName} has now been on site for 45 minutes and has not yet been ${actionText}.`,
+            route ? `Route: ${route}` : '',
+            ftsNumber ? `FTS: ${ftsNumber}` : '',
+            '',
+            'Please be aware demurrage charges may apply if loading/unloading is delayed further.',
+            '',
+            'Kind regards,',
+            'Frost Transport'
+        ].filter(line => line !== '');
+
+        window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join('\n'))}`;
+    }
+
+    function getDemurrageRoute(job) {
+        return [
+            job && (job.coll_postcode || job.coll_town || job.coll_cust_name),
+            job && (job.del_postcode || job.del_town || job.del_cust_name)
+        ].filter(Boolean).join(' to ');
+    }
+
+    function parseEditableJobPrice(value) {
+        const raw = String(value ?? '').trim();
+        if (!raw) return 0;
+        if (raw.toUpperCase() === 'PFJ') return null;
+        const numeric = Number(raw.replace(/[^0-9.-]/g, ''));
+        return Number.isFinite(numeric) ? numeric : null;
+    }
+
+    function openDemurrageFeeEmail(job, stage) {
+        const combinedJob = job || {};
+        const email = getBookingCustomerEmail(combinedJob);
+        if (!email) {
+            alert('No booking customer email address is saved on this job card.');
+            return;
+        }
+
+        const actionText = stage === 'delivery' ? 'tipped' : 'loaded';
+        const ftsNumber = combinedJob.fts_invoice_number || combinedJob.fts_number || '';
+        const route = getDemurrageRoute(combinedJob);
+        const subject = `Demurrage charge applied${ftsNumber ? ` ${ftsNumber}` : ''}`;
+        const bodyLines = [
+            'Hello,',
+            '',
+            `This is to confirm demurrage charges have now been applied to this job at GBP ${DEMURRAGE_FEE_AMOUNT} per hour.`,
+            `The driver has been on site for 60 minutes and has not yet been ${actionText}.`,
+            route ? `Route: ${route}` : '',
+            ftsNumber ? `FTS: ${ftsNumber}` : '',
+            '',
+            `An additional GBP ${DEMURRAGE_FEE_AMOUNT} has been added to the job price.`,
+            '',
+            'Kind regards,',
+            'Frost Transport'
+        ].filter(line => line !== '');
+
+        window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join('\n'))}`;
+    }
+
+    async function applyDemurrageFeeToJob(job, stage) {
+        const combinedJob = getJobById(job && job.id) || job || {};
+        if (!combinedJob.id) {
+            alert('This job card could not be found, so demurrage was not applied.');
+            return false;
+        }
+
+        if (Number(combinedJob.demurrage_fee_amount || 0) > 0 || hasTimestampValue(combinedJob.demurrage_fee_applied_at)) {
+            alert('Demurrage fees have already been applied to this job.');
+            return true;
+        }
+
+        const currentPrice = parseEditableJobPrice(combinedJob.total_price);
+        if (currentPrice === null) {
+            alert('The current job price is not a normal number, so I could not add the demurrage fee automatically.');
+            return false;
+        }
+
+        const appliedAt = new Date().toISOString();
+        const email = getBookingCustomerEmail(combinedJob);
+        const newTotal = currentPrice + DEMURRAGE_FEE_AMOUNT;
+        const updatePayload = {
+            total_price: newTotal.toFixed(2),
+            demurrage_fee_amount: DEMURRAGE_FEE_AMOUNT,
+            demurrage_fee_rate: DEMURRAGE_FEE_AMOUNT,
+            demurrage_fee_applied_at: appliedAt,
+            demurrage_fee_stage: stage,
+            demurrage_fee_notification_sent_at: appliedAt,
+            demurrage_fee_email_sent_to: email,
+            demurrage_fee_note: `Demurrage fee of GBP ${DEMURRAGE_FEE_AMOUNT} applied after 60 minutes on site.`
+        };
+
+        const { error } = await sb.from('quotes').update(updatePayload).eq('id', combinedJob.id);
+        if (error) {
+            if (error.code === '42703' || String(error.message || '').toLowerCase().includes('column')) {
+                alert('Demurrage was not applied because the new demurrage columns have not been added to the quotes table yet. Run the Supabase SQL I have provided, then try again.');
+            } else {
+                alert('Demurrage could not be applied: ' + (error.message || error));
+            }
+            return false;
+        }
+
+        Object.assign(combinedJob, updatePayload);
+        const localJob = (allJobsRaw || []).find(row => String(row.id) === String(combinedJob.id));
+        if (localJob) Object.assign(localJob, updatePayload);
+        await loadAll();
+        return true;
+    }
+
+    function showDemurrageToast(job, stage, minutes) {
+        const combinedJob = job || {};
+        const driverName = combinedJob.assigned_driver || 'Driver';
+        const actionText = stage === 'delivery' ? 'tipped' : 'loaded';
+        const isApplyNotice = minutes >= DEMURRAGE_APPLY_MINUTES;
+        const isEscalation = !isApplyNotice && minutes >= DEMURRAGE_ESCALATION_MINUTES;
+        const message = `${driverName} has been on site ${minutes} minutes and has yet to be ${actionText}.`;
+        const customerPhone = normaliseDialPhone(combinedJob.customer_phone || combinedJob.coll_phone || combinedJob.del_phone);
+        const customerEmail = getBookingCustomerEmail(combinedJob);
+        const route = getDemurrageRoute(combinedJob);
+        const promptText = isApplyNotice
+            ? 'Would you like to apply demurrage fees to this client\'s job and send notification email?'
+            : (isEscalation ? 'Would you like to send an email warning about demurrage fees?' : 'Would you like to call the booking customer?');
+
+        const container = getTimestampToastContainer();
+        const toast = document.createElement('div');
+        toast.className = `timestamp-toast ${isApplyNotice ? 'demurrage-apply-toast' : (isEscalation ? 'demurrage-escalation-toast' : 'demurrage-toast')}`;
+        toast.innerHTML = `
+            <div>${escapeHtml(message)}</div>
+            ${route ? `<small>${escapeHtml(route)}</small>` : ''}
+            <small>${escapeHtml(promptText)}</small>
+            <div class="timestamp-toast-actions">
+                <button type="button" class="timestamp-toast-yes">Yes</button>
+                <button type="button" class="timestamp-toast-no">No</button>
+            </div>
+        `;
+
+        const yesButton = toast.querySelector('.timestamp-toast-yes');
+        const noButton = toast.querySelector('.timestamp-toast-no');
+        if (yesButton) {
+            const hasContact = (isEscalation || isApplyNotice) ? !!customerEmail : !!customerPhone;
+            yesButton.disabled = !hasContact;
+            yesButton.title = hasContact
+                ? (isApplyNotice ? 'Apply demurrage and email booking customer' : (isEscalation ? 'Email booking customer' : 'Call booking customer'))
+                : ((isEscalation || isApplyNotice) ? 'No booking customer email address saved' : 'No booking customer phone number saved');
+            yesButton.onclick = async () => {
+                if (isApplyNotice) {
+                    yesButton.disabled = true;
+                    yesButton.textContent = 'Applying...';
+                    const applied = await applyDemurrageFeeToJob(combinedJob, stage);
+                    if (!applied) {
+                        yesButton.disabled = false;
+                        yesButton.textContent = 'Yes';
+                        return;
+                    }
+                    openDemurrageFeeEmail(combinedJob, stage);
+                } else if (isEscalation) {
+                    sendDemurrageWarningEmail(combinedJob, stage);
+                } else {
+                    callBookingCustomerForJob(combinedJob);
+                }
+                toast.remove();
+            };
+        }
+        if (noButton) noButton.onclick = () => toast.remove();
+        container.prepend(toast);
+    }
+
+    function showDemurrageTestToast(stage, minutes) {
+        const driverName = 'Test Driver';
+        const actionText = stage === 'delivery' ? 'tipped' : 'loaded';
+        const isApplyNotice = minutes >= DEMURRAGE_APPLY_MINUTES;
+        const isEscalation = !isApplyNotice && minutes >= DEMURRAGE_ESCALATION_MINUTES;
+        const route = 'TEST COLLECTION to TEST DELIVERY';
+        const message = `${driverName} has been on site ${minutes} minutes and has yet to be ${actionText}.`;
+        const promptText = isApplyNotice
+            ? 'Would you like to apply demurrage fees to this client\'s job and send notification email?'
+            : (isEscalation ? 'Would you like to send an email warning about demurrage fees?' : 'Would you like to call the booking customer?');
+
+        const container = getTimestampToastContainer();
+        const toast = document.createElement('div');
+        toast.className = `timestamp-toast ${isApplyNotice ? 'demurrage-apply-toast' : (isEscalation ? 'demurrage-escalation-toast' : 'demurrage-toast')}`;
+        toast.innerHTML = `
+            <div>${escapeHtml(message)}</div>
+            <small>${escapeHtml(route)}</small>
+            <small>${escapeHtml(promptText)}</small>
+            <small>Test only - no call, email or job update will be made.</small>
+            <div class="timestamp-toast-actions">
+                <button type="button" class="timestamp-toast-yes">Yes</button>
+                <button type="button" class="timestamp-toast-no">No</button>
+            </div>
+        `;
+
+        const yesButton = toast.querySelector('.timestamp-toast-yes');
+        const noButton = toast.querySelector('.timestamp-toast-no');
+        if (yesButton) yesButton.onclick = () => toast.remove();
+        if (noButton) noButton.onclick = () => toast.remove();
+        container.prepend(toast);
+    }
+
+    function showDemurrageTestNotifications() {
+        showDemurrageTestToast('collection', DEMURRAGE_WARNING_MINUTES);
+        showDemurrageTestToast('delivery', DEMURRAGE_ESCALATION_MINUTES);
+        showDemurrageTestToast('delivery', DEMURRAGE_APPLY_MINUTES);
+    }
+
+    function getDemurrageKey(job, stage, minutes) {
+        return `${job && job.id}:${stage}:${minutes}`;
+    }
+
+    function clearDemurrageTimer(job, stage, minutes) {
+        const key = getDemurrageKey(job, stage, minutes);
+        const timerId = demurrageTimerIds.get(key);
+        if (timerId) clearTimeout(timerId);
+        demurrageTimerIds.delete(key);
+    }
+
+    function maybeTriggerDemurrageAlert(job, stage, minutes = DEMURRAGE_WARNING_MINUTES) {
+        if (!job || job.id === undefined || job.id === null) return;
+        const isDeliveryStage = stage === 'delivery';
+        const arriveField = isDeliveryStage ? 'del_arrived_timestamp' : 'arrived_timestamp';
+        const completeField = isDeliveryStage ? 'tipped_timestamp' : 'loaded_timestamp';
+        if (!hasTimestampValue(job[arriveField]) || hasTimestampValue(job[completeField])) {
+            clearDemurrageTimer(job, stage, minutes);
+            return;
+        }
+
+        const arrivedAt = new Date(job[arriveField]);
+        if (isNaN(arrivedAt)) return;
+        const key = getDemurrageKey(job, stage, minutes);
+        const dueAt = arrivedAt.getTime() + (minutes * 60 * 1000);
+
+        if (Date.now() >= dueAt) {
+            clearDemurrageTimer(job, stage, minutes);
+            if (demurrageAlertedKeys.has(key)) return;
+            demurrageAlertedKeys.add(key);
+            showDemurrageToast(job, stage, minutes);
+            return;
+        }
+
+        clearDemurrageTimer(job, stage, minutes);
+        const delay = Math.max(1000, dueAt - Date.now());
+        const timerId = setTimeout(() => {
+            const latest = getJobById(job.id) || job;
+            maybeTriggerDemurrageAlert(latest, stage, minutes);
+        }, delay);
+        demurrageTimerIds.set(key, timerId);
+    }
+
+    function scheduleDemurrageChecksForJob(job) {
+        maybeTriggerDemurrageAlert(job, 'collection', DEMURRAGE_WARNING_MINUTES);
+        maybeTriggerDemurrageAlert(job, 'collection', DEMURRAGE_ESCALATION_MINUTES);
+        maybeTriggerDemurrageAlert(job, 'collection', DEMURRAGE_APPLY_MINUTES);
+        maybeTriggerDemurrageAlert(job, 'delivery', DEMURRAGE_WARNING_MINUTES);
+        maybeTriggerDemurrageAlert(job, 'delivery', DEMURRAGE_ESCALATION_MINUTES);
+        maybeTriggerDemurrageAlert(job, 'delivery', DEMURRAGE_APPLY_MINUTES);
+    }
+
+    function scheduleAllDemurrageChecks() {
+        (allJobsRaw || []).forEach(scheduleDemurrageChecksForJob);
     }
 
     function getBookingRequestRouteText(request) {
@@ -1755,6 +2070,9 @@ function escapeHtml(value) {
             addDriverTickerNotification(buildDriverTickerMessage(newJob, existingJob, step, timeText), newJob[step.field]);
             existingJob[step.field] = newJob[step.field];
         });
+
+        const combinedJob = { ...(existingJob || {}), ...(newJob || {}) };
+        scheduleDemurrageChecksForJob(combinedJob);
     }
 
     // ==========================================
@@ -3035,6 +3353,7 @@ function escapeHtml(value) {
         
         updateCalculations();
         restoreDrivers(allJobsRaw);
+        scheduleAllDemurrageChecks();
 
         // Do not call switchView/renderActiveDataView while History/Invoice/Subbed/Cancelled
         // is open. Those views lazy-load their own rows and must stay stable while live board
@@ -3358,6 +3677,7 @@ function escapeHtml(value) {
             'coll_cust_name', 'coll_phone', 'coll_email', 'coll_postcode', 'coll_street', 'coll_town', 'coll_county', 'coll_ref', 'coll_datetime', 'coll_postcode_2', 'coll_town_2',
             'del_postcode', 'del_cust_name', 'del_phone', 'del_email', 'del_street', 'del_town', 'del_county', 'del_ref', 'del_datetime', 'del_postcode_2', 'del_town_2',
             'total_price', 'total_pallets', 'total_weight', 'vehicle_type', 'status', 'dispatch_status', 'dispatch_release_date', 'dispatch_sequence', 'dispatch_scheduled_at', 'released_at', 'assigned_slot', 'assigned_driver', 'driver_phone',
+            'demurrage_fee_amount', 'demurrage_fee_rate', 'demurrage_fee_applied_at', 'demurrage_fee_stage', 'demurrage_fee_notification_sent_at', 'demurrage_fee_email_sent_to', 'demurrage_fee_note',
             'ack_timestamp', 'ack_gps', 'arrived_timestamp', 'arrived_gps', 'loaded_timestamp', 'del_arrived_timestamp', 'tipped_timestamp', 'tipped_gps', 'pod_url'
         ]);
 
@@ -3414,6 +3734,9 @@ function escapeHtml(value) {
             fullDetailRow('Total pallets', job.total_pallets),
             fullDetailRow('Total weight', job.total_weight ? `${job.total_weight} kg` : ''),
             fullDetailRow('Agreed price', job.total_price ? `£${job.total_price}` : ''),
+            fullDetailRow('Demurrage fee', job.demurrage_fee_amount ? `£${job.demurrage_fee_amount}` : ''),
+            fullDetailRow('Demurrage applied', job.demurrage_fee_applied_at, true),
+            fullDetailRow('Demurrage email sent to', job.demurrage_fee_email_sent_to),
             fullDetailRow('Driver phone', job.driver_phone)
         ];
 
@@ -5480,6 +5803,133 @@ function escapeHtml(value) {
         }
     }
 
+    function stripExtraStopFields(payload) {
+        const clean = { ...payload };
+        clean.coll_postcode_2 = '';
+        clean.coll_town_2 = '';
+        clean.del_postcode_2 = '';
+        clean.del_town_2 = '';
+        return clean;
+    }
+
+    function buildNewJobStagePayloads(payload) {
+        const hasExtraCollection = !!String(payload.coll_postcode_2 || payload.coll_town_2 || '').trim();
+        const hasExtraDelivery = !!String(payload.del_postcode_2 || payload.del_town_2 || '').trim();
+        if (!hasExtraCollection && !hasExtraDelivery) return [payload];
+
+        const baseCustomerName = cleanTwoCardCustomerName(payload.customer_name) || payload.customer_name || 'Job';
+        const collections = [{
+            name: payload.coll_cust_name,
+            phone: payload.coll_phone,
+            email: payload.coll_email,
+            postcode: payload.coll_postcode,
+            street: payload.coll_street,
+            town: payload.coll_town,
+            county: payload.coll_county,
+            ref: payload.coll_ref,
+            datetime: payload.coll_datetime
+        }];
+        const deliveries = [{
+            name: payload.del_cust_name,
+            phone: payload.del_phone,
+            email: payload.del_email,
+            postcode: payload.del_postcode,
+            street: payload.del_street,
+            town: payload.del_town,
+            county: payload.del_county,
+            ref: payload.del_ref,
+            datetime: payload.del_datetime
+        }];
+
+        if (hasExtraCollection) {
+            collections.push({
+                name: '',
+                phone: payload.coll_phone,
+                email: payload.coll_email,
+                postcode: payload.coll_postcode_2,
+                street: '',
+                town: payload.coll_town_2,
+                county: '',
+                ref: payload.coll_ref,
+                datetime: payload.coll_datetime
+            });
+        }
+
+        if (hasExtraDelivery) {
+            deliveries.push({
+                name: '',
+                phone: payload.del_phone,
+                email: payload.del_email,
+                postcode: payload.del_postcode_2,
+                street: '',
+                town: payload.del_town_2,
+                county: '',
+                ref: payload.del_ref,
+                datetime: payload.del_datetime
+            });
+        }
+
+        const firstCollection = collections[0] || {};
+        const firstDelivery = deliveries[0] || {};
+        const stagePayloads = [];
+
+        collections.forEach((stop, index) => {
+            const stage = stripExtraStopFields(payload);
+            Object.assign(stage, {
+                customer_name: `${baseCustomerName} (Collection ${index + 1}/${collections.length})`,
+                coll_cust_name: stop.name || payload.coll_cust_name || baseCustomerName,
+                coll_phone: stop.phone || payload.coll_phone || '',
+                coll_email: stop.email || payload.coll_email || '',
+                coll_postcode: stop.postcode || '',
+                coll_street: stop.street || '',
+                coll_town: stop.town || '',
+                coll_county: stop.county || '',
+                coll_ref: stop.ref || payload.coll_ref || '',
+                coll_datetime: stop.datetime || payload.coll_datetime || '',
+                del_postcode: firstDelivery.postcode || payload.del_postcode || '',
+                del_cust_name: firstDelivery.name || payload.del_cust_name || 'Multi-stage delivery task',
+                del_phone: firstDelivery.phone || payload.del_phone || '',
+                del_email: firstDelivery.email || payload.del_email || '',
+                del_street: firstDelivery.street || payload.del_street || '',
+                del_town: firstDelivery.town || payload.del_town || '',
+                del_county: firstDelivery.county || payload.del_county || '',
+                del_ref: `Awaiting multi-stage delivery (${payload.fts_invoice_number || ''})`,
+                del_datetime: firstDelivery.datetime || payload.del_datetime || '',
+                total_price: index === 0 ? payload.total_price : '0'
+            });
+            stagePayloads.push(stage);
+        });
+
+        deliveries.forEach((stop, index) => {
+            const stage = stripExtraStopFields(payload);
+            Object.assign(stage, {
+                customer_name: `${baseCustomerName} (Delivery ${index + 1}/${deliveries.length})`,
+                coll_cust_name: firstCollection.name || payload.coll_cust_name || baseCustomerName,
+                coll_phone: firstCollection.phone || payload.coll_phone || '',
+                coll_email: firstCollection.email || payload.coll_email || '',
+                coll_postcode: firstCollection.postcode || payload.coll_postcode || '',
+                coll_street: firstCollection.street || payload.coll_street || '',
+                coll_town: firstCollection.town || payload.coll_town || '',
+                coll_county: firstCollection.county || payload.coll_county || '',
+                coll_ref: `Multi job origin: ${firstCollection.ref || firstCollection.postcode || 'collection'}`,
+                coll_datetime: stop.datetime || payload.del_datetime || payload.coll_datetime || '',
+                del_postcode: stop.postcode || '',
+                del_cust_name: stop.name || payload.del_cust_name || '',
+                del_phone: stop.phone || payload.del_phone || '',
+                del_email: stop.email || payload.del_email || '',
+                del_street: stop.street || '',
+                del_town: stop.town || '',
+                del_county: stop.county || '',
+                del_ref: stop.ref || payload.del_ref || '',
+                del_datetime: stop.datetime || payload.del_datetime || '',
+                total_price: '0'
+            });
+            stagePayloads.push(stage);
+        });
+
+        return stagePayloads;
+    }
+
     async function saveJob() {
         const bookingMode = getCurrentJobBookingMode();
         const priceField = document.getElementById('n_price');
@@ -5584,9 +6034,18 @@ function escapeHtml(value) {
                     }
                 }
             } else { 
-                payload.status = 'pending'; 
-                const { error } = await sb.from('quotes').insert([payload]); 
-                errorObj = error;
+                payload.status = 'pending';
+                const stagePayloads = buildNewJobStagePayloads(payload);
+
+                if (stagePayloads.length > 1) {
+                    const group = `multi-stage-${payload.fts_invoice_number || Date.now()}`.replace(/[^a-z0-9_-]+/gi, '-');
+                    for (const stagePayload of stagePayloads) {
+                        await insertQuoteWithOptionalLinkedGroup(stagePayload, group);
+                    }
+                } else {
+                    const { error } = await sb.from('quotes').insert([payload]);
+                    errorObj = error;
+                }
             }
             
             if (errorObj) {
