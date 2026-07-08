@@ -5621,7 +5621,8 @@ function escapeHtml(value) {
         if (input && typeof input.focus === 'function') input.focus();
     }
 
-    function validatePlannerFormDateRules(collectionItems, deliveryItems) {
+    function validatePlannerFormDateRules(collectionItems, deliveryItems, options = {}) {
+        const allowPastCollection = !!options.allowPastCollection;
         const todayKey = getTodayLocalDateKey();
         const collections = (collectionItems || []).map(item => ({
             ...item,
@@ -5632,7 +5633,7 @@ function escapeHtml(value) {
             dateKey: getLocalDateKeyFromInputValue(item && item.value)
         })).filter(item => item.dateKey);
 
-        const pastCollection = collections.find(item => item.dateKey < todayKey);
+        const pastCollection = !allowPastCollection && collections.find(item => item.dateKey < todayKey);
         if (pastCollection) {
             alert('Collection date cannot be before today.');
             focusDateValidationInput(pastCollection.input);
@@ -5690,9 +5691,11 @@ function escapeHtml(value) {
     function validateNewJobDateRules() {
         const collectionInput = document.getElementById('n_coll_dt');
         const deliveryInput = document.getElementById('n_del_dt');
+        const existingJobId = String(document.getElementById('sys_job_id')?.value || '').trim();
         return validatePlannerFormDateRules(
             [{ value: collectionInput && collectionInput.value, input: collectionInput }],
-            [{ value: deliveryInput && deliveryInput.value, input: deliveryInput }]
+            [{ value: deliveryInput && deliveryInput.value, input: deliveryInput }],
+            { allowPastCollection: !!existingJobId }
         );
     }
 
