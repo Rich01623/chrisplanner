@@ -537,6 +537,7 @@
                 <button class="week-btn" id="btn-toggle-header" onclick="toggleHeaderView()">TOWNS</button>
                 <button class="week-btn" onclick="syncMaintenanceAndLoadAll()">SYNC</button>
                 <button class="week-btn" onclick="openAddVehicleModal()">ADD VEHICLE</button>
+                <button class="week-btn" id="btn-toggle-notifications" onclick="toggleOperationalNotifications()">HIDE NOTIFICATIONS</button>
             </div>
             <div class="header-menu-bar header-menu-row-secondary">
                 <div class="menu-group">
@@ -1566,8 +1567,10 @@ function escapeHtml(value) {
         { field: 'tipped_timestamp', action: 'tipped the job', tickerVerb: 'tipped', tickerLocation: 'delivery' }
     ];
     const DRIVER_TICKER_DISABLED_KEY = 'frost_driver_ticker_disabled';
+    const OPERATIONAL_NOTIFICATIONS_HIDDEN_KEY = 'frost_operational_notifications_hidden';
     const driverTickerItems = [];
     let driverTickerDisabled = localStorage.getItem(DRIVER_TICKER_DISABLED_KEY) === 'true';
+    let operationalNotificationsHidden = localStorage.getItem(OPERATIONAL_NOTIFICATIONS_HIDDEN_KEY) === 'true';
     const seenBookingRequestNotificationIds = new Set();
     let bookingRequestNotificationsReady = false;
     const DEMURRAGE_WARNING_MINUTES = 30;
@@ -1598,10 +1601,36 @@ function escapeHtml(value) {
         return container;
     }
 
+    function hideActiveOperationalNotificationToasts() {
+        document.querySelectorAll('.driver-timestamp-toast, .demurrage-toast, .demurrage-escalation-toast, .demurrage-apply-toast')
+            .forEach(toast => toast.remove());
+    }
+
+    function updateOperationalNotificationToggleButton() {
+        const button = document.getElementById('btn-toggle-notifications');
+        if (!button) return;
+        button.innerText = operationalNotificationsHidden ? 'SHOW NOTIFICATIONS' : 'HIDE NOTIFICATIONS';
+        button.title = operationalNotificationsHidden
+            ? 'Show driver and demurrage popup notifications'
+            : 'Hide driver and demurrage popup notifications';
+    }
+
+    function setOperationalNotificationsHidden(hidden) {
+        operationalNotificationsHidden = !!hidden;
+        localStorage.setItem(OPERATIONAL_NOTIFICATIONS_HIDDEN_KEY, operationalNotificationsHidden ? 'true' : 'false');
+        updateOperationalNotificationToggleButton();
+        if (operationalNotificationsHidden) hideActiveOperationalNotificationToasts();
+    }
+
+    function toggleOperationalNotifications() {
+        setOperationalNotificationsHidden(!operationalNotificationsHidden);
+    }
+
     function showDriverTimestampToast(message, detail = '') {
+        if (operationalNotificationsHidden) return;
         const container = getTimestampToastContainer();
         const toast = document.createElement('div');
-        toast.className = 'timestamp-toast';
+        toast.className = 'timestamp-toast driver-timestamp-toast';
         toast.innerHTML = `
             <div>${escapeHtml(message)}</div>
             ${detail ? `<small>${escapeHtml(detail)}</small>` : ''}
@@ -1780,6 +1809,7 @@ function escapeHtml(value) {
     }
 
     function showDemurrageToast(job, stage, minutes) {
+        if (operationalNotificationsHidden) return;
         const combinedJob = job || {};
         const driverName = combinedJob.assigned_driver || 'Driver';
         const actionText = stage === 'delivery' ? 'tipped' : 'loaded';
@@ -1838,6 +1868,7 @@ function escapeHtml(value) {
     }
 
     function showDemurrageTestToast(stage, minutes) {
+        if (operationalNotificationsHidden) return;
         const driverName = 'Test Driver';
         const actionText = stage === 'delivery' ? 'tipped' : 'loaded';
         const isApplyNotice = minutes >= DEMURRAGE_APPLY_MINUTES;
@@ -8141,6 +8172,7 @@ Are you sure you want to place it here?`);
 
     window.onload = async () => { 
         setupAutoScroll();
+        updateOperationalNotificationToggleButton();
         setupPlannerRealtimeOnce();
         await loadPlannerVehicleExtras();
         await syncMaintenanceAndLoadAll(); 
