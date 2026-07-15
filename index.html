@@ -18,6 +18,8 @@
             --frost-red: #c1272d;
             --frost-black: #1a1a1a;
             --frost-blue: #0056b3; 
+            --header-red: #e30613;
+            --header-red-dark: #b9040f;
             --light-grey: #f4f4f4;
             --border-color: #ccc;
             --whatsapp-green: #25D366;
@@ -36,32 +38,53 @@
         /* ==========================================
            2. HEADER & NAVIGATION
            ========================================== */
-        header { background: #2c3e50; padding: 0; border-bottom: 3px solid var(--frost-red); display: flex; align-items: stretch; justify-content: space-between; flex-shrink: 0; z-index: 100; box-shadow: none; }
-        .logo-container { display:flex; align-items:center; padding:0 14px; background:#2c3e50; }
+        header { background: var(--header-red); padding: 0; border-bottom: 3px solid var(--header-red-dark); display: flex; align-items: stretch; justify-content: space-between; flex-shrink: 0; z-index: 100; box-shadow: none; }
+        .logo-container { display:flex; align-items:center; padding:0 14px; background:var(--header-red); }
         .logo-container img { height: 50px; display:block; }
         
-        .grand-total-box { background: var(--frost-black); color: white; padding: 5px 15px; border-radius: 0; border-left: 4px solid var(--price-green); display:flex; align-items:center; }
+        .grand-total-box { background: var(--header-red); color: white; padding: 5px 15px; border-radius: 0; border-left: 1px solid rgba(255,255,255,0.18); display:flex; align-items:center; }
         .grand-total-value { font-size: 1.1rem; font-weight: bold; color: var(--whatsapp-green); }
-        .week-info-box { background: #233241; color: white; padding: 5px 12px; border-radius: 0; border: none; border-left: 1px solid rgba(255,255,255,0.18); font-size: 0.85rem; font-weight: bold; display:flex; align-items:center; }
+        .week-info-box { background: var(--header-red); color: white; padding: 5px 12px; border-radius: 0; border: none; border-left: 1px solid rgba(255,255,255,0.18); font-size: 0.85rem; font-weight: bold; display:flex; align-items:center; }
         .week-info-box select { margin:0 6px; background:#fff; color:#1a1a1a; border:0; border-radius:3px; padding:3px 6px; font-size:0.82rem; font-weight:900; cursor:pointer; }
         .week-info-box span { white-space:nowrap; }
 
-        .header-actions-wrapper { display:flex; gap:0; align-items:stretch; justify-content:flex-end; min-width:0; flex:1; background:#2c3e50; }
-        .header-menu-stack { display:flex; flex-direction:column; min-width:0; flex:1; overflow:hidden; background:#2c3e50; }
-        .header-menu-bar { display:flex; align-items:stretch; gap:0; overflow:hidden; background:#2c3e50; flex-wrap:nowrap; width:100%; }
-        .header-menu-row-secondary .menu-group:last-child { margin-left:auto; }
-        .header-menu-bar .week-btn { border-radius:0 !important; margin:0; border:0; box-shadow:none; white-space:nowrap; background:#2c3e50 !important; color:white !important; }
-        .header-menu-bar .week-btn:hover { transform:none; background:#243342 !important; }
+        .header-actions-wrapper { display:flex; gap:0; align-items:stretch; justify-content:flex-end; min-width:0; flex:1; background:var(--header-red); }
+        .header-menu-stack { display:flex; min-width:0; flex:1; overflow:visible; background:var(--header-red); }
+        .header-menu-bar { display:flex; align-items:stretch; gap:0; overflow:visible; background:var(--header-red); flex-wrap:nowrap; width:100%; min-height:50px; }
+        .toolbar-menu { position:relative; display:flex; align-items:stretch; border-left:1px solid rgba(255,255,255,0.16); }
+        .toolbar-menu:first-child { border-left:0; }
+        .toolbar-menu-trigger,
+        .toolbar-direct-btn { border:0; border-radius:0; margin:0; background:var(--header-red); color:white; padding:0 18px; font-size:0.82rem; font-weight:900; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:6px; }
+        .toolbar-menu-trigger::after { content:""; width:0; height:0; border-left:4px solid transparent; border-right:4px solid transparent; border-top:5px solid rgba(255,255,255,0.8); margin-left:2px; }
+        .toolbar-menu:hover .toolbar-menu-trigger,
+        .toolbar-menu:focus-within .toolbar-menu-trigger,
+        .toolbar-direct-btn:hover { background:var(--header-red-dark); }
+        .toolbar-menu-dropdown { display:none; position:absolute; top:100%; left:0; min-width:210px; z-index:2000; background:#fff; border:1px solid #cbd5e1; border-top:3px solid var(--frost-red); box-shadow:0 10px 24px rgba(15,23,42,0.22); padding:5px; }
+        .toolbar-menu:hover .toolbar-menu-dropdown,
+        .toolbar-menu:focus-within .toolbar-menu-dropdown { display:block; }
+        .menu-dropdown-item { width:100%; border:0; border-radius:3px; margin:0; background:#fff; color:#111827; padding:9px 11px; text-align:left; font-size:0.82rem; font-weight:800; cursor:pointer; white-space:nowrap; display:block; }
+        .menu-dropdown-item:hover,
+        .menu-dropdown-item:focus { background:#eef6ff; color:#0f172a; outline:none; }
+        .menu-dropdown-item.active,
+        .toolbar-menu .menu-dropdown-item.week-btn.active { background:var(--frost-red) !important; color:#fff !important; }
+        .toolbar-menu .menu-dropdown-item.week-btn { background:#fff !important; color:#111827 !important; padding:9px 11px; }
+        .header-planner-search { position:relative; display:flex; align-items:center; width:300px; min-width:220px; padding:0 8px; background:var(--header-red); border-left:1px solid rgba(255,255,255,0.16); }
+        .header-planner-search input { width:100%; height:30px; border:1px solid rgba(255,255,255,0.28); border-radius:4px; background:#fff; color:#111827; padding:0 9px; font-size:0.78rem; font-weight:800; outline:none; }
+        .header-planner-search input:focus { border-color:#93c5fd; box-shadow:0 0 0 2px rgba(147,197,253,0.25); }
+        .header-search-results { display:none; position:absolute; top:100%; left:8px; right:8px; z-index:2200; max-height:420px; overflow-y:auto; background:#fff; border:1px solid #cbd5e1; border-top:3px solid #2563eb; box-shadow:0 10px 24px rgba(15,23,42,0.24); border-radius:0 0 6px 6px; }
+        .header-search-results .planner-search-result { padding:9px 10px; }
+        .header-search-results .planner-search-result-title { font-size:0.78rem; }
+        .header-search-results .planner-search-result-meta { font-size:0.66rem; }
 
-        .driver-notification-ticker { flex-shrink:0; height:30px; display:flex; align-items:center; background:#0f172a; color:#fff; border-bottom:2px solid var(--frost-red); overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.18); }
-        .driver-ticker-label { align-self:stretch; display:flex; align-items:center; gap:8px; padding:0 10px 0 12px; background:var(--frost-red); font-size:0.68rem; font-weight:900; letter-spacing:0; white-space:nowrap; }
+        .driver-notification-ticker { flex-shrink:0; height:30px; display:flex; align-items:center; background:var(--header-red); color:#fff; border-bottom:2px solid var(--header-red-dark); overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.18); }
+        .driver-ticker-label { align-self:stretch; display:flex; align-items:center; gap:8px; padding:0 10px 0 12px; background:var(--header-red-dark); font-size:0.68rem; font-weight:900; letter-spacing:0; white-space:nowrap; }
         .driver-ticker-toggle { border:1px solid rgba(255,255,255,0.55); background:rgba(255,255,255,0.16); color:white; border-radius:3px; padding:2px 6px; font-size:0.62rem; font-weight:900; cursor:pointer; line-height:1.1; }
         .driver-ticker-toggle:hover { background:rgba(255,255,255,0.28); }
         .driver-ticker-window { flex:1; overflow:hidden; min-width:0; }
         .driver-ticker-track { display:inline-flex; align-items:center; gap:36px; white-space:nowrap; padding-left:100%; animation:driverTickerScroll 55s linear infinite; font-size:0.78rem; font-weight:800; }
         .driver-ticker-track:hover { animation-play-state:paused; }
         .driver-ticker-item { display:inline-flex; align-items:center; gap:7px; }
-        .driver-notification-ticker.disabled { background:var(--frost-red); }
+        .driver-notification-ticker.disabled { background:var(--header-red-dark); }
         .driver-notification-ticker.disabled .driver-ticker-window { display:none; }
         @keyframes driverTickerScroll { from { transform:translateX(0); } to { transform:translateX(-100%); } }
 
@@ -243,6 +266,7 @@
         .job-card.status-load { background: #f5eef8; border-left-color: #8e44ad; }
         .job-card.status-del-arr { background: #fef9e7; border-left-color: #f1c40f; }
         .job-card.status-tipped { background: #e8f8f5; border-left-color: #1abc9c; }
+        .job-card.status-trailer-dropped { border-left-color: #e67e22; }
         .job-card.two-card-planner-card { border-left-width: 7px; padding: 6px 7px 6px 8px; }
         .job-card.two-card-planner-card.collection-planner-card { background: #eef6ff !important; }
         .job-card.two-card-planner-card.delivery-planner-card { background: #edf8ef !important; }
@@ -277,12 +301,15 @@
         .two-card-route { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
         .two-card-postcode { font-size:0.86rem; font-weight:1000; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .two-card-time { font-size:0.76rem; font-weight:900; white-space:nowrap; color:#111827; }
+        .two-card-trailer-head { margin-top:3px; padding:3px 5px; border-radius:3px; background:#fff7ed; border:1px solid #f5c186; color:#9a3412; font-size:0.65rem; font-weight:1000; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .two-card-type { display:inline-block; margin-bottom:5px; padding:2px 6px; border-radius:999px; font-size:0.62rem; font-weight:1000; letter-spacing:0.2px; }
         .two-card-type.collection { color:#0056b3; background:#e9f3ff; border:1px solid #b9d7f7; }
         .two-card-type.delivery { color:#2e7d32; background:#e8f5e9; border:1px solid #b8dfbd; }
         .two-card-main { font-weight:900; color:#111827; font-size:0.76rem; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .two-card-meta { display:flex; flex-wrap:wrap; gap:4px; margin:4px 0; }
         .two-card-planner-card .card-actions { border-top:1px solid rgba(15,23,42,0.08); margin-top:5px; padding-top:5px; }
+        .trailer-drop-marker { margin:6px 0; border:1px solid #f5c186; border-left:4px solid #e67e22; background:#fff7ed; color:#7c2d12; border-radius:4px; padding:6px 7px; font-size:0.66rem; font-weight:900; line-height:1.25; }
+        .trailer-drop-marker span { display:block; color:#111827; font-size:0.7rem; margin-top:2px; }
         .dispatch-route-marker { display: inline-flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px; min-width: 13px; padding: 0 2px; line-height: 1; }
         .dispatch-route-dot { width: 9px; height: 9px; border-radius: 50%; display: block; box-shadow: 0 0 0 1px rgba(0,0,0,0.14); }
         .dispatch-route-dot.sent { background: #c1272d; }
@@ -356,7 +383,6 @@
         
         .tab-content-zone { display: none; }
         .tab-content-zone.active { display: block; }
-        #form-tabs { display: none !important; }
         
         /* Auto-Complete Dropdown Styles */
         .autocomplete-suggestions { display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid var(--frost-blue); border-radius: 0 0 4px 4px; max-height:160px; overflow-y:auto; z-index:1000; box-shadow:0 4px 6px rgba(0,0,0,0.1); }
@@ -400,6 +426,8 @@
         .pod-detail-box button:hover { background: #004494; }
         .pod-download-card-btn { width: 100%; margin-top: 8px; padding: 7px; background: var(--frost-blue); color: white; border: none; border-radius: 3px; font-size: 0.7rem; font-weight: 900; cursor: pointer; }
         .pod-download-card-btn:hover { background: #004494; }
+        .pod-upload-card-btn { width: 100%; margin-top: 6px; padding: 7px; background: #16a34a; color: white; border: none; border-radius: 3px; font-size: 0.7rem; font-weight: 900; cursor: pointer; }
+        .pod-upload-card-btn:hover { background: #15803d; }
         .pod-detail-url { font-size: 0.75rem; color: #555; word-break: break-all; text-align: right; }
         .invoice-number-banner { margin-bottom: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
         .invoice-number-pill { background: white; border: 1px solid #ddd; border-left: 4px solid var(--frost-red); border-radius: 8px; padding: 10px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
@@ -470,16 +498,18 @@
         .timestamp-toast-yes { background: var(--whatsapp-green); color:white; }
         .timestamp-toast-no { background: rgba(255,255,255,0.18); color:white; border:1px solid rgba(255,255,255,0.35) !important; }
         @keyframes timestampToastIn { to { opacity: 1; transform: translateY(0); } }
-        .header-menu-stack .week-btn,
-        .header-menu-stack .week-btn:hover,
-        .header-menu-stack .planner-search-btn,
-        .header-menu-stack .instruction-btn,
-        .header-menu-stack .quick-card-btn {
-            background:#2c3e50 !important;
+        .header-menu-stack .toolbar-direct-btn,
+        .header-menu-stack .toolbar-menu-trigger {
+            background:var(--header-red) !important;
             color:#fff !important;
             border:0 !important;
             box-shadow:none !important;
             outline:none !important;
+        }
+        .header-menu-stack .toolbar-direct-btn:hover,
+        .header-menu-stack .toolbar-menu:hover .toolbar-menu-trigger,
+        .header-menu-stack .toolbar-menu:focus-within .toolbar-menu-trigger {
+            background:var(--header-red-dark) !important;
         }
         .header-mode-client .postcode-header .pc-coll,
         .header-mode-client .postcode-header .pc-del,
@@ -489,6 +519,70 @@
         .header-mode-all .header-all-client { font-size: 0.66rem; font-weight: 900; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .header-mode-all .header-all-postcode { font-size: 0.76rem; font-weight: 900; white-space: nowrap; }
         .header-mode-all .header-all-town { font-size: 0.62rem; font-weight: 800; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .message-modal-content { width: 980px; max-width: 96vw; height: 82vh; max-height: 82vh; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+        .message-modal-head { background: var(--frost-black); color: white; padding: 12px 16px; border-bottom: 4px solid var(--frost-red); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .message-modal-head h2 { margin: 0; font-size: 1rem; }
+        .message-layout { flex: 1; min-height: 0; overflow: hidden; display: grid; grid-template-columns: 280px minmax(0, 1fr); }
+        .message-thread-list { min-height: 0; border-right: 1px solid #d8dee8; background: #f8fafc; overflow-y: auto; }
+        .message-thread-item { width: 100%; border: 0; border-bottom: 1px solid #e5e7eb; background: transparent; padding: 12px; text-align: left; cursor: pointer; color: #111827; }
+        .message-thread-item:hover, .message-thread-item.active { background: #eef6ff; }
+        .message-thread-item.no-messages { color: #475569; }
+        .message-thread-item.no-messages .message-thread-title span:first-child { font-weight: 800; }
+        .message-thread-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 900; font-size: 0.82rem; }
+        .message-thread-name { min-width: 0; display: inline-flex; align-items: center; gap: 6px; }
+        .message-thread-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .message-online-dot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 999px; background: #16a34a; box-shadow: 0 0 0 2px rgba(22,163,74,0.15); }
+        .message-thread-email { margin-top: 3px; color: #64748b; font-size: 0.7rem; word-break: break-word; }
+        .message-thread-preview { margin-top: 4px; color: #94a3b8; font-size: 0.66rem; font-weight: 800; }
+        .message-unread-badge { display: inline-flex; min-width: 18px; height: 18px; border-radius: 999px; background: var(--frost-red); color: white; align-items: center; justify-content: center; padding: 0 5px; font-size: 0.64rem; font-weight: 900; }
+        #planner-message-button.message-alert-active {
+            background: var(--frost-red) !important;
+            color: #fff !important;
+            animation: plannerMessagePulse 1s ease-in-out infinite;
+        }
+        #planner-message-button.message-alert-active .message-unread-badge {
+            background: #fff !important;
+            color: var(--frost-red) !important;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.35);
+        }
+        @keyframes plannerMessagePulse {
+            0%, 100% { box-shadow: inset 0 0 0 0 rgba(255,255,255,0.2), 0 0 0 0 rgba(193,39,45,0.35); filter: brightness(1); }
+            50% { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.45), 0 0 0 6px rgba(193,39,45,0.22); filter: brightness(1.18); }
+        }
+        .message-conversation { min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; background: white; }
+        .message-conversation-title { border-bottom: 1px solid #e5e7eb; padding: 10px 14px; font-size: 0.86rem; font-weight: 900; color: #111827; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+        .message-conversation-title-text { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .message-clear-chat-btn { flex:0 0 auto; border:0; border-radius:5px; padding:7px 10px; background:#dc2626; color:#fff; font-size:0.72rem; font-weight:900; cursor:pointer; }
+        .message-clear-chat-btn:hover { background:#b91c1c; }
+        .message-clear-chat-btn:disabled { background:#cbd5e1; color:#64748b; cursor:not-allowed; }
+        .message-list { flex: 1; min-height: 0; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: #f8fafc; }
+        .message-bubble { max-width: 76%; border-radius: 8px; padding: 9px 11px; border: 1px solid #d8dee8; background: white; color: #111827; box-shadow: 0 1px 2px rgba(15,23,42,0.05); }
+        .message-bubble.planner { align-self: flex-end; background: #e8f3ff; border-color: #bfdbfe; }
+        .message-bubble.customer { align-self: flex-start; background: #fff; border-left: 4px solid var(--frost-red); }
+        .message-meta { font-size: 0.64rem; color: #64748b; font-weight: 800; margin-bottom: 4px; }
+        .message-text { white-space: pre-wrap; word-break: break-word; font-size: 0.82rem; line-height: 1.35; }
+        .message-read-status { margin-top: 6px; color: #64748b; font-size: 0.66rem; font-weight: 900; text-align: right; }
+        .message-read-status.read { color: #16a34a; }
+        .message-attachment { margin-top: 8px; display: inline-flex; flex-direction: column; gap: 2px; max-width: 100%; padding: 8px 10px; border: 1px solid #bfdbfe; border-radius: 7px; background: #f8fbff; color: #0f4c81; text-decoration: none; font-size: 0.78rem; font-weight: 900; }
+        .message-attachment:hover { background: #e8f3ff; }
+        .message-attachment small { color: #64748b; font-size: 0.66rem; font-weight: 800; }
+        .message-job-badge { margin: 0 0 7px; display: inline-flex; align-items: center; gap: 5px; max-width: 100%; border: 1px solid #f59e0b; border-radius: 999px; padding: 4px 9px; background: #fffbeb; color: #92400e; font-size: 0.7rem; font-weight: 900; cursor: pointer; }
+        .message-job-badge:hover { background: #fef3c7; }
+        .message-compose { flex: 0 0 auto; border-top: 1px solid #e5e7eb; padding: 10px; display: flex; gap: 8px; align-items: flex-end; background: white; }
+        .message-compose-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+        .message-job-link-row { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 7px; align-items: center; }
+        .message-job-link-row label { color: #334155; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; }
+        .message-job-link-row input,
+        .message-job-link-row select { min-width: 0; border: 1px solid #cbd5e1; border-radius: 6px; padding: 7px 8px; font-size: 0.8rem; font-weight: 800; background: #fff; color: #111827; }
+        .message-job-link-hint { min-height: 16px; color: #64748b; font-size: 0.68rem; font-weight: 800; }
+        .message-compose textarea { flex: 1; min-height: 58px; max-height: 110px; resize: vertical; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; font-size: 0.82rem; }
+        .message-compose button { border: 0; border-radius: 5px; padding: 10px 14px; background: var(--frost-blue); color: white; font-weight: 900; cursor: pointer; }
+        .message-file-btn { border: 0; border-radius: 5px; padding: 10px 12px; background: #475569; color: white; font-weight: 900; cursor: pointer; font-size: 0.78rem; }
+        .message-file-btn.disabled { opacity: 0.55; cursor: not-allowed; pointer-events: none; }
+        .message-file-btn input { display: none; }
+        .message-selected-file { min-height: 18px; color: #334155; font-size: 0.72rem; font-weight: 800; display: flex; gap: 8px; align-items: center; }
+        .message-selected-file button { padding: 3px 7px; background: #e2e8f0; color: #111827; font-size: 0.68rem; }
+        .message-empty { color: #64748b; font-weight: 800; text-align: center; padding: 24px 12px; }
 
         .quick-card-modal-content { width: 620px; max-width: 95vw; border-top: 5px solid var(--frost-red); }
         .instruction-modal-content { width: 520px; max-width: 95vw; border-top: 5px solid #0f766e; }
@@ -529,33 +623,56 @@
     <div class="header-actions-wrapper">
         <div class="header-menu-stack">
             <div class="header-menu-bar">
-                <button class="week-btn planner-search-btn" onclick="openPlannerSearch()">SEARCH</button>
-                <button class="week-btn instruction-btn" onclick="openInstructionModal()">INSTRUCTION</button>
-                <button class="week-btn quick-card-btn" onclick="openQuickCardModal()">QUICK CARD</button>
-                <button class="week-btn" onclick="openPostcodeSearch()">POSTCODE</button>
-                <button class="week-btn" id="btn-toggle-maintenance" onclick="toggleMaintenanceCards()">HIDE MAINTENANCE</button>
-                <button class="week-btn" id="btn-toggle-header" onclick="toggleHeaderView()">TOWNS</button>
-                <button class="week-btn" onclick="syncMaintenanceAndLoadAll()">SYNC</button>
-                <button class="week-btn" onclick="openAddVehicleModal()">ADD VEHICLE</button>
-                <button class="week-btn" id="btn-toggle-notifications" onclick="toggleOperationalNotifications()">HIDE NOTIFICATIONS</button>
-            </div>
-            <div class="header-menu-bar header-menu-row-secondary">
-                <div class="menu-group">
-                    <button class="week-btn" onclick="toggleUnassigned()">UNASSIGNED</button>
-                    <button class="week-btn" onclick="toggleMaintenancePool()">MAINTENANCE POOL</button>
-                    <button class="week-btn" onclick="resetForm(); openModal('modal-add')">+ NEW JOB</button>
-                    <button class="week-btn multi-job-btn" onclick="openMultiJobModal()">+ MULTI JOB</button>
-                    <button class="week-btn" onclick="openNoteModal()">NOTES</button>
-                    <button class="week-btn" onclick="showDemurrageTestNotifications()">TEST</button>
+                <div class="toolbar-menu">
+                    <button type="button" class="toolbar-menu-trigger">Planning</button>
+                    <div class="toolbar-menu-dropdown">
+                        <button type="button" class="menu-dropdown-item" onclick="openNewJobForm()">+ New Job</button>
+                        <button type="button" class="menu-dropdown-item" onclick="openMultiJobModal()">+ Multi Job</button>
+                        <button type="button" class="menu-dropdown-item" onclick="openQuickCardModal()">Quick Card</button>
+                        <button type="button" class="menu-dropdown-item" onclick="openInstructionModal()">Instruction</button>
+                    </div>
                 </div>
-                <div class="menu-group">
-                    <button class="week-btn active" id="btn-w0" onclick="switchView(0)">WEEK 1</button>
-                    <button class="week-btn" id="btn-w1" onclick="switchView(1)">WEEK 2</button>
-                    <button class="week-btn" id="btn-w2" onclick="switchView(2)">WEEK 3</button>
-                    <button class="week-btn" id="btn-w3" onclick="switchView(3)">WEEK 4</button>
-                    <button class="week-btn" onclick="toggleWeekend()">W/E</button>
+                <div class="toolbar-menu">
+                    <button type="button" class="toolbar-menu-trigger">Tools</button>
+                    <div class="toolbar-menu-dropdown">
+                        <button type="button" class="menu-dropdown-item" onclick="openPostcodeSearch()">Postcode</button>
+                        <button type="button" class="menu-dropdown-item" onclick="openNoteModal()">Notes</button>
+                        <button type="button" class="menu-dropdown-item" onclick="generateWeeklyPlannerReport(event)">Report</button>
+                    </div>
+                </div>
+                <button type="button" class="toolbar-direct-btn" id="planner-message-button" onclick="openPlannerMessages()">Message <span id="planner-message-unread" class="message-unread-badge" style="display:none;">0</span></button>
+                <div class="toolbar-menu">
+                    <button type="button" class="toolbar-menu-trigger">Admin</button>
+                    <div class="toolbar-menu-dropdown">
+                        <button type="button" class="menu-dropdown-item" onclick="openAddVehicleModal()">Add Vehicle</button>
+                        <button type="button" class="menu-dropdown-item" onclick="syncMaintenanceAndLoadAll()">Sync</button>
+                        <button type="button" class="menu-dropdown-item" id="btn-toggle-maintenance" onclick="toggleMaintenanceCards()">Hide Maintenance</button>
+                        <button type="button" class="menu-dropdown-item" id="btn-toggle-notifications" onclick="toggleOperationalNotifications()">Hide Notifications</button>
+                    </div>
+                </div>
+                <div class="toolbar-menu">
+                    <button type="button" class="toolbar-menu-trigger">View</button>
+                    <div class="toolbar-menu-dropdown">
+                        <button type="button" class="menu-dropdown-item" onclick="toggleUnassigned()">Unassigned</button>
+                        <button type="button" class="menu-dropdown-item" onclick="toggleMaintenancePool()">Maintenance Pool</button>
+                        <button type="button" class="menu-dropdown-item" id="btn-toggle-header" onclick="toggleHeaderView()">Towns</button>
+                    </div>
+                </div>
+                <div class="toolbar-menu">
+                    <button type="button" class="toolbar-menu-trigger">Weeks</button>
+                    <div class="toolbar-menu-dropdown">
+                        <button type="button" class="menu-dropdown-item week-btn active" id="btn-w0" onclick="switchView(0)">Week 1</button>
+                        <button type="button" class="menu-dropdown-item week-btn" id="btn-w1" onclick="switchView(1)">Week 2</button>
+                        <button type="button" class="menu-dropdown-item week-btn" id="btn-w2" onclick="switchView(2)">Week 3</button>
+                        <button type="button" class="menu-dropdown-item week-btn" id="btn-w3" onclick="switchView(3)">Week 4</button>
+                        <button type="button" class="menu-dropdown-item" onclick="toggleWeekend()">W/E</button>
+                    </div>
                 </div>
             </div>
+        </div>
+        <div class="header-planner-search">
+            <input type="text" id="planner-header-search-input" placeholder="Search planner..." autocomplete="off" oninput="queuePlannerHeaderSearch()" onfocus="renderPlannerHeaderSearchResults()" onkeydown="handlePlannerHeaderSearchKeydown(event)" onblur="setTimeout(hidePlannerHeaderSearchResults, 180)">
+            <div id="planner-header-search-results" class="header-search-results"></div>
         </div>
         <div id="week-display-box" class="week-info-box">WK -- | MON --/--/--</div>
         <div class="grand-total-box"><span class="grand-total-value" id="grand-total">£0.00</span></div>
@@ -670,6 +787,50 @@
         <div id="planner-search-count" style="font-size:0.72rem; color:#666; font-weight:bold; text-transform:uppercase; margin-bottom:8px;">Type to search the planner</div>
         <div id="planner-search-results" class="planner-search-results">
             <div style="padding:18px; color:#666; font-size:0.86rem;">Enter a search term above.</div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-planner-messages" class="modal-overlay" onclick="closeModalOnOutsideClick(event, 'modal-planner-messages')">
+    <div class="modal-content message-modal-content" onclick="event.stopPropagation();">
+        <div class="message-modal-head">
+            <h2>Customer Messages</h2>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button type="button" class="week-btn" onclick="loadPlannerMessages(false, true)" style="background:#0056b3;">Refresh</button>
+                <button type="button" class="week-btn" onclick="closeModal('modal-planner-messages')" style="background:#ddd; color:#333;">Close</button>
+            </div>
+        </div>
+        <div class="message-layout">
+            <div id="planner-message-thread-list" class="message-thread-list">
+                <div class="message-empty">Loading messages...</div>
+            </div>
+            <div class="message-conversation">
+                <div class="message-conversation-title">
+                    <span id="planner-message-title" class="message-conversation-title-text">Select a customer</span>
+                    <button type="button" id="planner-message-clear-btn" class="message-clear-chat-btn" onclick="clearPlannerMessageThread()" disabled>Clear chat</button>
+                </div>
+                <div id="planner-message-list" class="message-list">
+                    <div class="message-empty">Customer conversations will appear here.</div>
+                </div>
+                <div class="message-compose">
+                    <div class="message-compose-main">
+                        <div class="message-job-link-row">
+                            <label for="planner-message-job-link">Link job</label>
+                            <select id="planner-message-job-link" onchange="handlePlannerMessageJobLinkInput()" disabled>
+                                <option value="">No linked job</option>
+                            </select>
+                        </div>
+                        <div id="planner-message-job-hint" class="message-job-link-hint"></div>
+                        <textarea id="planner-message-input" placeholder="Type a reply..." onkeydown="handlePlannerMessageInputKeydown(event)" disabled></textarea>
+                        <div id="planner-message-selected-file" class="message-selected-file"></div>
+                    </div>
+                    <label id="planner-message-file-label" class="message-file-btn disabled">
+                        Attach file
+                        <input id="planner-message-file" type="file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onchange="handlePlannerMessageFileChange()" disabled>
+                    </label>
+                    <button type="button" id="planner-message-send-btn" onclick="sendPlannerMessage()" disabled>Send</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -1074,6 +1235,15 @@ function escapeHtml(value) {
     }
 
 
+    function buildPodDetailBox(job) {
+        const podUrl = (job.pod_url || '').trim();
+        const jobId = escapeInlineArg(job.id);
+        if (!podUrl) {
+            return `<div class="pod-detail-box"><div class="pod-detail-actions"><button type="button" onclick="promptManualPODUpload(event, '${jobId}')">Upload POD</button></div><span class="pod-detail-url">No POD image URL saved against this job yet.</span></div>`;
+        }
+        return `<div class="pod-detail-box"><div class="pod-detail-actions"><button type="button" onclick="openPODImage(event, '${jobId}')">Open POD Image</button><button type="button" onclick="downloadPODPdf(event, '${jobId}')">Download POD PDF</button><button type="button" onclick="promptManualPODUpload(event, '${jobId}')">Replace POD</button></div><span class="pod-detail-url">${escapeHtml(podUrl)}</span></div>`;
+    }
+
     function etaSafeId(value) {
         return String(value || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
     }
@@ -1137,6 +1307,26 @@ function escapeHtml(value) {
     const _KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1idWR3bnd4dWNsdXdnYmtnYmZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMDQwMjYsImV4cCI6MjA5MDc4MDAyNn0.xFv-FiQ894vdfJuQYWQyF4WzQXmlnmnKvz_c8nuzl5Q";
     const sb = supabase.createClient(_URL, _KEY);
     const DRIVER_PUSH_FUNCTION_NAME = "driver-dispatch-push";
+    const POD_STORAGE_BUCKETS = ['pods', 'pod-uploads'];
+    const PORTAL_MESSAGES_TABLE = 'portal_messages';
+    const PORTAL_PRESENCE_TABLE = 'portal_client_presence';
+    const MESSAGE_ATTACHMENT_BUCKET = 'portal-message-files';
+    const MESSAGE_ATTACHMENT_FALLBACK_BUCKETS = ['portal-message-files', ...POD_STORAGE_BUCKETS];
+    const MESSAGE_ATTACHMENT_MAX_MB = 15;
+    const MESSAGE_INLINE_ATTACHMENT_MAX_MB = 1.5;
+    const MESSAGE_POLL_INTERVAL_MS = 10000;
+    const PORTAL_ONLINE_WINDOW_MS = 125000;
+    const NEW_JOB_DRAFT_KEY = 'frost_planner_new_job_draft_v1';
+    const NEW_JOB_DRAFT_FIELD_IDS = [
+        'n_cust_name', 'n_cust_phone', 'n_cust_email', 'n_job_notes',
+        'n_coll_address_search', 'n_coll_name', 'n_coll_phone', 'n_coll_email',
+        'n_coll_pc', 'n_coll_street', 'n_coll_town', 'n_coll_county', 'n_coll_ref', 'n_coll_dt',
+        'n_del_address_search', 'n_del_name', 'n_del_phone', 'n_del_email',
+        'n_del_pc', 'n_del_street', 'n_8', 'n_9', 'n_10', 'n_del_dt',
+        'n_coll_pc_2', 'n_coll_town_2', 'n_del_pc_2', 'n_del_town_2',
+        'n_customers_own_invoice_number', 'n_cx_number', 'n_veh_type',
+        'n_total_pallets', 'n_total_weight', 'n_price', 'n_job_contract_type'
+    ];
     const podFolder = "https://drive.google.com/drive/folders/173z9mkrCmqmEyEENeH__-qvdw1SFJl7w?usp=sharing";
 
     const PLANNER_VEHICLES_TABLE = 'planner_vehicles';
@@ -1247,6 +1437,8 @@ function escapeHtml(value) {
         { name: "Andy Elston", phone: "447999811320" },
         { name: "Agency One", phone: "447701238562" },
         { name: "Agency Two", phone: "447701238558" },
+        { name: "Agency Three", phone: "" },
+        { name: "Agency Four", phone: "" },
         { name: "Andy West", phone: "447734369810" },
         { name: "Barrie Ashmore", phone: "447890536159" },
         { name: "Callum Lee", phone: "447359390140" },
@@ -1353,6 +1545,10 @@ function escapeHtml(value) {
     let plannerSearchRows = [];
     let plannerSearchCacheAt = 0;
     let plannerSearchLoadPromise = null;
+    let plannerHeaderSearchTimer = null;
+    let newJobDraftAutosaveTimer = null;
+    let newJobDraftAutosaveReady = false;
+    let restoringNewJobDraft = false;
     const PLANNER_SEARCH_CACHE_TTL_MS = 90000;
     let allJccBookings = []; 
     let historicalTrailers = {}; 
@@ -1364,6 +1560,11 @@ function escapeHtml(value) {
     let headerDisplayMode = 'all'; // postcodes -> towns -> client -> all
     let showMaintenanceCards = false;
     let isDragging = false;
+    let plannerMessagesRaw = [];
+    let plannerMessageClientsRaw = [];
+    let plannerPortalPresenceRaw = [];
+    let plannerActiveMessageEmail = '';
+    let plannerMessagePollTimer = null;
     const expandedPastPlannerDays = new Set();
     const PLANNER_STATUS_LANES = [
         { key: 'booking_requests', label: 'Booking Requests', acceptsDrop: false },
@@ -1450,6 +1651,93 @@ function escapeHtml(value) {
         if (status === 'cancelled') return false;
         const hasPOD = !!(job && job.pod_url && String(job.pod_url).trim() !== '');
         return hasPOD || isCompletedWithinPreviousWeeks(job, 2);
+    }
+
+    function getTrailerDropTextValue(job, keys) {
+        for (const key of keys) {
+            const value = job && job[key];
+            if (value !== null && value !== undefined && String(value).trim() !== '') {
+                return String(value).trim();
+            }
+        }
+        return '';
+    }
+
+    function getTrailerDropInfo(job) {
+        if (!job) return null;
+
+        let trailer = getTrailerDropTextValue(job, ['trailer_drop_trailer', 'dropped_trailer_number', 'drop_trailer_number']);
+        let location = getTrailerDropTextValue(job, ['trailer_drop_location', 'dropped_trailer_location', 'drop_trailer_location']);
+        let stage = getTrailerDropTextValue(job, ['trailer_drop_stage', 'dropped_trailer_stage', 'drop_trailer_stage']);
+        let timestamp = getTrailerDropTextValue(job, ['trailer_drop_timestamp', 'dropped_trailer_timestamp', 'drop_trailer_timestamp']);
+
+        const noteText = getTrailerDropTextValue(job, ['driver_notes', 'notes', 'job_notes', 'delivery_notes', 'collection_notes']);
+        const noteMatch = noteText.match(/TRAILER DROP\s*-\s*Trailer:\s*([^|]+)(?:\|\s*Location:\s*([^|]+))?(?:\|\s*Stage:\s*([^|]+))?(?:\|\s*Driver:\s*([^|]+))?(?:\|\s*Time:\s*([^|]+))?/i);
+        if (noteMatch) {
+            trailer = trailer || String(noteMatch[1] || '').trim();
+            location = location || String(noteMatch[2] || '').trim();
+            stage = stage || String(noteMatch[3] || '').trim();
+            timestamp = timestamp || String(noteMatch[5] || '').trim();
+        }
+
+        const status = String(job.dispatch_status || '').toLowerCase();
+        if (status !== 'trailer_dropped' && !trailer && !location) return null;
+
+        return {
+            trailer: trailer || 'Trailer TBA',
+            location: location || 'Location TBA',
+            stage: stage || '',
+            timestamp: timestamp || ''
+        };
+    }
+
+    function hasTrailerDropDetail(info) {
+        if (!info) return false;
+        return !!(
+            (info.trailer && info.trailer !== 'Trailer TBA') ||
+            (info.location && info.location !== 'Location TBA')
+        );
+    }
+
+    function getBestTrailerDropInfo(jobs) {
+        const infos = (jobs || []).map(getTrailerDropInfo).filter(Boolean);
+        return infos.find(hasTrailerDropDetail) || infos[0] || null;
+    }
+
+    function buildTrailerDropMarker(jobOrJobs) {
+        const info = Array.isArray(jobOrJobs)
+            ? getBestTrailerDropInfo(jobOrJobs)
+            : getTrailerDropInfo(jobOrJobs);
+        if (!info) return '';
+
+        const when = info.timestamp ? new Date(info.timestamp) : null;
+        const whenText = when && !isNaN(when.getTime())
+            ? ` - ${when.toLocaleDateString('en-GB')} ${when.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+            : '';
+        const stageText = info.stage ? ` (${info.stage})` : '';
+
+        return `<div class="trailer-drop-marker">STILL NEEDS DELIVERING${stageText}<span>Trailer: ${escapeHtml(info.trailer)} | ${escapeHtml(info.location)}${escapeHtml(whenText)}</span></div>`;
+    }
+
+    function buildTrailerDropHeaderLine(jobOrJobs) {
+        const jobs = Array.isArray(jobOrJobs) ? jobOrJobs.filter(Boolean) : [jobOrJobs].filter(Boolean);
+        if (!jobs.length) return '';
+
+        const stillOpen = jobs.some(job => {
+            const status = String(job && job.status || '').toLowerCase();
+            const dispatchStatus = String(job && job.dispatch_status || '').toLowerCase();
+            return status !== 'completed' &&
+                dispatchStatus !== 'completed' &&
+                dispatchStatus !== 'tipped' &&
+                !String(job && job.pod_url || '').trim() &&
+                !String(job && job.tipped_timestamp || '').trim();
+        });
+        if (!stillOpen) return '';
+
+        const info = getBestTrailerDropInfo(jobs);
+        if (!hasTrailerDropDetail(info)) return '';
+
+        return `<div class="two-card-trailer-head">Trailer ${escapeHtml(info.trailer)} | Location ${escapeHtml(info.location)}</div>`;
     }
 
 
@@ -2162,7 +2450,7 @@ function escapeHtml(value) {
         return field ? field.value : '';
     }
 
-    function setJobBookingMode(mode) {
+    async function setJobBookingMode(mode) {
         const hidden = document.getElementById('n_job_contract_type');
         const modal = document.getElementById('add-job-modal-content');
         const banner = document.getElementById('palletforce-mode-banner');
@@ -2196,7 +2484,7 @@ function escapeHtml(value) {
             ftsInv.disabled = isPFMode;
             ftsInv.readOnly = true;
             if (isPFMode) {
-                ftsInv.value = '';
+                await prefillNextPalletforceInvoiceNumber();
             } else if (!document.getElementById('sys_job_id')?.value && !ftsInv.value) {
                 prefillNextFtsInvoiceNumber();
             }
@@ -2208,6 +2496,7 @@ function escapeHtml(value) {
             else if (priceField.value === 'PFJ') priceField.value = '';
             priceField.placeholder = isPFMode ? 'PFJ' : '0.00';
         }
+        queueNewJobDraftSave();
     }
 
     function isQuickCardJobType(type) {
@@ -3435,10 +3724,19 @@ function escapeHtml(value) {
 
     const FTS_INVOICE_PREFIX = 'FTS-';
     const FTS_INVOICE_START_NUMBER = 55001;
+    const PALLETFORCE_INVOICE_PREFIX = 'PLTF-';
+    const PALLETFORCE_INVOICE_START_NUMBER = 1;
+    const PALLETFORCE_INVOICE_PAD_LENGTH = 3;
     let ftsInvoicePrefillToken = 0;
+    let palletforceInvoicePrefillToken = 0;
 
     function parseFtsInvoiceNumber(value) {
         const match = String(value || '').trim().toUpperCase().match(/^FTS-(\d+)$/);
+        return match ? parseInt(match[1], 10) : null;
+    }
+
+    function parsePalletforceInvoiceNumber(value) {
+        const match = String(value || '').trim().toUpperCase().match(/^PLTF-(\d+)$/);
         return match ? parseInt(match[1], 10) : null;
     }
 
@@ -3446,11 +3744,22 @@ function escapeHtml(value) {
         return `${FTS_INVOICE_PREFIX}${number}`;
     }
 
+    function formatPalletforceInvoiceNumber(number) {
+        return `${PALLETFORCE_INVOICE_PREFIX}${String(number).padStart(PALLETFORCE_INVOICE_PAD_LENGTH, '0')}`;
+    }
+
     function getHighestFtsInvoiceNumberFromList(rows) {
         return (rows || []).reduce((highest, row) => {
             const parsed = parseFtsInvoiceNumber(row && row.fts_invoice_number);
             return parsed && parsed > highest ? parsed : highest;
         }, FTS_INVOICE_START_NUMBER - 1);
+    }
+
+    function getHighestPalletforceInvoiceNumberFromList(rows) {
+        return (rows || []).reduce((highest, row) => {
+            const parsed = parsePalletforceInvoiceNumber(row && row.fts_invoice_number);
+            return parsed && parsed > highest ? parsed : highest;
+        }, PALLETFORCE_INVOICE_START_NUMBER - 1);
     }
 
     async function getNextFtsInvoiceNumber() {
@@ -3462,6 +3771,17 @@ function escapeHtml(value) {
             console.warn('Could not refresh FTS invoice numbers from Supabase, using loaded planner data instead.', err);
         }
         return formatFtsInvoiceNumber(Math.max(FTS_INVOICE_START_NUMBER, highest + 1));
+    }
+
+    async function getNextPalletforceInvoiceNumber() {
+        let highest = getHighestPalletforceInvoiceNumberFromList(allJobsRaw);
+        try {
+            const { data, error } = await sb.from('quotes').select('fts_invoice_number');
+            if (!error && data) highest = Math.max(highest, getHighestPalletforceInvoiceNumberFromList(data));
+        } catch (err) {
+            console.warn('Could not refresh PLTF invoice numbers from Supabase, using loaded planner data instead.', err);
+        }
+        return formatPalletforceInvoiceNumber(Math.max(PALLETFORCE_INVOICE_START_NUMBER, highest + 1));
     }
 
     function getNextFtsInvoiceNumberAfter(value) {
@@ -3476,7 +3796,20 @@ function escapeHtml(value) {
         field.value = 'Generating...';
         const nextNumber = await getNextFtsInvoiceNumber();
         const isStillNewJob = !document.getElementById('sys_job_id').value;
-        if (token === ftsInvoicePrefillToken && isStillNewJob) field.value = nextNumber;
+        const isStillStandardNewJob = isStillNewJob && !isPalletforceJobType(getCurrentJobBookingMode());
+        if (token === ftsInvoicePrefillToken && isStillStandardNewJob) field.value = nextNumber;
+    }
+
+    async function prefillNextPalletforceInvoiceNumber() {
+        const field = document.getElementById('n_fts_invoice_number');
+        if (!field) return;
+        const existingJobId = document.getElementById('sys_job_id')?.value;
+        if (existingJobId && field.value) return;
+        const token = ++palletforceInvoicePrefillToken;
+        field.value = 'Generating...';
+        const nextNumber = await getNextPalletforceInvoiceNumber();
+        const isStillPalletforceMode = isPalletforceJobType(getCurrentJobBookingMode());
+        if (token === palletforceInvoicePrefillToken && isStillPalletforceMode) field.value = nextNumber;
     }
 
     function buildInvoiceNumberBanner(job) {
@@ -3730,7 +4063,7 @@ function escapeHtml(value) {
             fullDetailRow('Booking customer', job.customer_name),
             fullDetailRow('Customer telephone', job.customer_phone),
             fullDetailRow('Customer email', job.customer_email),
-            fullDetailRow('Job notes', job.job_notes),
+            fullDetailRow('Job notes', stripPlannerInternalNoteMarkers(job.job_notes)),
             fullDetailRow('Status', job.status),
             fullDetailRow('Dispatch status', job.dispatch_status),
             fullDetailRow('Dispatch release date', job.dispatch_release_date),
@@ -4239,15 +4572,87 @@ function escapeHtml(value) {
         return String(name || '').replace(/\s*\((?:Leg\s*[12]|Collection(?:\s+\d+\s*\/\s*\d+)?|Delivery(?:\s+\d+\s*\/\s*\d+)?)\)\s*$/i, '').trim();
     }
 
+    const PLANNER_CARD_ROLE_MARKER_RE = /\[PLANNER CARD ROLE:\s*(COLLECTION|DELIVERY)(?:\s+(\d+)\s*\/\s*(\d+))?\]/i;
+    const MULTI_JOB_ROLE_MARKER_RE = /\[MULTI JOB\s+(COLLECTION|DELIVERY)\s+(\d+)\s*\/\s*(\d+)\]/i;
+
+    function stripPlannerCardRoleMarkers(notes) {
+        return String(notes || '')
+            .replace(/\s*\[PLANNER CARD ROLE:\s*(?:COLLECTION|DELIVERY)(?:\s+\d+\s*\/\s*\d+)?\]\s*/ig, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function stripPlannerInternalNoteMarkers(notes) {
+        return stripPlannerCardRoleMarkers(notes)
+            .replace(/\s*\[MULTI JOB\s+(?:COLLECTION|DELIVERY)\s+\d+\s*\/\s*\d+\]\s*/ig, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function getPlannerCardRoleMeta(job) {
+        if (!job) return null;
+        const explicitRole = String(job.planner_card_role || '').trim().toLowerCase();
+        if (explicitRole === 'collection' || explicitRole === 'delivery') {
+            return {
+                role: explicitRole,
+                index: Number(job.planner_stage_index || 0) || null,
+                total: Number(job.planner_stage_total || 0) || null
+            };
+        }
+
+        const notes = String(job.job_notes || '');
+        const markerMatch = notes.match(PLANNER_CARD_ROLE_MARKER_RE) || notes.match(MULTI_JOB_ROLE_MARKER_RE);
+        if (markerMatch) {
+            return {
+                role: markerMatch[1].toLowerCase(),
+                index: markerMatch[2] ? Number(markerMatch[2]) : null,
+                total: markerMatch[3] ? Number(markerMatch[3]) : null
+            };
+        }
+
+        const suffixMatch = String(job.customer_name || '').match(/\((Collection|Delivery)(?:\s+(\d+)\s*\/\s*(\d+))?\)\s*$/i);
+        if (suffixMatch) {
+            return {
+                role: suffixMatch[1].toLowerCase(),
+                index: suffixMatch[2] ? Number(suffixMatch[2]) : null,
+                total: suffixMatch[3] ? Number(suffixMatch[3]) : null
+            };
+        }
+
+        return null;
+    }
+
+    function applyPlannerCardRole(payload, role, index = null, total = null) {
+        if (!payload || !role) return payload;
+        const cleanRole = String(role).toLowerCase() === 'delivery' ? 'DELIVERY' : 'COLLECTION';
+        const cleanIndex = Number(index || 0);
+        const cleanTotal = Number(total || 0);
+        const roleText = cleanIndex && cleanTotal ? `${cleanRole} ${cleanIndex}/${cleanTotal}` : cleanRole;
+        const cleanNotes = stripPlannerCardRoleMarkers(payload.job_notes);
+        payload.customer_name = cleanTwoCardCustomerName(payload.customer_name) || payload.customer_name || 'Job';
+        payload.job_notes = [`[PLANNER CARD ROLE: ${roleText}]`, cleanNotes].filter(Boolean).join(' ');
+        return payload;
+    }
+
     function isDeliveryPlannerCardJob(job) {
-        return /\((?:Leg\s*2|Delivery(?:\s+\d+\s*\/\s*\d+)?)\)\s*$/i.test(String(job && job.customer_name || ''));
+        const meta = getPlannerCardRoleMeta(job);
+        return !!(meta && meta.role === 'delivery') || /\(Leg\s*2\)\s*$/i.test(String(job && job.customer_name || ''));
     }
 
     function isCollectionPlannerCardJob(job) {
-        return /\((?:Leg\s*1|Collection(?:\s+\d+\s*\/\s*\d+)?)\)\s*$/i.test(String(job && job.customer_name || ''));
+        const meta = getPlannerCardRoleMeta(job);
+        return !!(meta && meta.role === 'collection') || /\(Leg\s*1\)\s*$/i.test(String(job && job.customer_name || ''));
     }
 
     function getNumberedOperationalStage(job) {
+        const meta = getPlannerCardRoleMeta(job);
+        if (meta && meta.index && meta.total) {
+            return {
+                role: meta.role,
+                index: meta.index,
+                total: meta.total
+            };
+        }
         const match = String(job && job.customer_name || '').match(/\((Collection|Delivery)\s+(\d+)\s*\/\s*(\d+)\)\s*$/i);
         if (!match) return null;
         return {
@@ -4275,11 +4680,10 @@ function escapeHtml(value) {
     }
 
     function getOperationalTaskLabel(job, role) {
-        const customer = String(job && job.customer_name || '');
-        const match = customer.match(/\((Collection|Delivery)(?:\s+(\d+)\s*\/\s*(\d+))?\)\s*$/i);
-        if (match) {
-            const label = match[1].toUpperCase();
-            return match[2] && match[3] ? `${label} ${match[2]}/${match[3]}` : label;
+        const meta = getPlannerCardRoleMeta(job);
+        if (meta && meta.role) {
+            const label = meta.role.toUpperCase();
+            return meta.index && meta.total ? `${label} ${meta.index}/${meta.total}` : label;
         }
         return role === 'delivery' ? 'DELIVERY' : 'COLLECTION';
     }
@@ -4483,11 +4887,19 @@ function escapeHtml(value) {
         if (dispatchStatus === 'loaded') dispatchClass = ' status-load';
         if (dispatchStatus === 'del_arrived') dispatchClass = ' status-del-arr';
         if (dispatchStatus === 'tipped' || dispatchStatus === 'completed') dispatchClass = ' status-tipped';
-        const hasDispatchAck = !!q.ack_timestamp || ['acknowledged', 'arrived', 'loaded', 'del_arrived', 'tipped', 'completed'].includes(dispatchStatus);
+        if (dispatchStatus === 'trailer_dropped') dispatchClass = ' status-trailer-dropped';
+        const hasDispatchAck = !!q.ack_timestamp || ['acknowledged', 'arrived', 'loaded', 'del_arrived', 'tipped', 'completed', 'trailer_dropped'].includes(dispatchStatus);
         const hasDispatchSent = hasDispatchAck || !!q.dispatch_scheduled_at || ['scheduled', 'sent'].includes(dispatchStatus);
         const dispatchDotHtml = hasDispatchSent
             ? `<span class="dispatch-route-dot ${hasDispatchAck ? 'ack' : 'sent'}" title="${hasDispatchAck ? 'Driver has acknowledged this job' : 'Job has been sent to the driver'}"></span>`
             : '';
+        const pairedCollectionCard = role === 'delivery' && isDeliveryPlannerCardJob(q)
+            ? findCollectionCardForDeliveryJob(q)
+            : null;
+        const trailerDropMarkerHtml = role === 'delivery'
+            ? buildTrailerDropMarker([q, pairedCollectionCard])
+            : '';
+        const trailerDropHeaderHtml = buildTrailerDropHeaderLine([q, pairedCollectionCard]);
 
         card.className = `job-card two-card-planner-card ${role}-planner-card${dispatchClass}`;
         if (isCompleted) card.classList.add('completed-grey');
@@ -4517,6 +4929,7 @@ function escapeHtml(value) {
         const palletTag = q.total_pallets ? `<span class="vehicle-tag" style="background:#d68910;">${escapeHtml(q.total_pallets)} Plt</span>` : '';
         const weightTag = q.total_weight ? `<span class="vehicle-tag" style="background:#666;">${escapeHtml(q.total_weight)}kg</span>` : '';
         const podDownloadButton = q.pod_url && !isVirtualDelivery ? `<button type="button" class="pod-download-card-btn" onclick="downloadPODPdf(event, '${escapeInlineArg(q.id)}')">DOWNLOAD POD PDF</button>` : '';
+        const podUploadButton = !isVirtualDelivery ? `<button type="button" class="pod-upload-card-btn" onclick="promptManualPODUpload(event, '${escapeInlineArg(q.id)}')">${q.pod_url ? 'REPLACE POD' : 'UPLOAD POD'}</button>` : '';
         const collectionRefText = getCardCollectionRefDisplay(q);
         const quickEditHtml = `<button type="button" class="card-quick-edit-btn" title="Edit this job" onmousedown="event.stopPropagation()" onclick="editJob(event, '${q.id}')">&#9998;</button>`;
         const reorderHandleHtml = `<div class="card-reorder-handle" draggable="true" title="Rearrange this card within this grid space" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()" ondragstart="startCardReorderDrag(event, '${card.id}')" ondragend="endCardReorderDrag(event)">☰</div>`;
@@ -4530,17 +4943,20 @@ function escapeHtml(value) {
                     <span class="two-card-postcode" title="${escapeHtml(headerText)}">${escapeHtml(headerText)}</span>
                     <span class="two-card-time">${escapeHtml(timeText)}</span>
                 </div>
+                ${trailerDropHeaderHtml}
             </div>
             <div class="card-body">
                 <span class="two-card-type ${role}">${escapeHtml(taskLabel)}</span>
                 <div class="two-card-main" title="${escapeHtml(cleanCustomer)}">${escapeHtml(cleanCustomer)} ${contractBadge}</div>
                 <div style="font-size:0.68rem; color:#475569; font-weight:800;">${escapeHtml(dateText)}</div>
+                ${trailerDropMarkerHtml}
                 <div class="two-card-meta">
                     <span class="vehicle-tag">${escapeHtml(q.vehicle_type || 'Any')}</span>
                     ${palletTag}
                     ${weightTag}
                 </div>
                 ${podDownloadButton}
+                ${podUploadButton}
                 ${buildTwoCardActions(q, role, isVirtualDelivery)}
             </div>`;
         return card;
@@ -4912,6 +5328,7 @@ function escapeHtml(value) {
             let contractBadge = isPalletforceJob ? `<span class="palletforce-job-badge">${jobContractType}</span>` : '';
             if (isQuickCard) contractBadge += `<span class="quick-card-badge">QUICK CARD - COMPLETE</span>`;
             let podDownloadButton = q.pod_url ? `<button type="button" class="pod-download-card-btn" onclick="downloadPODPdf(event, '${escapeInlineArg(q.id)}')">DOWNLOAD POD PDF</button>` : '';
+            let podUploadButton = `<button type="button" class="pod-upload-card-btn" onclick="promptManualPODUpload(event, '${escapeInlineArg(q.id)}')">${q.pod_url ? 'REPLACE POD' : 'UPLOAD POD'}</button>`;
             const collectionRefText = getCardCollectionRefDisplay(q);
             const ftsCardHeader = `<div class="fts-card-header"><span>${escapeHtml(q.fts_invoice_number || 'NO FTS')}</span><span class="fts-card-ref">Collection Ref: ${escapeHtml(collectionRefText)}</span></div>`;
             const priceValue = String(q.total_price ?? '').trim();
@@ -4949,6 +5366,7 @@ function escapeHtml(value) {
                          The full details are shown once in the neat cards below. -->
 
                     ${podDownloadButton}
+                    ${podUploadButton}
                     ${extraActions}
                 </div>`;
         }
@@ -5206,8 +5624,10 @@ function escapeHtml(value) {
 
             if (!quoteData) {
                 const quotePayload = buildQuotePayloadFromBookingRequest(request);
-                if (!quotePayload.fts_invoice_number && !isPalletforceJobType(quotePayload.job_contract_type)) {
-                    quotePayload.fts_invoice_number = await getNextFtsInvoiceNumber();
+                if (!quotePayload.fts_invoice_number) {
+                    quotePayload.fts_invoice_number = isPalletforceJobType(quotePayload.job_contract_type)
+                        ? await getNextPalletforceInvoiceNumber()
+                        : await getNextFtsInvoiceNumber();
                 }
 
                 const insertResult = await insertQuoteForBookingRequest(quotePayload);
@@ -5812,8 +6232,8 @@ function escapeHtml(value) {
         const roleLabel = `${isDelivery ? 'Delivery' : 'Collection'} ${stop.index}/${totalForRole}`;
         const taskNote = `[MULTI JOB ${roleLabel.toUpperCase()}]`;
 
-        return {
-            customer_name: `${shared.customerName} (${roleLabel})`,
+        return applyPlannerCardRole({
+            customer_name: cleanTwoCardCustomerName(shared.customerName) || shared.customerName,
             customer_phone: shared.customerPhone,
             customer_email: shared.customerEmail,
             job_notes: [taskNote, shared.jobNotes].filter(Boolean).join(' '),
@@ -5845,7 +6265,7 @@ function escapeHtml(value) {
             job_contract_type: '',
             status: 'pending',
             dispatch_status: 'unsent'
-        };
+        }, role, stop.index, totalForRole);
     }
 
     async function saveMultiJob() {
@@ -5991,7 +6411,7 @@ function escapeHtml(value) {
         collections.forEach((stop, index) => {
             const stage = stripExtraStopFields(payload);
             Object.assign(stage, {
-                customer_name: `${baseCustomerName} (Collection ${index + 1}/${collections.length})`,
+                customer_name: baseCustomerName,
                 coll_cust_name: stop.name || payload.coll_cust_name || baseCustomerName,
                 coll_phone: stop.phone || payload.coll_phone || '',
                 coll_email: stop.email || payload.coll_email || '',
@@ -6012,13 +6432,14 @@ function escapeHtml(value) {
                 del_datetime: firstDelivery.datetime || payload.del_datetime || '',
                 total_price: index === 0 ? payload.total_price : '0'
             });
+            applyPlannerCardRole(stage, 'collection', index + 1, collections.length);
             stagePayloads.push(stage);
         });
 
         deliveries.forEach((stop, index) => {
             const stage = stripExtraStopFields(payload);
             Object.assign(stage, {
-                customer_name: `${baseCustomerName} (Delivery ${index + 1}/${deliveries.length})`,
+                customer_name: baseCustomerName,
                 coll_cust_name: firstCollection.name || payload.coll_cust_name || baseCustomerName,
                 coll_phone: firstCollection.phone || payload.coll_phone || '',
                 coll_email: firstCollection.email || payload.coll_email || '',
@@ -6039,6 +6460,7 @@ function escapeHtml(value) {
                 del_datetime: stop.datetime || payload.del_datetime || '',
                 total_price: '0'
             });
+            applyPlannerCardRole(stage, 'delivery', index + 1, deliveries.length);
             stagePayloads.push(stage);
         });
 
@@ -6062,6 +6484,7 @@ function escapeHtml(value) {
 
         const id = document.getElementById('sys_job_id').value;
         const existingJobBeforeSave = id ? getJobById(id) : null;
+        const ftsInvoiceFieldValue = String(document.getElementById('n_fts_invoice_number').value || '').trim();
         
         const payload = {
             customer_name: document.getElementById('n_cust_name').value,
@@ -6097,7 +6520,7 @@ function escapeHtml(value) {
             vehicle_type: document.getElementById('n_veh_type').value,
             customers_own_invoice_number: isPalletforceJobType(bookingMode) ? '' : document.getElementById('n_customers_own_invoice_number').value,
             cx_number: isPalletforceJobType(bookingMode) ? '' : document.getElementById('n_cx_number').value,
-            fts_invoice_number: isPalletforceJobType(bookingMode) ? '' : document.getElementById('n_fts_invoice_number').value,
+            fts_invoice_number: ftsInvoiceFieldValue === 'Generating...' ? '' : ftsInvoiceFieldValue,
             job_contract_type: isQuickCardJobType(bookingMode) ? '' : bookingMode
         };
 
@@ -6105,10 +6528,15 @@ function escapeHtml(value) {
             payload.coll_ref = '';
         }
 
-        if (!id && !isPalletforceJobType(payload.job_contract_type)) {
-            payload.fts_invoice_number = await getNextFtsInvoiceNumber();
+        if (!id) {
+            payload.customer_name = cleanTwoCardCustomerName(payload.customer_name) || payload.customer_name || 'Job';
+            payload.fts_invoice_number = isPalletforceJobType(payload.job_contract_type)
+                ? await getNextPalletforceInvoiceNumber()
+                : await getNextFtsInvoiceNumber();
             const ftsField = document.getElementById('n_fts_invoice_number');
             if (ftsField) ftsField.value = payload.fts_invoice_number;
+        } else if (!payload.fts_invoice_number && existingJobBeforeSave && existingJobBeforeSave.fts_invoice_number) {
+            payload.fts_invoice_number = existingJobBeforeSave.fts_invoice_number;
         }
 
         let cp2 = document.getElementById('n_coll_pc_2').value;
@@ -6131,8 +6559,13 @@ function escapeHtml(value) {
 
             if(id) {
                 const editedDeliveryCard = isDeliveryPlannerCardJob(existingJobBeforeSave);
+                const editedCollectionCard = isCollectionPlannerCardJob(existingJobBeforeSave);
                 if (editedDeliveryCard) {
-                    payload.customer_name = `${cleanTwoCardCustomerName(payload.customer_name) || payload.customer_name || 'Job'} (Delivery)`;
+                    const stage = getNumberedOperationalStage(existingJobBeforeSave);
+                    applyPlannerCardRole(payload, 'delivery', stage && stage.index, stage && stage.total);
+                } else if (editedCollectionCard) {
+                    const stage = getNumberedOperationalStage(existingJobBeforeSave);
+                    applyPlannerCardRole(payload, 'collection', stage && stage.index, stage && stage.total);
                 }
                 const { error } = await sb.from('quotes').update(payload).eq('id', id);
                 errorObj = error;
@@ -6141,9 +6574,9 @@ function escapeHtml(value) {
                     if (deliveryPartner) {
                         const deliveryPayload = {
                             ...payload,
-                            customer_name: `${cleanTwoCardCustomerName(payload.customer_name) || payload.customer_name || 'Job'} (Delivery)`,
                             total_price: '0'
                         };
+                        applyPlannerCardRole(deliveryPayload, 'delivery');
                         const partnerUpdate = await sb.from('quotes').update(deliveryPayload).eq('id', deliveryPartner.id);
                         errorObj = partnerUpdate.error;
                     }
@@ -6206,6 +6639,7 @@ Standard jobs without extra legs will continue to save normally.`);
                 throw errorObj;
             }
             
+            if (!id) clearNewJobDraft();
             closeModal('modal-add'); 
             loadAll();
         } catch(e) { console.error(e); alert("Error saving: " + e.message); }
@@ -6228,7 +6662,7 @@ Standard jobs without extra legs will continue to save normally.`);
         document.getElementById('n_cust_name').value = cleanTwoCardCustomerName(j.customer_name) || j.customer_name || '';
         document.getElementById('n_cust_phone').value = j.customer_phone || '';
         document.getElementById('n_cust_email').value = j.customer_email || '';
-        if (document.getElementById('n_job_notes')) document.getElementById('n_job_notes').value = j.job_notes || '';
+        if (document.getElementById('n_job_notes')) document.getElementById('n_job_notes').value = stripPlannerInternalNoteMarkers(j.job_notes) || '';
         if (document.getElementById('n_coll_name')) document.getElementById('n_coll_name').value = j.coll_cust_name || '';
         if (document.getElementById('n_coll_phone')) document.getElementById('n_coll_phone').value = j.coll_phone || '';
         if (document.getElementById('n_coll_email')) document.getElementById('n_coll_email').value = j.coll_email || '';
@@ -6443,6 +6877,27 @@ function sameLocalDateValue(a, b) {
         if (error) throw error;
     }
 
+    async function insertQuoteAndReturnRow(payload, group) {
+        const insertPayload = { ...payload };
+        if (group && linkedJobGroupColumnAvailable) insertPayload[LINKED_JOB_GROUP_COLUMN] = group;
+
+        let result = await sb.from('quotes').insert([insertPayload]).select('*').maybeSingle();
+        if (result.error && group && /linked_job_group|schema cache|column/i.test(result.error.message || String(result.error))) {
+            linkedJobGroupColumnAvailable = false;
+            delete insertPayload[LINKED_JOB_GROUP_COLUMN];
+            result = await sb.from('quotes').insert([insertPayload]).select('*').maybeSingle();
+        }
+        for (let attempts = 0; result.error && attempts < 8; attempts++) {
+            const removedColumn = removeMissingQuoteColumnFromPayload(insertPayload, result.error);
+            if (!removedColumn) break;
+            console.warn(`quotes.${removedColumn} is not available. Retrying insert without it.`, result.error);
+            result = await sb.from('quotes').insert([insertPayload]).select('*').maybeSingle();
+        }
+        if (result.error) throw result.error;
+        if (!result.data) throw new Error('The delivery card was created, but Supabase did not return the new row.');
+        return result.data;
+    }
+
     function removeMissingQuoteColumnFromPayload(payload, error) {
         const message = error && error.message ? String(error.message) : String(error || '');
         const match = message.match(/Could not find the '([^']+)' column of 'quotes'/i)
@@ -6508,7 +6963,8 @@ function sameLocalDateValue(a, b) {
     }
 
     function getJobDispatchReleaseDate(job) {
-        return getLocalDateKeyFromValue(job.dispatch_release_date) || getLocalDateKeyFromValue(job.coll_datetime) || getTodayLocalDateKey();
+        const plannerDate = isDeliveryPlannerCardJob(job) ? job.del_datetime : job.coll_datetime;
+        return getLocalDateKeyFromValue(job.dispatch_release_date) || getLocalDateKeyFromValue(plannerDate) || getTodayLocalDateKey();
     }
 
     function isReleaseDateTodayOrPast(releaseDate) {
@@ -6647,9 +7103,60 @@ function sameLocalDateValue(a, b) {
         }
     }
 
+    async function ensureRealDeliveryCardForDispatch(source, virtualCard) {
+        if (!source || isDeliveryPlannerCardJob(source)) return source;
+
+        const targetSlot = virtualCard && virtualCard.parentElement ? virtualCard.parentElement.id : getPlannerSlotForLeg(source, 'delivery');
+        if (!targetSlot || !String(targetSlot).startsWith('planner-w')) {
+            throw new Error("Please place the green delivery card onto a driver's planner cell before dispatching it.");
+        }
+
+        const existingDelivery = findDeliveryCardForJob(source);
+        const assignedDriver = getAssignedDriverForPlannerSlot(targetSlot);
+        const updatePayload = {
+            status: 'assigned',
+            assigned_slot: targetSlot,
+            assigned_driver: assignedDriver,
+            planner_sort_order: null,
+            planner_sort_manual: false,
+            ...getCleanDispatchResetPayload()
+        };
+
+        if (existingDelivery) {
+            const deliveryUpdatePayload = {
+                ...updatePayload,
+                customer_name: cleanTwoCardCustomerName(existingDelivery.customer_name) || cleanTwoCardCustomerName(source.customer_name) || source.customer_name || 'Job',
+                job_notes: existingDelivery.job_notes || source.job_notes || ''
+            };
+            applyPlannerCardRole(deliveryUpdatePayload, 'delivery');
+            const { error } = await sb.from('quotes').update(deliveryUpdatePayload).eq('id', existingDelivery.id);
+            if (error) throw error;
+            return { ...existingDelivery, ...deliveryUpdatePayload };
+        }
+
+        const deliveryPayload = buildCopiedJobPayload(source);
+        deliveryPayload.customer_name = cleanTwoCardCustomerName(source.customer_name) || source.customer_name || 'Job';
+        deliveryPayload.total_price = '0';
+        Object.assign(deliveryPayload, updatePayload);
+        applyPlannerCardRole(deliveryPayload, 'delivery');
+        return await insertQuoteAndReturnRow(deliveryPayload, null);
+    }
+
     async function dispatchJob(e, id) {
         e.stopPropagation();
-        const j = allJobsRaw.find(x => x.id == id);
+        const dispatchCard = e && e.target && e.target.closest ? e.target.closest('.job-card') : null;
+        const requestedDeliveryCard = dispatchCard && dispatchCard.dataset && dispatchCard.dataset.cardRole === 'delivery';
+        const requestedVirtualDelivery = dispatchCard && dispatchCard.dataset && dispatchCard.dataset.virtualDelivery === 'true';
+        let j = allJobsRaw.find(x => x.id == id);
+        if (requestedDeliveryCard && requestedVirtualDelivery && j && !isDeliveryPlannerCardJob(j)) {
+            try {
+                j = await ensureRealDeliveryCardForDispatch(j, dispatchCard);
+                allJobsRaw.push(j);
+                id = j.id;
+            } catch (err) {
+                return alert("Error preparing green delivery card for dispatch: " + (err && err.message ? err.message : err));
+            }
+        }
         if (!j || !j.assigned_slot || j.assigned_slot.includes('pool') || j.assigned_slot.includes('zone')) {
             return alert("Please assign the job to a driver's row first before dispatching.");
         }
@@ -6657,7 +7164,7 @@ function sameLocalDateValue(a, b) {
         const cellId = j.assigned_slot.split('-s')[0]; 
         const dropdown = document.getElementById(`sel-${cellId}`);
         const selectedDriver = getSelectedDriverFromDropdown(dropdown);
-        if (!dropdown || !selectedDriver.phone) return alert("Please select a driver in the row's dropdown first.");
+        if (!dropdown || !selectedDriver.name || selectedDriver.name === 'Unassigned') return alert("Please select a driver in the row's dropdown first.");
         
         const driverName = selectedDriver.name.toLowerCase();
         const releaseDate = getJobDispatchReleaseDate(j);
@@ -6681,11 +7188,45 @@ function sameLocalDateValue(a, b) {
                 driver_hide_times: hideTimesFromDriver
             };
 
+            const pairedCollectionCard = isDeliveryPlannerCardJob(j) ? findCollectionCardForDeliveryJob(j) : null;
+            const trailerDropInfo = isDeliveryPlannerCardJob(j) ? getBestTrailerDropInfo([j, pairedCollectionCard]) : null;
+            if (trailerDropInfo) {
+                const handoverNote = `TRAILER HANDOVER - Trailer: ${trailerDropInfo.trailer || 'Trailer TBA'} | Location: ${trailerDropInfo.location || 'Location TBA'} | Original Stage: ${trailerDropInfo.stage || 'trailer dropped'}${trailerDropInfo.timestamp ? ` | Dropped At: ${trailerDropInfo.timestamp}` : ''}`;
+                const existingJobNotes = String(j.job_notes || '').trim();
+                const existingDriverNotes = String(j.driver_notes || '').trim();
+
+                dispatchPayload.job_notes = existingJobNotes && !existingJobNotes.includes(handoverNote)
+                    ? `${existingJobNotes}\n${handoverNote}`
+                    : (existingJobNotes || handoverNote);
+                dispatchPayload.driver_notes = existingDriverNotes && !existingDriverNotes.includes(handoverNote)
+                    ? `${existingDriverNotes}\n${handoverNote}`
+                    : (existingDriverNotes || handoverNote);
+                dispatchPayload.trailer_drop_trailer = trailerDropInfo.trailer || null;
+                dispatchPayload.trailer_drop_location = trailerDropInfo.location || null;
+                dispatchPayload.trailer_drop_stage = trailerDropInfo.stage || null;
+                dispatchPayload.trailer_drop_timestamp = trailerDropInfo.timestamp || null;
+                dispatchPayload.trailer_handover_required = true;
+
+                const handoverLocation = trailerDropInfo.location || `Trailer ${trailerDropInfo.trailer || 'TBA'}`;
+                const handoverTrailer = trailerDropInfo.trailer || 'TBA';
+                dispatchPayload.coll_cust_name = `Dropped trailer ${handoverTrailer}`;
+                dispatchPayload.coll_postcode = handoverLocation;
+                dispatchPayload.coll_town = handoverLocation;
+                dispatchPayload.coll_street = '';
+                dispatchPayload.coll_county = '';
+                dispatchPayload.coll_ref = `Trailer: ${handoverTrailer} | Drop location: ${handoverLocation}`;
+            }
+
             let { error: queueError } = await sb.from('quotes').update(dispatchPayload).eq('id', id);
-            if (queueError && /driver_hide_times|schema cache|column/i.test(queueError.message || String(queueError))) {
-                // Safety fallback: if an older Supabase cache has not seen the new column yet,
-                // still queue the job normally instead of breaking dispatch.
-                delete dispatchPayload.driver_hide_times;
+            for (let attempts = 0; queueError && attempts < 10; attempts++) {
+                const removedColumn = removeMissingQuoteColumnFromPayload(dispatchPayload, queueError);
+                if (!removedColumn) {
+                    if (/driver_hide_times|schema cache|column/i.test(queueError.message || String(queueError))) {
+                        delete dispatchPayload.driver_hide_times;
+                    } else {
+                        break;
+                    }
+                }
                 const retry = await sb.from('quotes').update(dispatchPayload).eq('id', id);
                 queueError = retry.error;
             }
@@ -6802,6 +7343,371 @@ No phone notification has been sent yet because this job is for a future date.`;
         const customer = job && job.customer_name ? String(job.customer_name) : '';
         const ref = invoice || customer || `job-${job && job.id ? job.id : 'pod'}`;
         return `POD_${ref}`.replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '').slice(0, 80) + '.pdf';
+    }
+
+    function getManualPODStoragePath(job, file) {
+        const invoice = String(job && job.fts_invoice_number || '').trim() || `job-${job && job.id ? job.id : 'unknown'}`;
+        const extensionMatch = String(file && file.name || '').match(/\.([a-z0-9]{2,8})$/i);
+        const extension = extensionMatch ? extensionMatch[1].toLowerCase() : 'bin';
+        const safeInvoice = invoice.replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '') || 'pod';
+        return `manual/${safeInvoice}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${extension}`;
+    }
+
+    async function uploadManualPODToStorage(job, file) {
+        const storagePath = getManualPODStoragePath(job, file);
+        let lastError = null;
+
+        for (const bucket of POD_STORAGE_BUCKETS) {
+            try {
+                const uploadResult = await sb.storage
+                    .from(bucket)
+                    .upload(storagePath, file, {
+                        cacheControl: '3600',
+                        contentType: file.type || 'application/octet-stream',
+                        upsert: false
+                    });
+
+                if (uploadResult.error) {
+                    lastError = uploadResult.error;
+                    continue;
+                }
+
+                const publicResult = sb.storage.from(bucket).getPublicUrl(storagePath);
+                const publicUrl = publicResult && publicResult.data && publicResult.data.publicUrl;
+                if (!publicUrl) throw new Error(`POD uploaded to ${bucket}, but no public URL was returned.`);
+                return publicUrl;
+            } catch (err) {
+                lastError = err;
+            }
+        }
+
+        throw lastError || new Error('No Supabase Storage bucket accepted the POD upload.');
+    }
+
+    function promptManualPODUpload(e, id) {
+        if (e) e.stopPropagation();
+        const job = allJobsRaw.find(x => String(x.id) === String(id));
+        if (!job) return alert('Job card not found. Refresh the planner and try again.');
+
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*,application/pdf';
+        input.style.display = 'none';
+        input.onchange = async () => {
+            const file = input.files && input.files[0];
+            input.remove();
+            if (!file) return;
+            await uploadManualPODFile(job, file);
+        };
+        document.body.appendChild(input);
+        input.click();
+    }
+
+    async function uploadManualPODFile(job, file) {
+        const maxSizeMb = 15;
+        if (file.size > maxSizeMb * 1024 * 1024) {
+            alert(`This POD file is too large. Please choose a file under ${maxSizeMb}MB.`);
+            return;
+        }
+
+        try {
+            const podUrl = await uploadManualPODToStorage(job, file);
+            const { error } = await sb.from('quotes').update({ pod_url: podUrl }).eq('id', job.id);
+            if (error) throw error;
+
+            job.pod_url = podUrl;
+            const rawStatus = String(job.status || '').toLowerCase();
+            if (!['completed', 'archived', 'billed'].includes(rawStatus)) {
+                job.status = job.status || 'assigned';
+            }
+
+            alert('Manual POD uploaded successfully.');
+            closeJobDetailsModal();
+            loadAll();
+        } catch (err) {
+            console.error('Manual POD upload failed:', err);
+            alert('Manual POD upload failed: ' + (err && err.message ? err.message : err));
+        }
+    }
+
+    function getDisplayedPlannerWeekWindow() {
+        const displayOffset = getPlannerDisplayWeekOffset(currentWeekOffset || 0);
+        const start = getCurrentPlannerMondayDate();
+        start.setDate(start.getDate() + (displayOffset * 7));
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 7);
+        return { start, end, startIso: start.toISOString(), endIso: end.toISOString(), displayOffset };
+    }
+
+    function parseReportJobNumber(value) {
+        const text = String(value || '').trim().toUpperCase();
+        let match = text.match(/^FTS-(\d+)$/);
+        if (match) return { group: 0, number: parseInt(match[1], 10), text };
+        match = text.match(/^PLTF-(\d+)$/);
+        if (match) return { group: 1, number: parseInt(match[1], 10), text };
+        return { group: 2, number: Number.MAX_SAFE_INTEGER, text };
+    }
+
+    function comparePlannerReportJobs(a, b) {
+        const numA = parseReportJobNumber(a && a.fts_invoice_number);
+        const numB = parseReportJobNumber(b && b.fts_invoice_number);
+        if (numA.group !== numB.group) return numA.group - numB.group;
+        if (numA.number !== numB.number) return numA.number - numB.number;
+        const dateA = Date.parse((a && (a.coll_datetime || a.del_datetime)) || '') || Number.MAX_SAFE_INTEGER;
+        const dateB = Date.parse((b && (b.coll_datetime || b.del_datetime)) || '') || Number.MAX_SAFE_INTEGER;
+        if (dateA !== dateB) return dateA - dateB;
+        return String(a && a.id || '').localeCompare(String(b && b.id || ''));
+    }
+
+    function getUsefulPlannerReportRef(job) {
+        const candidates = [
+            job && job.customers_own_invoice_number,
+            job && job.coll_ref,
+            job && job.del_ref
+        ];
+        return candidates.map(value => String(value || '').trim()).find(value => {
+            if (!value) return false;
+            if (/^(quick card|instruction|awaiting|multi job origin|trailer:)/i.test(value)) return false;
+            return true;
+        }) || '';
+    }
+
+    function getPlannerReportRelatedJobs(job, sourceJobs) {
+        const invoice = String(job && job.fts_invoice_number || '').trim().toLowerCase();
+        if (!invoice) return [job].filter(Boolean);
+        const related = (sourceJobs || []).filter(row =>
+            String(row && row.fts_invoice_number || '').trim().toLowerCase() === invoice
+        );
+        return related.length ? related : [job].filter(Boolean);
+    }
+
+    function getPlannerReportPodStatus(job, sourceJobs) {
+        const relatedJobs = getPlannerReportRelatedJobs(job, sourceJobs);
+        if (relatedJobs.some(row => String(row && row.pod_url || '').trim())) return 'POD RECEIVED';
+        if (relatedJobs.some(row => String(row && row.tipped_timestamp || '').trim())) return 'Tipped - POD missing';
+        return 'No POD';
+    }
+
+    function getPlannerReportJobPrice(job, sourceJobs) {
+        const relatedJobs = getPlannerReportRelatedJobs(job, sourceJobs);
+        const pricedJob = relatedJobs.find(row => {
+            const raw = String(row && row.total_price || '').trim();
+            if (raw.toUpperCase() === 'PFJ') return true;
+            const parsed = parseEditableJobPrice(raw);
+            return parsed !== null && parsed > 0;
+        });
+        const rawPrice = String((pricedJob || job || {}).total_price || '').trim();
+        if (rawPrice.toUpperCase() === 'PFJ') return 'PFJ';
+        const price = parseEditableJobPrice(rawPrice);
+        return price !== null ? `GBP ${price.toFixed(2)}` : '-';
+    }
+
+    function getPlannerReportStatus(job) {
+        const status = String(job && job.status || '').trim();
+        const dispatch = String(job && job.dispatch_status || '').trim();
+        const parts = [];
+        parts.push(status || 'pending');
+        if (dispatch) parts.push(`driver: ${dispatch}`);
+        return parts.join(' / ');
+    }
+
+    function formatPlannerReportDateTime(value) {
+        if (!value) return '-';
+        const d = new Date(value);
+        if (isNaN(d.getTime())) return '-';
+        return d.toLocaleString('en-GB', {
+            weekday: 'short',
+            day: '2-digit',
+            month: '2-digit',
+            year: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    function isRealPlannerReportJob(job) {
+        if (!job) return false;
+        const status = String(job.status || '').toLowerCase();
+        if (['template', 'driver_config'].includes(status)) return false;
+        if (isMaintenanceJob(job) || isNoteJob(job) || isInstructionJob(job)) return false;
+        return true;
+    }
+
+    function getPlannerReportInvoiceKey(job) {
+        const invoice = String(job && job.fts_invoice_number || '').trim().toLowerCase();
+        return invoice || `job:${job && job.id ? job.id : Math.random()}`;
+    }
+
+    function getPlannerReportRevenueTotal(reportJobs, sourceJobs) {
+        const sourceRows = sourceJobs || [];
+        const countedKeys = new Set();
+        return (reportJobs || []).reduce((total, job) => {
+            const key = getPlannerReportInvoiceKey(job);
+            if (countedKeys.has(key)) return total;
+            countedKeys.add(key);
+
+            const invoice = String(job && job.fts_invoice_number || '').trim().toLowerCase();
+            const candidates = invoice
+                ? sourceRows.filter(row => String(row && row.fts_invoice_number || '').trim().toLowerCase() === invoice)
+                : [job];
+            const pricedJob = candidates.find(row => {
+                const parsed = parseEditableJobPrice(row && row.total_price);
+                return parsed !== null && parsed > 0;
+            });
+            const price = parseEditableJobPrice(pricedJob ? pricedJob.total_price : job && job.total_price);
+            return price !== null && price > 0 ? total + price : total;
+        }, 0);
+    }
+
+    async function fetchPlannerReportJobsForWeek(weekWindow) {
+        const [collectionRes, deliveryRes] = await Promise.all([
+            sb.from('quotes').select('*').gte('coll_datetime', weekWindow.startIso).lt('coll_datetime', weekWindow.endIso),
+            sb.from('quotes').select('*').gte('del_datetime', weekWindow.startIso).lt('del_datetime', weekWindow.endIso)
+        ]);
+
+        if (collectionRes.error) throw collectionRes.error;
+        if (deliveryRes.error) throw deliveryRes.error;
+
+        const merged = new Map();
+        [...(collectionRes.data || []), ...(deliveryRes.data || [])].forEach(job => {
+            if (job && job.id !== undefined && job.id !== null && isRealPlannerReportJob(job)) {
+                merged.set(String(job.id), job);
+            }
+        });
+
+        const weekJobs = Array.from(merged.values());
+        const deliveryJobs = weekJobs.filter(isDeliveryPlannerCardJob);
+        const deliveryPairKeys = new Set(deliveryJobs.map(getTwoCardPairKey).filter(Boolean));
+        const fallbackSingleCardJobs = weekJobs.filter(job => {
+            if (isDeliveryPlannerCardJob(job) || isCollectionPlannerCardJob(job)) return false;
+            const pairKey = getTwoCardPairKey(job);
+            return !pairKey || !deliveryPairKeys.has(pairKey);
+        });
+        const reportJobs = [...deliveryJobs, ...fallbackSingleCardJobs].sort(comparePlannerReportJobs);
+        const invoiceNumbers = [...new Set(reportJobs.map(job => String(job.fts_invoice_number || '').trim()).filter(Boolean))];
+        let sourceJobs = weekJobs;
+
+        if (invoiceNumbers.length) {
+            const invoiceRes = await sb.from('quotes').select('*').in('fts_invoice_number', invoiceNumbers);
+            if (!invoiceRes.error && invoiceRes.data) {
+                const sourceMap = new Map();
+                [...weekJobs, ...invoiceRes.data].forEach(job => {
+                    if (job && job.id !== undefined && job.id !== null) sourceMap.set(String(job.id), job);
+                });
+                sourceJobs = Array.from(sourceMap.values());
+            }
+        }
+
+        return {
+            jobs: reportJobs,
+            sourceJobs,
+            revenueTotal: getPlannerReportRevenueTotal(reportJobs, sourceJobs)
+        };
+    }
+
+    function buildPlannerReportFileName(weekWindow) {
+        const info = getWeekInfo(weekWindow.displayOffset);
+        const startKey = [
+            weekWindow.start.getFullYear(),
+            String(weekWindow.start.getMonth() + 1).padStart(2, '0'),
+            String(weekWindow.start.getDate()).padStart(2, '0')
+        ].join('-');
+        return `FROST_Planner_Report_WK${info.week}_${startKey}.pdf`;
+    }
+
+    async function generateWeeklyPlannerReport(event) {
+        const button = event && event.currentTarget && event.currentTarget.tagName === 'BUTTON' ? event.currentTarget : null;
+        const originalText = button ? button.innerText : '';
+        if (button) {
+            button.disabled = true;
+            button.innerText = 'BUILDING...';
+        }
+
+        try {
+            if (!window.jspdf || !window.jspdf.jsPDF) throw new Error('PDF library is not available yet. Refresh the planner and try again.');
+            const weekWindow = getDisplayedPlannerWeekWindow();
+            const reportData = await fetchPlannerReportJobsForWeek(weekWindow);
+            const jobs = reportData.jobs || [];
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            const info = getWeekInfo(weekWindow.displayOffset);
+            const generatedAt = new Date().toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
+            const sourceJobs = reportData.sourceJobs || [];
+            const podCount = jobs.filter(job => getPlannerReportPodStatus(job, sourceJobs) === 'POD RECEIVED').length;
+            const missingRefCount = jobs.filter(job => !getUsefulPlannerReportRef(job)).length;
+            const revenueTotal = Number(reportData.revenueTotal || 0);
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.text('FROST Weekly Planner Report', 12, 13);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.text(`ISO Week ${info.week} | Monday ${weekWindow.start.toLocaleDateString('en-GB')} to ${new Date(weekWindow.end.getTime() - 1).toLocaleDateString('en-GB')} | Generated ${generatedAt}`, 12, 20);
+            doc.text(`Jobs: ${jobs.length} | Revenue: GBP ${revenueTotal.toFixed(2)} | POD received: ${podCount} | Missing customer ref: ${missingRefCount}`, 12, 26);
+
+            const body = jobs.map(job => {
+                const customerRef = getUsefulPlannerReportRef(job);
+                return [
+                    job.fts_invoice_number || 'NO FTS',
+                    cleanTwoCardCustomerName(job.customer_name) || job.customer_name || '-',
+                    customerRef || 'MISSING',
+                    formatPlannerReportDateTime(job.coll_datetime),
+                    formatPlannerReportDateTime(job.del_datetime),
+                    getPlannerReportJobPrice(job, sourceJobs),
+                    getPlannerReportPodStatus(job, sourceJobs),
+                    customerRef ? '' : 'MISSING CUSTOMER REF'
+                ];
+            });
+
+            if (body.length) {
+                doc.autoTable({
+                    startY: 32,
+                    head: [['Job No', 'Customer', 'Customer Ref', 'Collection', 'Delivery', 'Job Price', 'POD', 'Flag']],
+                    body,
+                    styles: { fontSize: 9, textColor: [0, 0, 0], cellPadding: 1.8, overflow: 'linebreak', valign: 'top' },
+                    headStyles: { fillColor: [193, 39, 45], textColor: 255, fontStyle: 'bold' },
+                    alternateRowStyles: { fillColor: [248, 250, 252] },
+                    columnStyles: {
+                        0: { cellWidth: 23, fontStyle: 'bold' },
+                        1: { cellWidth: 42 },
+                        2: { cellWidth: 32 },
+                        3: { cellWidth: 32 },
+                        4: { cellWidth: 32 },
+                        5: { cellWidth: 42 },
+                        6: { cellWidth: 27 },
+                        7: { cellWidth: 35, textColor: [0, 0, 0], fontStyle: 'bold' }
+                    },
+                    didParseCell(data) {
+                        if (data.section === 'body' && data.column.index === 6 && String(data.cell.raw).includes('POD RECEIVED')) {
+                            data.cell.styles.textColor = [22, 101, 52];
+                            data.cell.styles.fontStyle = 'bold';
+                        }
+                        if (data.section === 'body' && data.column.index === 6 && String(data.cell.raw) === 'No POD') {
+                            data.cell.styles.textColor = [185, 28, 28];
+                            data.cell.styles.fontStyle = 'bold';
+                        }
+                        if (data.section === 'body' && data.column.index === 7 && data.cell.raw) {
+                            data.cell.styles.fillColor = [254, 226, 226];
+                        }
+                    }
+                });
+            } else {
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(12);
+                doc.text('No planner jobs found for this week.', 12, 40);
+            }
+
+            doc.save(buildPlannerReportFileName(weekWindow));
+        } catch (err) {
+            console.error('Could not build weekly planner report:', err);
+            alert('Could not build the weekly planner report: ' + (err.message || err));
+        } finally {
+            if (button) {
+                button.disabled = false;
+                button.innerText = originalText;
+            }
+        }
     }
 
     function blobToDataUrl(blob) {
@@ -7095,7 +8001,13 @@ Are you sure you want to place it here?`);
 
         try {
             if (isDeliveryPlannerCardJob(source)) {
-                const { error } = await sb.from('quotes').update(updatePayload).eq('id', source.id);
+                const deliveryUpdatePayload = {
+                    ...updatePayload,
+                    customer_name: cleanTwoCardCustomerName(source.customer_name) || source.customer_name || 'Job',
+                    job_notes: source.job_notes || ''
+                };
+                applyPlannerCardRole(deliveryUpdatePayload, 'delivery');
+                const { error } = await sb.from('quotes').update(deliveryUpdatePayload).eq('id', source.id);
                 if (error) throw error;
                 if (assignedSlot && assignedSlot.startsWith('planner-w')) {
                     await clearManualSortForContainerJobs(document.getElementById(assignedSlot), [source.id]);
@@ -7106,7 +8018,13 @@ Are you sure you want to place it here?`);
 
             const existingDelivery = findDeliveryCardForJob(source);
             if (existingDelivery) {
-                const { error } = await sb.from('quotes').update(updatePayload).eq('id', existingDelivery.id);
+                const deliveryUpdatePayload = {
+                    ...updatePayload,
+                    customer_name: cleanTwoCardCustomerName(existingDelivery.customer_name) || cleanTwoCardCustomerName(source.customer_name) || source.customer_name || 'Job',
+                    job_notes: existingDelivery.job_notes || source.job_notes || ''
+                };
+                applyPlannerCardRole(deliveryUpdatePayload, 'delivery');
+                const { error } = await sb.from('quotes').update(deliveryUpdatePayload).eq('id', existingDelivery.id);
                 if (error) throw error;
                 if (assignedSlot && assignedSlot.startsWith('planner-w')) {
                     await clearManualSortForContainerJobs(document.getElementById(assignedSlot), [existingDelivery.id]);
@@ -7116,9 +8034,10 @@ Are you sure you want to place it here?`);
             }
 
             const deliveryPayload = buildCopiedJobPayload(source);
-            deliveryPayload.customer_name = `${cleanTwoCardCustomerName(source.customer_name) || source.customer_name || 'Job'} (Delivery)`;
+            deliveryPayload.customer_name = cleanTwoCardCustomerName(source.customer_name) || source.customer_name || 'Job';
             deliveryPayload.total_price = '0';
             Object.assign(deliveryPayload, updatePayload);
+            applyPlannerCardRole(deliveryPayload, 'delivery');
             await insertQuoteWithOptionalLinkedGroup(deliveryPayload, null);
             if (assignedSlot && assignedSlot.startsWith('planner-w')) {
                 await clearManualSortForContainerJobs(document.getElementById(assignedSlot));
@@ -7150,16 +8069,23 @@ Are you sure you want to place it here?`);
         };
 
         if (deliveryJob) {
-            const { error } = await sb.from('quotes').update(deliveryPayload).eq('id', deliveryJob.id);
+            const deliveryUpdatePayload = {
+                ...deliveryPayload,
+                customer_name: cleanTwoCardCustomerName(deliveryJob.customer_name) || cleanTwoCardCustomerName(collectionJob.customer_name) || collectionJob.customer_name || 'Job',
+                job_notes: deliveryJob.job_notes || collectionJob.job_notes || ''
+            };
+            applyPlannerCardRole(deliveryUpdatePayload, 'delivery');
+            const { error } = await sb.from('quotes').update(deliveryUpdatePayload).eq('id', deliveryJob.id);
             if (error) throw error;
             await clearManualSortForContainerJobs(document.getElementById(deliverySlot), [deliveryJob.id]);
             return;
         }
 
         const newDelivery = buildCopiedJobPayload(collectionJob);
-        newDelivery.customer_name = `${cleanTwoCardCustomerName(collectionJob.customer_name) || collectionJob.customer_name || 'Job'} (Delivery)`;
+        newDelivery.customer_name = cleanTwoCardCustomerName(collectionJob.customer_name) || collectionJob.customer_name || 'Job';
         newDelivery.total_price = '0';
         Object.assign(newDelivery, deliveryPayload);
+        applyPlannerCardRole(newDelivery, 'delivery');
         await insertQuoteWithOptionalLinkedGroup(newDelivery, null);
         await clearManualSortForContainerJobs(document.getElementById(deliverySlot));
     }
@@ -7491,6 +8417,127 @@ Are you sure you want to place it here?`);
         });
     }
 
+    function getNewJobDraftValues() {
+        const values = {};
+        NEW_JOB_DRAFT_FIELD_IDS.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) values[id] = el.value || '';
+        });
+        return values;
+    }
+
+    function hasNewJobDraftContent(values) {
+        return Object.entries(values || {}).some(([id, value]) => {
+            const text = String(value || '').trim();
+            if (!text) return false;
+            if (id === 'n_veh_type') return false;
+            if (id === 'n_price' && text === 'PFJ' && !isPalletforceJobType(values.n_job_contract_type)) return false;
+            return true;
+        });
+    }
+
+    function clearNewJobDraft() {
+        if (newJobDraftAutosaveTimer) {
+            clearTimeout(newJobDraftAutosaveTimer);
+            newJobDraftAutosaveTimer = null;
+        }
+        try {
+            localStorage.removeItem(NEW_JOB_DRAFT_KEY);
+        } catch (err) {
+            console.warn('Could not clear the new job draft.', err);
+        }
+    }
+
+    function saveNewJobDraft() {
+        newJobDraftAutosaveTimer = null;
+        if (restoringNewJobDraft) return;
+        if (String(document.getElementById('sys_job_id')?.value || '').trim()) return;
+
+        const values = getNewJobDraftValues();
+        if (!hasNewJobDraftContent(values)) {
+            clearNewJobDraft();
+            return;
+        }
+
+        try {
+            localStorage.setItem(NEW_JOB_DRAFT_KEY, JSON.stringify({
+                savedAt: new Date().toISOString(),
+                values
+            }));
+        } catch (err) {
+            console.warn('Could not save the new job draft.', err);
+        }
+    }
+
+    function queueNewJobDraftSave() {
+        if (restoringNewJobDraft) return;
+        if (newJobDraftAutosaveTimer) clearTimeout(newJobDraftAutosaveTimer);
+        newJobDraftAutosaveTimer = setTimeout(saveNewJobDraft, 350);
+    }
+
+    function setupNewJobDraftAutosave() {
+        if (newJobDraftAutosaveReady) return;
+        const modal = document.getElementById('modal-add');
+        if (!modal) return;
+
+        const handler = event => {
+            if (event && event.target && NEW_JOB_DRAFT_FIELD_IDS.includes(event.target.id)) {
+                queueNewJobDraftSave();
+            }
+        };
+
+        modal.addEventListener('input', handler, true);
+        modal.addEventListener('change', handler, true);
+        newJobDraftAutosaveReady = true;
+    }
+
+    async function restoreNewJobDraft() {
+        let draft = null;
+        try {
+            const raw = localStorage.getItem(NEW_JOB_DRAFT_KEY);
+            draft = raw ? JSON.parse(raw) : null;
+        } catch (err) {
+            console.warn('Could not read the new job draft.', err);
+            clearNewJobDraft();
+            return false;
+        }
+
+        const values = draft && draft.values ? draft.values : null;
+        if (!hasNewJobDraftContent(values)) return false;
+
+        restoringNewJobDraft = true;
+        try {
+            const mode = String(values.n_job_contract_type || '').trim();
+            await setJobBookingMode(mode);
+            const skipFields = new Set(['n_job_contract_type']);
+            if (isPalletforceJobType(mode)) {
+                skipFields.add('n_customers_own_invoice_number');
+                skipFields.add('n_cx_number');
+            }
+
+            NEW_JOB_DRAFT_FIELD_IDS.forEach(id => {
+                if (skipFields.has(id)) return;
+                const el = document.getElementById(id);
+                if (el && Object.prototype.hasOwnProperty.call(values, id)) {
+                    el.value = values[id] || '';
+                }
+            });
+
+            updateNewJobDatePickerLimits();
+            switchFormTab('leg1');
+            return true;
+        } finally {
+            restoringNewJobDraft = false;
+        }
+    }
+
+    async function openNewJobForm() {
+        resetForm();
+        openModal('modal-add');
+        setupNewJobDraftAutosave();
+        await restoreNewJobDraft();
+    }
+
     function resetForm() {
         document.getElementById('sys_job_id').value = '';
         ['n_cust_name','n_coll_address_search','n_del_address_search','n_coll_name','n_coll_phone','n_coll_email','n_cust_phone', 'n_cust_email','n_job_notes','n_coll_town','n_coll_pc','n_coll_dt','n_8','n_del_pc','n_price','n_coll_street','n_coll_county','n_coll_ref','n_del_name','n_del_street','n_9','n_10','n_del_dt', 'n_del_pc_2', 'n_del_phone', 'n_del_email', 'n_total_pallets', 'n_total_weight', 'n_coll_pc_2', 'n_coll_town_2', 'n_del_town_2', 'n_customers_own_invoice_number', 'n_cx_number', 'n_fts_invoice_number', 'n_job_contract_type', 'n_coll_time_period', 'n_del_time_period'].forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
@@ -7707,7 +8754,7 @@ Are you sure you want to place it here?`);
         return {
             ...job,
             id: `delivery-${job.id}`,
-            customer_name: `${cleanCustomer} (Delivery)`,
+            customer_name: cleanCustomer,
             _plannerSearchBaseId: String(job.id),
             _plannerSearchFocusId: `delivery-${job.id}`,
             _plannerSearchVirtualDelivery: true,
@@ -7773,6 +8820,117 @@ Are you sure you want to place it here?`);
         const from = getVal(job.coll_cust_name, job.customer_name, getVal(job.coll_postcode, job.coll_town, 'Collection'));
         const to = getVal(job.del_cust_name, getVal(job.del_postcode, job.del_town, ''), 'Delivery');
         return `${from} ➔ ${to}`;
+    }
+
+    async function getPlannerSearchMatches(queryText, forceRefresh = false, limit = 100) {
+        const query = String(queryText || '').trim().toLowerCase();
+        const jobs = await loadPlannerSearchRows(forceRefresh);
+        if (!query) return { query, jobs, results: [] };
+
+        const terms = query.split(/\s+/).filter(Boolean);
+        const baseResults = jobs.filter(job => {
+            const haystack = getSearchablePlannerText(job);
+            return terms.every(term => haystack.includes(term));
+        });
+        const results = expandPlannerFtsSearchResults(baseResults, jobs, query).slice(0, limit);
+        return { query, jobs, results };
+    }
+
+    function getPlannerSearchResultHtml(job, clickHandler = 'focusPlannerSearchResult') {
+        const type = getPlannerSearchType(job);
+        const weekOffset = getPlannerSearchWeek(job);
+        const info = getWeekInfo(weekOffset);
+        const route = escapeHtml(getPlannerSearchRoute(job));
+        const customer = escapeHtml(job.customer_name || job.coll_cust_name || job.del_cust_name || getPlannerSearchTypeLabel(type));
+        const slot = escapeHtml(getPlannerSearchSlot(job) || 'Unassigned');
+        const searchDateValue = getPlannerSearchDateValue(job);
+        const parsedDate = searchDateValue ? new Date(searchDateValue) : null;
+        const date = parsedDate && !isNaN(parsedDate) ? parsedDate.toLocaleDateString('en-GB') : 'No date';
+        const status = escapeHtml(job.status || 'pending');
+        const ref = escapeHtml([job.coll_ref, job.del_ref, job.customers_own_invoice_number, job.fts_invoice_number].filter(Boolean).join(' | '));
+        const focusId = getPlannerSearchFocusId(job);
+        return `
+            <div class="planner-search-result" data-focus-id="${escapeHtml(focusId)}" onclick="${clickHandler}('${escapeInlineArg(focusId)}')">
+                <div class="planner-search-result-title"><span class="planner-search-result-type ${type}">${getPlannerSearchTypeLabel(type)}</span>${customer}</div>
+                <div class="planner-search-result-meta"><b>Route:</b> ${route}</div>
+                <div class="planner-search-result-meta"><b>Week:</b> WK ${info.week} | MON ${info.date} &nbsp; <b>Date:</b> ${date} &nbsp; <b>Status:</b> ${status}</div>
+                <div class="planner-search-result-meta"><b>Location:</b> ${slot}${ref ? ` &nbsp; <b>Ref:</b> ${ref}` : ''}</div>
+            </div>`;
+    }
+
+    function hidePlannerHeaderSearchResults() {
+        const resultBox = document.getElementById('planner-header-search-results');
+        if (resultBox) {
+            resultBox.style.display = 'none';
+            resultBox.innerHTML = '';
+        }
+    }
+
+    function queuePlannerHeaderSearch() {
+        if (plannerHeaderSearchTimer) clearTimeout(plannerHeaderSearchTimer);
+        const input = document.getElementById('planner-header-search-input');
+        const resultBox = document.getElementById('planner-header-search-results');
+        const query = String(input && input.value || '').trim();
+        if (!resultBox) return;
+        if (!query) {
+            hidePlannerHeaderSearchResults();
+            return;
+        }
+        resultBox.style.display = 'block';
+        resultBox.innerHTML = `<div style="padding:12px; color:#64748b; font-size:0.76rem; font-weight:800;">Searching...</div>`;
+        plannerHeaderSearchTimer = setTimeout(() => renderPlannerHeaderSearchResults(), 180);
+    }
+
+    async function renderPlannerHeaderSearchResults(forceRefresh = false) {
+        const input = document.getElementById('planner-header-search-input');
+        const resultBox = document.getElementById('planner-header-search-results');
+        if (!input || !resultBox) return;
+
+        const query = String(input.value || '').trim();
+        if (!query) {
+            hidePlannerHeaderSearchResults();
+            return;
+        }
+        if (query.length < 2) {
+            resultBox.style.display = 'block';
+            resultBox.innerHTML = `<div style="padding:12px; color:#64748b; font-size:0.76rem; font-weight:800;">Type at least 2 characters...</div>`;
+            return;
+        }
+
+        resultBox.style.display = 'block';
+        resultBox.innerHTML = `<div style="padding:12px; color:#64748b; font-size:0.76rem; font-weight:800;">Searching planner...</div>`;
+        const { results } = await getPlannerSearchMatches(query, forceRefresh, 10);
+
+        if (String(input.value || '').trim() !== query) return;
+        if (!results.length) {
+            resultBox.innerHTML = `<div style="padding:12px; color:#64748b; font-size:0.76rem; font-weight:800;">No matching planner cards found.</div>`;
+            return;
+        }
+
+        resultBox.innerHTML = results.map(job => getPlannerSearchResultHtml(job, 'selectPlannerHeaderSearchResult')).join('');
+    }
+
+    function handlePlannerHeaderSearchKeydown(event) {
+        if (!event) return;
+        if (event.key === 'Escape') {
+            hidePlannerHeaderSearchResults();
+            event.currentTarget.blur();
+            return;
+        }
+        if (event.key === 'Enter') {
+            const first = document.querySelector('#planner-header-search-results .planner-search-result[data-focus-id]');
+            if (first && first.dataset.focusId) {
+                event.preventDefault();
+                selectPlannerHeaderSearchResult(first.dataset.focusId);
+            }
+        }
+    }
+
+    async function selectPlannerHeaderSearchResult(id) {
+        const input = document.getElementById('planner-header-search-input');
+        if (input) input.value = '';
+        hidePlannerHeaderSearchResults();
+        await focusPlannerSearchResult(id);
     }
 
     async function renderPlannerSearchResults(forceRefresh = false) {
@@ -7846,6 +9004,7 @@ Are you sure you want to place it here?`);
 
         const selectedWeekOffset = getPlannerSearchWeek(job);
         closePlannerSearch();
+        hidePlannerHeaderSearchResults();
         plannerWeekStartOffset = selectedWeekOffset;
         currentWeekOffset = 0;
         activePlannerView = 0;
@@ -8167,7 +9326,9 @@ Are you sure you want to place it here?`);
     });
 
     window.addEventListener('beforeunload', () => {
+        saveNewJobDraft();
         if (plannerPollingTimer) clearInterval(plannerPollingTimer);
+        if (plannerMessagePollTimer) clearInterval(plannerMessagePollTimer);
         if (plannerRealtimeChannel) {
             try { sb.removeChannel(plannerRealtimeChannel); } catch (err) {}
         }
@@ -8177,10 +9338,816 @@ Are you sure you want to place it here?`);
         setupAutoScroll();
         updateOperationalNotificationToggleButton();
         setupPlannerRealtimeOnce();
+        startPlannerMessagePolling();
         await loadPlannerVehicleExtras();
         await syncMaintenanceAndLoadAll(); 
     };
 
+
+    function getMessageCustomerKey(message) {
+        return String(message && message.customer_email || '').trim().toLowerCase();
+    }
+
+    function getPlannerClientEmail(profile) {
+        return String(profile && (profile.accounts_email || profile.email || profile.account_email) || '').trim().toLowerCase();
+    }
+
+    function getPlannerClientName(profile) {
+        return String(profile && (profile.customer_name || profile.name || profile.company_name) || '').trim();
+    }
+
+    function formatMessageTime(value) {
+        if (!value) return '';
+        const d = new Date(value);
+        if (isNaN(d.getTime())) return '';
+        return d.toLocaleString('en-GB', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatMessageFileSize(size) {
+        const bytes = Number(size || 0);
+        if (!bytes || !Number.isFinite(bytes)) return '';
+        if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(bytes >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+        if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+        return `${bytes} bytes`;
+    }
+
+    function renderMessageAttachment(message) {
+        const url = String(message && message.attachment_url || '').trim();
+        if (!url) return '';
+        const name = String(message.attachment_name || '').trim() || 'Attachment';
+        const detail = [formatMessageFileSize(message.attachment_size), message.attachment_type].filter(Boolean).join(' | ');
+        return `
+            <a class="message-attachment" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" download="${escapeHtml(name)}">
+                <span>${escapeHtml(name)}</span>
+                ${detail ? `<small>${escapeHtml(detail)}</small>` : ''}
+            </a>
+        `;
+    }
+
+    function renderMessageText(value) {
+        const text = String(value || '').trim();
+        if (!text) return '';
+        const linked = escapeHtml(text).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+        return `<div class="message-text">${linked}</div>`;
+    }
+
+    function renderPlannerMessageReadStatus(message) {
+        if (String(message && message.sender_type || '').toLowerCase() !== 'planner') return '';
+        const read = !!(message && message.read_by_customer);
+        return `<div class="message-read-status ${read ? 'read' : ''}">${read ? 'Message read' : 'Message sent'}</div>`;
+    }
+
+    function getMessageJobLabel(message) {
+        const fts = String(message && message.fts_invoice_number || '').trim();
+        const id = String(message && message.related_job_id || '').trim();
+        if (fts) return fts;
+        if (id) return `Job ${id}`;
+        return '';
+    }
+
+    function renderMessageJobBadge(message, clickable = false) {
+        const label = getMessageJobLabel(message);
+        if (!label) return '';
+        if (!clickable) return `<span class="message-job-badge">Linked job: ${escapeHtml(label)}</span>`;
+        return `<button type="button" class="message-job-badge" onclick="openLinkedPlannerMessageJob(event, '${escapeInlineArg(message.related_job_id || '')}', '${escapeInlineArg(message.fts_invoice_number || '')}')">Linked job: ${escapeHtml(label)}</button>`;
+    }
+
+    function getPlannerMessageJobRows() {
+        const merged = new Map();
+        (allJobsRaw || []).forEach(job => {
+            if (job && job.id) merged.set(String(job.id), job);
+        });
+        (plannerSearchRows || []).forEach(job => {
+            if (job && job.id) merged.set(String(job.id), job);
+        });
+        return Array.from(merged.values())
+            .filter(job => job && job.id && String(job.fts_invoice_number || '').trim())
+            .sort((a, b) => {
+                const aFts = String(a.fts_invoice_number || '').localeCompare(String(b.fts_invoice_number || ''), undefined, { numeric: true, sensitivity: 'base' });
+                if (aFts !== 0) return aFts;
+                return String(a.id || '').localeCompare(String(b.id || ''), undefined, { numeric: true });
+            });
+    }
+
+    function normalisePlannerMessageText(value) {
+        return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function getPlannerMessageActiveClient() {
+        const email = String(plannerActiveMessageEmail || '').trim().toLowerCase();
+        const client = (plannerMessageClientsRaw || []).find(item => String(item.email || '').trim().toLowerCase() === email) || {};
+        return {
+            email,
+            name: normalisePlannerMessageText(client.name || getPlannerMessageClientName(email))
+        };
+    }
+
+    function getPlannerMessageJobEmail(job) {
+        return String(job && (job.customer_email || job.account_email || job.accounts_email || job.cust_email) || '').trim().toLowerCase();
+    }
+
+    function plannerMessageJobMatchesActiveClient(job) {
+        const activeClient = getPlannerMessageActiveClient();
+        if (!activeClient.email && !activeClient.name) return false;
+        const jobEmail = getPlannerMessageJobEmail(job);
+        if (jobEmail && activeClient.email && jobEmail === activeClient.email) return true;
+
+        const jobCustomer = normalisePlannerMessageText(cleanTwoCardCustomerName(job && job.customer_name) || (job && job.customer_name));
+        return !!(jobCustomer && activeClient.name && jobCustomer === activeClient.name);
+    }
+
+    function getPlannerMessageJobRowsForActiveClient() {
+        return getPlannerMessageJobRows().filter(plannerMessageJobMatchesActiveClient);
+    }
+
+    function getPlannerMessageJobSummary(job) {
+        const fts = String(job && job.fts_invoice_number || '').trim();
+        const collPostcode = String(job && (job.coll_postcode || job.collection_postcode) || '').trim() || '-';
+        const delPostcode = String(job && (job.del_postcode || job.delivery_postcode) || '').trim() || '-';
+        const rawDelDate = job && (job.del_datetime || job.delivery_datetime || job.del_date || '');
+        const delDate = rawDelDate ? new Date(rawDelDate) : null;
+        const delDateText = delDate && !isNaN(delDate.getTime()) ? delDate.toLocaleDateString('en-GB') : '-';
+        return `${fts} - ${collPostcode} to ${delPostcode} - ${delDateText}`;
+    }
+
+    async function renderPlannerMessageJobOptions() {
+        const select = document.getElementById('planner-message-job-link');
+        if (!select) return;
+        const selectedValue = String(select.value || '');
+        try {
+            await loadPlannerSearchRows(false);
+        } catch (err) {
+            console.warn('Could not refresh job link options:', err);
+        }
+        const jobs = getPlannerMessageJobRowsForActiveClient().slice(0, 250);
+        select.innerHTML = '<option value="">No linked job</option>' + jobs.map(job => {
+            const value = String(job.id || '').trim();
+            const label = getPlannerMessageJobSummary(job);
+            return `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`;
+        }).join('');
+        if (selectedValue && jobs.some(job => String(job.id || '') === selectedValue)) {
+            select.value = selectedValue;
+        }
+        handlePlannerMessageJobLinkInput();
+    }
+
+    function findPlannerMessageLinkedJob(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return null;
+        const normalised = normalisePlannerFtsText(raw);
+        const jobs = getPlannerMessageJobRows();
+        return jobs.find(job => String(job.id) === raw)
+            || jobs.find(job => normalisePlannerFtsText(job.fts_invoice_number) === normalised)
+            || jobs.find(job => normalisePlannerFtsText(job.fts_invoice_number).includes(normalised))
+            || null;
+    }
+
+    function getMessageSafeRelatedJobId(value) {
+        const raw = String(value || '').trim();
+        if (!/^\d+$/.test(raw)) return null;
+        const numberValue = Number(raw);
+        return Number.isSafeInteger(numberValue) ? numberValue : raw;
+    }
+
+    function getPlannerMessageLinkedJobPayload() {
+        const select = document.getElementById('planner-message-job-link');
+        const selectedId = String(select && select.value || '').trim();
+        if (!selectedId) return {};
+        const job = getPlannerMessageJobRowsForActiveClient().find(row => String(row && row.id || '') === selectedId) || findPlannerMessageLinkedJob(selectedId);
+        if (!job) return {};
+        const payload = {};
+        if (job.fts_invoice_number) payload.fts_invoice_number = job.fts_invoice_number;
+        const relatedJobId = getMessageSafeRelatedJobId(job && job.id);
+        if (relatedJobId !== null) payload.related_job_id = relatedJobId;
+        return payload;
+    }
+
+    function handlePlannerMessageJobLinkInput() {
+        const input = document.getElementById('planner-message-job-link');
+        const hint = document.getElementById('planner-message-job-hint');
+        if (!hint) return;
+        hint.textContent = '';
+    }
+
+    function clearPlannerMessageJobLink() {
+        const input = document.getElementById('planner-message-job-link');
+        if (input) input.value = '';
+        handlePlannerMessageJobLinkInput();
+    }
+
+    async function openLinkedPlannerMessageJob(event, relatedJobId, ftsNumber) {
+        if (event) event.stopPropagation();
+        closeModal('modal-planner-messages');
+        try {
+            const jobs = await loadPlannerSearchRows(true);
+            const cleanId = String(relatedJobId || '').trim();
+            const cleanFts = normalisePlannerFtsText(ftsNumber);
+            const job = (jobs || []).find(row => cleanId && String(row.id) === cleanId)
+                || (jobs || []).find(row => cleanFts && normalisePlannerFtsText(row.fts_invoice_number) === cleanFts)
+                || (jobs || []).find(row => cleanFts && normalisePlannerFtsText(row.fts_invoice_number).includes(cleanFts));
+            if (!job) {
+                alert('Could not find that linked job on the planner.');
+                return;
+            }
+            await focusPlannerSearchResult(getPlannerSearchFocusId(job));
+        } catch (err) {
+            alert('Could not open linked job: ' + (err && err.message ? err.message : err));
+        }
+    }
+
+    function getSafeMessageStoragePart(value, fallback) {
+        return String(value || fallback || 'message')
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9._-]+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .slice(0, 80) || fallback || 'message';
+    }
+
+    function getMessageAttachmentStoragePath(file, customerEmail) {
+        const safeEmail = getSafeMessageStoragePart(customerEmail, 'customer');
+        const safeName = getSafeMessageStoragePart(file && file.name, 'attachment');
+        return `messages/${safeEmail}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`;
+    }
+
+    async function uploadMessageAttachmentToStorage(file, customerEmail) {
+        if (!file) return null;
+        if (file.size > MESSAGE_ATTACHMENT_MAX_MB * 1024 * 1024) {
+            throw new Error(`This file is too large. Please choose a file under ${MESSAGE_ATTACHMENT_MAX_MB}MB.`);
+        }
+        let lastError = null;
+        const buckets = [...new Set(MESSAGE_ATTACHMENT_FALLBACK_BUCKETS.filter(Boolean))];
+        for (const bucket of buckets) {
+            const storagePath = getMessageAttachmentStoragePath(file, customerEmail);
+            try {
+                const { error } = await sb.storage
+                    .from(bucket)
+                    .upload(storagePath, file, {
+                        cacheControl: '3600',
+                        contentType: file.type || 'application/octet-stream',
+                        upsert: false
+                    });
+                if (error) throw error;
+                const publicResult = sb.storage.from(bucket).getPublicUrl(storagePath);
+                const publicUrl = publicResult && publicResult.data && publicResult.data.publicUrl;
+                if (!publicUrl) throw new Error(`File uploaded to ${bucket}, but no public URL was returned.`);
+                return {
+                    attachment_url: publicUrl,
+                    attachment_name: file.name || 'attachment',
+                    attachment_type: file.type || 'application/octet-stream',
+                    attachment_size: file.size || null,
+                    attachment_bucket: bucket,
+                    attachment_path: storagePath
+                };
+            } catch (error) {
+                lastError = error;
+                console.warn(`Message attachment upload failed for bucket ${bucket}:`, error);
+            }
+        }
+        throw new Error(`File upload failed in Supabase Storage. Tried buckets: ${buckets.join(', ')}. Last error: ${getPlannerSupabaseErrorText(lastError) || 'Unknown storage error'}`);
+    }
+
+    function readMessageFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result || ''));
+            reader.onerror = () => reject(reader.error || new Error('Could not read the selected file.'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function createInlineMessageAttachmentPayload(file) {
+        if (!file) return null;
+        if (file.size > MESSAGE_INLINE_ATTACHMENT_MAX_MB * 1024 * 1024) {
+            throw new Error(`Supabase Storage rejected the file upload and this file is too large for the emergency inline fallback. Please run the Supabase storage setup SQL, or try a file under ${MESSAGE_INLINE_ATTACHMENT_MAX_MB}MB.`);
+        }
+        const dataUrl = await readMessageFileAsDataUrl(file);
+        if (!dataUrl) throw new Error('The selected file could not be prepared for sending.');
+        return {
+            attachment_url: dataUrl,
+            attachment_name: file.name || 'attachment',
+            attachment_type: file.type || 'application/octet-stream',
+            attachment_size: file.size || null,
+            attachment_bucket: 'inline-message',
+            attachment_path: '',
+            __inlineFallback: true
+        };
+    }
+
+    async function getPlannerMessageAttachmentPayload(file, customerEmail) {
+        if (!file) return null;
+        try {
+            return await uploadMessageAttachmentToStorage(file, customerEmail);
+        } catch (storageError) {
+            console.warn('Supabase Storage rejected the message attachment, trying inline fallback:', storageError);
+            return await createInlineMessageAttachmentPayload(file);
+        }
+    }
+
+    function getPlannerSupabaseErrorText(error) {
+        if (!error) return '';
+        const parts = [];
+        ['message', 'error', 'error_description', 'details', 'hint', 'code', 'statusCode', 'status'].forEach(key => {
+            if (error[key] !== undefined && error[key] !== null && String(error[key]).trim()) {
+                parts.push(String(error[key]).trim());
+            }
+        });
+        if (!parts.length && typeof error === 'string') parts.push(error);
+        if (!parts.length) {
+            try {
+                const json = JSON.stringify(error);
+                if (json && json !== '{}') parts.push(json);
+            } catch (e) {}
+        }
+        return [...new Set(parts)].join(' | ');
+    }
+
+    function isPlannerMessageAttachmentColumnError(error) {
+        const raw = getPlannerSupabaseErrorText(error).toLowerCase();
+        return raw.includes('attachment_')
+            || raw.includes('schema cache')
+            || raw.includes('could not find')
+            || raw.includes('column');
+    }
+
+    function getPlannerMessageSendErrorText(error) {
+        const raw = getPlannerSupabaseErrorText(error);
+        const lower = raw.toLowerCase();
+        if (lower.includes('bucket') || lower.includes('storage') || lower.includes('row-level security')) {
+            return 'Could not upload the file. Please check the Supabase message storage setup has been run, including the portal-message-files bucket and storage policies. ' + raw;
+        }
+        if (lower.includes('attachment_') || lower.includes('column') || lower.includes('schema cache')) {
+            return 'Could not save the attachment details. Please run the updated portal messages SQL in Supabase. ' + raw;
+        }
+        if (lower.includes('related_job_id') || lower.includes('bigint')) {
+            return 'Could not save the job link. Please try again with no linked job, or refresh and retry. ' + raw;
+        }
+        if (lower.includes('http 400')) {
+            return 'Supabase rejected the message setup with HTTP 400. Please run the updated portal messages SQL in Supabase, especially the attachment columns and storage bucket setup. ' + raw;
+        }
+        return raw || 'Could not send message. Please try again.';
+    }
+
+    function getPlannerMessagePayloadWithoutAttachment(payload) {
+        const fallbackPayload = { ...(payload || {}) };
+        delete fallbackPayload.attachment_url;
+        delete fallbackPayload.attachment_name;
+        delete fallbackPayload.attachment_type;
+        delete fallbackPayload.attachment_size;
+        delete fallbackPayload.attachment_bucket;
+        delete fallbackPayload.attachment_path;
+        if (payload && payload.attachment_url) {
+            const label = payload.attachment_name ? `Attached file: ${payload.attachment_name}` : 'Attached file';
+            const isInlineData = String(payload.attachment_url || '').startsWith('data:');
+            const attachmentNote = isInlineData
+                ? 'The attachment could not be saved because Supabase Storage rejected the upload.'
+                : `Attachment link: ${payload.attachment_url}`;
+            fallbackPayload.message_text = [fallbackPayload.message_text || label, attachmentNote].filter(Boolean).join('\n\n');
+        }
+        return fallbackPayload;
+    }
+
+    function getPlannerMessagePayloadWithoutJobLink(payload) {
+        const fallbackPayload = { ...(payload || {}) };
+        delete fallbackPayload.related_job_id;
+        delete fallbackPayload.fts_invoice_number;
+        return fallbackPayload;
+    }
+
+    function getPlannerMinimalMessagePayload(payload) {
+        const fallbackPayload = {
+            customer_email: payload.customer_email,
+            customer_name: payload.customer_name,
+            sender_type: payload.sender_type,
+            sender_name: payload.sender_name,
+            message_text: payload.message_text,
+            read_by_planner: payload.read_by_planner,
+            read_by_customer: payload.read_by_customer
+        };
+        return fallbackPayload;
+    }
+
+    function getPlannerMessagePayloadKey(payload) {
+        try {
+            return JSON.stringify(payload || {});
+        } catch (e) {
+            return String(Math.random());
+        }
+    }
+
+    async function insertPlannerPortalMessage(payload) {
+        const attempts = [{ payload, fallback: false }];
+        if (payload && payload.attachment_url) {
+            attempts.push({ payload: getPlannerMessagePayloadWithoutAttachment(payload), fallback: true });
+        }
+        if (payload && (payload.related_job_id || payload.fts_invoice_number)) {
+            attempts.push({ payload: getPlannerMessagePayloadWithoutJobLink(payload), fallback: true });
+        }
+        if (payload && payload.attachment_url && (payload.related_job_id || payload.fts_invoice_number)) {
+            attempts.push({ payload: getPlannerMessagePayloadWithoutJobLink(getPlannerMessagePayloadWithoutAttachment(payload)), fallback: true });
+        }
+        attempts.push({ payload: getPlannerMinimalMessagePayload(payload), fallback: true });
+
+        let firstError = null;
+        const seen = new Set();
+        for (const attempt of attempts) {
+            const key = getPlannerMessagePayloadKey(attempt.payload);
+            if (seen.has(key)) continue;
+            seen.add(key);
+            const { error } = await sb.from(PORTAL_MESSAGES_TABLE).insert([attempt.payload]);
+            if (!error) return { fallback: attempt.fallback };
+            if (!firstError) firstError = error;
+            console.warn('Planner message insert attempt failed:', error);
+        }
+        throw firstError || new Error('Supabase rejected the message insert.');
+    }
+
+    function renderPlannerSelectedMessageFile() {
+        const fileInput = document.getElementById('planner-message-file');
+        const selected = document.getElementById('planner-message-selected-file');
+        if (!selected) return;
+        const file = fileInput && fileInput.files && fileInput.files[0];
+        selected.innerHTML = file
+            ? `<span>${escapeHtml(file.name)}${file.size ? ` (${escapeHtml(formatMessageFileSize(file.size))})` : ''}</span><button type="button" onclick="clearPlannerMessageFile()">Remove</button>`
+            : '';
+    }
+
+    function clearPlannerMessageFile() {
+        const fileInput = document.getElementById('planner-message-file');
+        if (fileInput) fileInput.value = '';
+        renderPlannerSelectedMessageFile();
+    }
+
+    function handlePlannerMessageFileChange() {
+        const fileInput = document.getElementById('planner-message-file');
+        const file = fileInput && fileInput.files && fileInput.files[0];
+        if (file && file.size > MESSAGE_ATTACHMENT_MAX_MB * 1024 * 1024) {
+            alert(`This file is too large. Please choose a file under ${MESSAGE_ATTACHMENT_MAX_MB}MB.`);
+            clearPlannerMessageFile();
+            return;
+        }
+        renderPlannerSelectedMessageFile();
+    }
+
+    function normalisePlannerMessageClientProfile(profile) {
+        const email = getPlannerClientEmail(profile);
+        if (!email) return null;
+        return {
+            email,
+            name: getPlannerClientName(profile) || email,
+            phone: String(profile && profile.accounts_tel || '').trim()
+        };
+    }
+
+    async function loadPlannerMessageClients() {
+        try {
+            const { data, error } = await sb
+                .from('customer_invoice_emails')
+                .select('customer_name, accounts_email, accounts_tel, portal_enabled')
+                .not('accounts_email', 'is', null)
+                .eq('portal_enabled', true)
+                .order('customer_name', { ascending: true });
+            if (error) throw error;
+            const clients = new Map();
+            (data || []).forEach(profile => {
+                const client = normalisePlannerMessageClientProfile(profile);
+                if (!client) return;
+                if (!clients.has(client.email)) clients.set(client.email, client);
+            });
+            plannerMessageClientsRaw = Array.from(clients.values());
+        } catch (err) {
+            console.warn('Could not load booking portal clients for planner messages:', err);
+        }
+    }
+
+    async function loadPlannerPortalPresence() {
+        try {
+            const { data, error } = await sb
+                .from(PORTAL_PRESENCE_TABLE)
+                .select('customer_email, customer_name, last_seen_at, is_online');
+            if (error) throw error;
+            plannerPortalPresenceRaw = data || [];
+        } catch (err) {
+            plannerPortalPresenceRaw = [];
+            console.warn('Could not load portal client presence:', err);
+        }
+    }
+
+    function isPlannerMessageClientOnline(email) {
+        const cleanEmail = String(email || '').trim().toLowerCase();
+        if (!cleanEmail) return false;
+        const presence = (plannerPortalPresenceRaw || []).find(row => String(row.customer_email || '').trim().toLowerCase() === cleanEmail);
+        if (!presence || presence.is_online === false) return false;
+        const seenTime = Date.parse(presence.last_seen_at || '');
+        return Number.isFinite(seenTime) && (Date.now() - seenTime) <= PORTAL_ONLINE_WINDOW_MS;
+    }
+
+    function groupPlannerMessagesByCustomer(messages) {
+        const groups = new Map();
+        (plannerMessageClientsRaw || []).forEach(client => {
+            const key = String(client && client.email || '').trim().toLowerCase();
+            if (!key) return;
+            groups.set(key, {
+                email: key,
+                name: client.name || key,
+                phone: client.phone || '',
+                messages: [],
+                unread: 0,
+                latest: '',
+                hasMessages: false
+            });
+        });
+        (messages || []).forEach(message => {
+            const key = getMessageCustomerKey(message);
+            if (!key) return;
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    email: key,
+                    name: message.customer_name || key,
+                    phone: '',
+                    messages: [],
+                    unread: 0,
+                    latest: '',
+                    hasMessages: false
+                });
+            }
+            const group = groups.get(key);
+            if (message.customer_name && group.name === key) group.name = message.customer_name;
+            group.messages.push(message);
+            group.latest = message.created_at || group.latest;
+            group.hasMessages = true;
+            if (String(message.sender_type || '').toLowerCase() === 'customer' && !message.read_by_planner) group.unread += 1;
+        });
+        return Array.from(groups.values()).sort((a, b) => {
+            if ((a.unread > 0) !== (b.unread > 0)) return a.unread > 0 ? -1 : 1;
+            if (a.latest || b.latest) {
+                if (!a.latest) return 1;
+                if (!b.latest) return -1;
+                return String(b.latest || '').localeCompare(String(a.latest || ''));
+            }
+            return String(a.name || a.email).localeCompare(String(b.name || b.email), undefined, { sensitivity: 'base' });
+        });
+    }
+
+    function getPlannerMessageClientName(email) {
+        const cleanEmail = String(email || '').trim().toLowerCase();
+        if (!cleanEmail) return '';
+        const client = (plannerMessageClientsRaw || []).find(item => String(item.email || '').trim().toLowerCase() === cleanEmail);
+        return client && client.name ? client.name : '';
+    }
+
+    function renderPlannerMessageUnread() {
+        const badge = document.getElementById('planner-message-unread');
+        const button = document.getElementById('planner-message-button');
+        if (!badge) return;
+        const unread = (plannerMessagesRaw || []).filter(message =>
+            String(message.sender_type || '').toLowerCase() === 'customer' && !message.read_by_planner
+        ).length;
+        badge.textContent = unread > 99 ? '99+' : String(unread);
+        badge.style.display = unread ? 'inline-flex' : 'none';
+        if (button) button.classList.toggle('message-alert-active', unread > 0);
+    }
+
+    function renderPlannerMessageThreads() {
+        const list = document.getElementById('planner-message-thread-list');
+        if (!list) return;
+        const groups = groupPlannerMessagesByCustomer(plannerMessagesRaw);
+        if (!groups.length) {
+            list.innerHTML = '<div class="message-empty">No booking portal clients found.</div>';
+            renderPlannerConversation();
+            return;
+        }
+        if (!plannerActiveMessageEmail || !groups.some(group => group.email === plannerActiveMessageEmail)) {
+            plannerActiveMessageEmail = groups[0].email;
+        }
+        list.innerHTML = groups.map(group => `
+            <button type="button" class="message-thread-item ${group.email === plannerActiveMessageEmail ? 'active' : ''} ${group.hasMessages ? '' : 'no-messages'}" onclick="selectPlannerMessageThread('${escapeInlineArg(group.email)}')">
+                <div class="message-thread-title">
+                    <span class="message-thread-name">${isPlannerMessageClientOnline(group.email) ? '<span class="message-online-dot" title="Logged into booking portal"></span>' : ''}<span class="message-thread-name-text">${escapeHtml(group.name || group.email)}</span></span>
+                    ${group.unread ? `<span class="message-unread-badge">${group.unread > 99 ? '99+' : group.unread}</span>` : ''}
+                </div>
+                <div class="message-thread-email">${escapeHtml(group.email)}</div>
+                ${group.hasMessages ? '' : '<div class="message-thread-preview">No messages yet</div>'}
+            </button>
+        `).join('');
+        renderPlannerConversation();
+        renderPlannerMessageJobOptions();
+    }
+
+    function renderPlannerConversation() {
+        const title = document.getElementById('planner-message-title');
+        const list = document.getElementById('planner-message-list');
+        const input = document.getElementById('planner-message-input');
+        const send = document.getElementById('planner-message-send-btn');
+        const fileInput = document.getElementById('planner-message-file');
+        const fileLabel = document.getElementById('planner-message-file-label');
+        const jobInput = document.getElementById('planner-message-job-link');
+        const clearBtn = document.getElementById('planner-message-clear-btn');
+        if (!title || !list || !input || !send) return;
+        const messages = (plannerMessagesRaw || []).filter(message => getMessageCustomerKey(message) === plannerActiveMessageEmail);
+        const displayName = messages.find(message => message.customer_name)?.customer_name || getPlannerMessageClientName(plannerActiveMessageEmail) || plannerActiveMessageEmail || 'Select a customer';
+        title.textContent = plannerActiveMessageEmail ? `${displayName} | ${plannerActiveMessageEmail}` : 'Select a customer';
+        input.disabled = !plannerActiveMessageEmail;
+        send.disabled = !plannerActiveMessageEmail;
+        if (fileInput) fileInput.disabled = !plannerActiveMessageEmail;
+        if (fileLabel) fileLabel.classList.toggle('disabled', !plannerActiveMessageEmail);
+        if (jobInput) jobInput.disabled = !plannerActiveMessageEmail;
+        if (clearBtn) clearBtn.disabled = !plannerActiveMessageEmail || !messages.length;
+        if (!plannerActiveMessageEmail) {
+            clearPlannerMessageFile();
+            clearPlannerMessageJobLink();
+            list.innerHTML = '<div class="message-empty">Customer conversations will appear here.</div>';
+            return;
+        }
+        list.innerHTML = messages.map(message => {
+            const senderType = String(message.sender_type || '').toLowerCase() === 'planner' ? 'planner' : 'customer';
+            const senderName = message.sender_name || (senderType === 'planner' ? 'Planner' : displayName);
+            return `
+                <div class="message-bubble ${senderType}">
+                    <div class="message-meta">${escapeHtml(senderName)} | ${escapeHtml(formatMessageTime(message.created_at))}</div>
+                    ${renderMessageJobBadge(message, true)}
+                    ${renderMessageText(message.message_text)}
+                    ${renderMessageAttachment(message)}
+                    ${renderPlannerMessageReadStatus(message)}
+                </div>
+            `;
+        }).join('') || '<div class="message-empty">No messages in this thread yet.</div>';
+        requestAnimationFrame(() => {
+            list.scrollTop = list.scrollHeight;
+        });
+    }
+
+    async function selectPlannerMessageThread(email) {
+        const nextEmail = String(email || '').trim().toLowerCase();
+        if (nextEmail !== plannerActiveMessageEmail) {
+            clearPlannerMessageFile();
+            clearPlannerMessageJobLink();
+        }
+        plannerActiveMessageEmail = nextEmail;
+        renderPlannerMessageThreads();
+        await renderPlannerMessageJobOptions();
+        await markPlannerThreadRead(plannerActiveMessageEmail);
+    }
+
+    async function clearPlannerMessageThread() {
+        const cleanEmail = String(plannerActiveMessageEmail || '').trim().toLowerCase();
+        if (!cleanEmail) return;
+
+        const clientName = getPlannerMessageClientName(cleanEmail) || cleanEmail;
+        const threadMessages = (plannerMessagesRaw || []).filter(message => getMessageCustomerKey(message) === cleanEmail);
+        if (!threadMessages.length) {
+            alert('There are no messages to clear for this client.');
+            return;
+        }
+
+        if (!confirm(`Clear all chat messages for ${clientName}?\n\nThis will remove the conversation from the planner and the customer portal.`)) {
+            return;
+        }
+
+        const clearBtn = document.getElementById('planner-message-clear-btn');
+        if (clearBtn) {
+            clearBtn.disabled = true;
+            clearBtn.textContent = 'Clearing...';
+        }
+
+        try {
+            const { error } = await sb.from(PORTAL_MESSAGES_TABLE)
+                .delete()
+                .ilike('customer_email', cleanEmail);
+            if (error) throw error;
+
+            plannerMessagesRaw = (plannerMessagesRaw || []).filter(message => getMessageCustomerKey(message) !== cleanEmail);
+            clearPlannerMessageFile();
+            clearPlannerMessageJobLink();
+            renderPlannerMessageUnread();
+            renderPlannerMessageThreads();
+            alert('Chat cleared for this client.');
+        } catch (err) {
+            console.error('Could not clear chat:', err);
+            const detail = getPlannerSupabaseErrorText(err) || (err && err.message) || String(err);
+            alert('Could not clear this chat. Please make sure the portal_messages table grants DELETE permission, then try again. ' + detail);
+            renderPlannerConversation();
+        } finally {
+            if (clearBtn) {
+                clearBtn.textContent = 'Clear chat';
+            }
+        }
+    }
+
+    async function loadPlannerMessages(silent = true, includeClients = false) {
+        try {
+            const messagesModalOpen = document.getElementById('modal-planner-messages')?.style.display === 'flex';
+            if (includeClients || (messagesModalOpen && !plannerMessageClientsRaw.length)) {
+                await loadPlannerMessageClients();
+            }
+            if (messagesModalOpen) {
+                await loadPlannerPortalPresence();
+            }
+            const { data, error } = await sb.from(PORTAL_MESSAGES_TABLE)
+                .select('*')
+                .order('created_at', { ascending: true })
+                .limit(1000);
+            if (error) throw error;
+            plannerMessagesRaw = data || [];
+            renderPlannerMessageUnread();
+            if (messagesModalOpen) {
+                renderPlannerMessageThreads();
+                if (plannerActiveMessageEmail) await markPlannerThreadRead(plannerActiveMessageEmail);
+            }
+        } catch (err) {
+            console.warn('Could not load portal messages:', err);
+            if (!silent) alert('Could not load messages. Check the portal_messages Supabase table exists. ' + (err.message || err));
+        }
+    }
+
+    async function markPlannerThreadRead(email) {
+        const cleanEmail = String(email || '').trim().toLowerCase();
+        if (!cleanEmail) return;
+        const unreadIds = (plannerMessagesRaw || [])
+            .filter(message => getMessageCustomerKey(message) === cleanEmail && String(message.sender_type || '').toLowerCase() === 'customer' && !message.read_by_planner)
+            .map(message => message.id)
+            .filter(Boolean);
+        if (!unreadIds.length) return;
+        const { error } = await sb.from(PORTAL_MESSAGES_TABLE).update({ read_by_planner: true }).in('id', unreadIds);
+        if (!error) {
+            plannerMessagesRaw.forEach(message => {
+                if (unreadIds.includes(message.id)) message.read_by_planner = true;
+            });
+            renderPlannerMessageUnread();
+            renderPlannerMessageThreads();
+        }
+    }
+
+    function handlePlannerMessageInputKeydown(event) {
+        if (!event || event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+        event.preventDefault();
+        sendPlannerMessage();
+    }
+
+    async function sendPlannerMessage() {
+        const input = document.getElementById('planner-message-input');
+        const fileInput = document.getElementById('planner-message-file');
+        const send = document.getElementById('planner-message-send-btn');
+        const text = String(input && input.value || '').trim();
+        const file = fileInput && fileInput.files && fileInput.files[0];
+        if (!plannerActiveMessageEmail || (!text && !file)) return;
+        const threadMessages = (plannerMessagesRaw || []).filter(message => getMessageCustomerKey(message) === plannerActiveMessageEmail);
+        const customerName = threadMessages.find(message => message.customer_name)?.customer_name || getPlannerMessageClientName(plannerActiveMessageEmail) || plannerActiveMessageEmail;
+        if (send) {
+            send.disabled = true;
+            send.textContent = file ? 'Uploading...' : 'Sending...';
+        }
+        try {
+            const rawAttachmentPayload = file ? await getPlannerMessageAttachmentPayload(file, plannerActiveMessageEmail) : null;
+            const attachmentWasInline = !!(rawAttachmentPayload && rawAttachmentPayload.__inlineFallback);
+            const attachmentPayload = rawAttachmentPayload ? { ...rawAttachmentPayload } : null;
+            if (attachmentPayload) delete attachmentPayload.__inlineFallback;
+            const payload = {
+                customer_email: plannerActiveMessageEmail,
+                customer_name: customerName,
+                sender_type: 'planner',
+                sender_name: 'FROST Planner',
+                message_text: text || (file ? `Attached file: ${file.name || 'attachment'}` : ''),
+                read_by_planner: true,
+                read_by_customer: false,
+                ...getPlannerMessageLinkedJobPayload(),
+                ...(attachmentPayload || {})
+            };
+            const result = await insertPlannerPortalMessage(payload);
+            if (input) input.value = '';
+            clearPlannerMessageFile();
+            clearPlannerMessageJobLink();
+            await loadPlannerMessages(false);
+            if (result && result.fallback) {
+                alert('Message sent, but Supabase has not got the attachment columns set up yet, so the file was sent as a link in the message.');
+            } else if (attachmentWasInline) {
+                alert('Message sent. Supabase Storage rejected the upload, so this small file was sent inside the message instead.');
+            }
+        } catch (err) {
+            console.error('Could not send planner message:', err);
+            alert(getPlannerMessageSendErrorText(err));
+        } finally {
+            if (send) {
+                send.disabled = !plannerActiveMessageEmail;
+                send.textContent = 'Send';
+            }
+            if (input && plannerActiveMessageEmail && !input.disabled) {
+                setTimeout(() => input.focus(), 0);
+            }
+        }
+    }
+
+    function openPlannerMessages() {
+        openModal('modal-planner-messages');
+        renderPlannerMessageJobOptions();
+        loadPlannerMessages(false, true);
+    }
+
+    function startPlannerMessagePolling() {
+        if (plannerMessagePollTimer) clearInterval(plannerMessagePollTimer);
+        loadPlannerMessages(true);
+        plannerMessagePollTimer = setInterval(() => loadPlannerMessages(true), MESSAGE_POLL_INTERVAL_MS);
+    }
 
     // ==========================================
     // GOOGLE PLACES ADDRESS AUTOCOMPLETE
@@ -8346,7 +10313,7 @@ Are you sure you want to place it here?`);
             'q': () => openQuickCardModal(),
             'i': () => openInstructionModal(),
             's': () => openPlannerSearch(),
-            'n': () => { resetForm(); openModal('modal-add'); },
+            'n': () => openNewJobForm(),
             'u': () => toggleUnassigned(),
             'm': () => toggleMaintenanceCards(),
             'p': () => toggleMaintenancePool()
